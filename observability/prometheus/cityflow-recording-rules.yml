@@ -1,0 +1,16 @@
+groups:
+  - name: cityflow-slo-recording
+    interval: 1m
+    rules:
+      - record: cityflow:diffusion_healthy:ratio_5m
+        expr: avg_over_time(cityflow_diffusion_health{state="healthy"}[5m])
+      - record: cityflow:diffusion_healthy:ratio_1h
+        expr: avg_over_time(cityflow_diffusion_health{state="healthy"}[1h])
+      - record: cityflow:diffusion_healthy:ratio_24h
+        expr: avg_over_time(cityflow_diffusion_health{state="healthy"}[24h])
+      - record: cityflow:delivery_p95_seconds:avg_1h
+        expr: avg_over_time(cityflow_diffusion_delivery_seconds_p95[1h])
+      - record: cityflow:critical_alerts:max_1h
+        expr: max_over_time(cityflow_operational_alerts_open_critical_total[1h])
+      - record: cityflow:dead_diffusions:max_24h
+        expr: max_over_time(cityflow_diffusion_dead_total[24h])
