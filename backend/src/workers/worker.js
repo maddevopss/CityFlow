@@ -1,5 +1,6 @@
 const { Worker } = require('bullmq');
 const config = require('../config');
+const logger = require('../logger');
 const diffuseEvent = require('./jobs/diffuseEvent');
 const { startOutboxDispatcher } = require('./outboxDispatcher');
 const { startDeliverySlaMonitor } = require('./deliverySlaMonitor');
@@ -9,18 +10,18 @@ const worker = new Worker('diffusion', diffuseEvent, {
 });
 
 worker.on('completed', job => {
-  console.log(`✅ Job ${job.id} terminé`);
+  logger.info(`Job ${job.id} terminé`);
 });
 
 worker.on('failed', (job, err) => {
-  console.error(`❌ Job ${job.id} échoué:`, err.message);
+  logger.error(`Job ${job?.id} échoué`, { error: err.message });
 });
 
 startOutboxDispatcher();
 const deliverySlaMonitor = startDeliverySlaMonitor();
 
 async function shutdown(signal) {
-  console.log(`🛑 Arrêt du worker reçu (${signal})`);
+  logger.info(`Arrêt du worker reçu (${signal})`);
   deliverySlaMonitor.stop();
   await worker.close();
   process.exit(0);
@@ -29,4 +30,19 @@ async function shutdown(signal) {
 process.once('SIGTERM', () => void shutdown('SIGTERM'));
 process.once('SIGINT', () => void shutdown('SIGINT'));
 
-console.log('⚙️  Worker de diffusion, distributeur de sortie et surveillance des objectifs démarrés');
+process.on('unhandledRejection', (reason) => {
+  logger.error('Rejet de promesse non géré dans le worker', {
+    error: reason instanceof Error ? reason.message : reason,
+    stack: reason instanceof Error ? reason.stack : undefined
+  });
+});
+
+process.on('uncaughtException', (error) => {
+  logger.error('Exception non interceptée dans le worker, arrêt du processus', {
+    error: error.message,
+    stack: error.stack
+  });
+  process.exit(1);
+});
+
+logger.info('Worker de diffusion, distributeur de sortie et surveillance des objectifs démarrés');
