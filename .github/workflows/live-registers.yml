@@ -1,0 +1,36 @@
+name: Live registers
+
+on:
+  pull_request:
+    paths:
+      - 'docs/registres/**'
+      - 'scripts/validate-live-registers.mjs'
+      - '.github/workflows/live-registers.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/registres/**'
+      - 'scripts/validate-live-registers.mjs'
+      - '.github/workflows/live-registers.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-live-registers:
+    name: Validate live registers
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate T1 to T20
+        run: node scripts/validate-live-registers.mjs
