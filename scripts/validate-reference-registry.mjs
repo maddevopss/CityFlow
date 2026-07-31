@@ -51,8 +51,15 @@ for (let index = 1; index <= 20; index += 1) {
     errors.push(`${referenceId}: section Statut absente dans ${relativePath}`);
   }
 
-  if (!/^## Barrière(?: finale)?\s*$/m.test(content)) {
-    errors.push(`${referenceId}: section Barrière absente dans ${relativePath}`);
+  const hasBarrierSection = /^## Barrière(?: finale)?\s*$/m.test(content);
+  const hasClosureSection = /^## Fermeture\s*$/m.test(content);
+  if (!hasBarrierSection && !hasClosureSection) {
+    errors.push(`${referenceId}: section Barrière ou Fermeture absente dans ${relativePath}`);
+  }
+
+  const explicitOpenVerdict = new RegExp(`\\*\\*${referenceId} NON FERMÉ\\b`, 'i');
+  if (!explicitOpenVerdict.test(content)) {
+    errors.push(`${referenceId}: verdict explicite « ${referenceId} NON FERMÉ » absent dans ${relativePath}`);
   }
 }
 
