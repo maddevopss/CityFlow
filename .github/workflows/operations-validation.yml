@@ -42,17 +42,21 @@ jobs:
             /github/workspace/observability/alertmanager/alertmanager.yml
 
       - name: Validate Grafana dashboard JSON
-        run: |
-          python -m json.tool observability/grafana/dashboards/cityflow-diffusion.json >/dev/null
+        run: python -m json.tool observability/grafana/dashboards/cityflow-diffusion.json >/dev/null
 
-      - name: Validate shell scripts
+      - name: Validate available shell scripts
         run: |
-          bash -n ops/postgresql/backup.sh
-          bash -n ops/postgresql/restore.sh
+          find ops -type f -name '*.sh' -print0 | while IFS= read -r -d '' script; do
+            bash -n "$script"
+          done
 
       - name: Reject committed secrets
         run: |
-          if grep -RInE '(postgres(ql)?://[^[:space:]]+:[^[:space:]]+@|hooks\.slack\.com/services/|sk_live_)' observability ops docs/operations tests/load; then
+          paths=()
+          for path in observability ops docs/operations tests/load; do
+            [[ -e "$path" ]] && paths+=("$path")
+          done
+          if grep -RInE '(postgres(ql)?://[^[:space:]]+:[^[:space:]]+@|hooks\.slack\.com/services/|sk_live_)' "${paths[@]}"; then
             echo 'Potential secret committed in operations files.' >&2
             exit 1
           fi
