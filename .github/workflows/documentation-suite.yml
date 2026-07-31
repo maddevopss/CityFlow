@@ -6,6 +6,7 @@ on:
       - 'docs/**'
       - 'scripts/validate-*.mjs'
       - 'scripts/generate-governance-document.mjs'
+      - 'scripts/test-document-generator.mjs'
       - '.github/workflows/documentation-suite.yml'
   push:
     branches: [main]
@@ -13,6 +14,7 @@ on:
       - 'docs/**'
       - 'scripts/validate-*.mjs'
       - 'scripts/generate-governance-document.mjs'
+      - 'scripts/test-document-generator.mjs'
       - '.github/workflows/documentation-suite.yml'
 
 permissions:
@@ -32,6 +34,9 @@ jobs:
 
       - name: Validate documentation suite
         run: node scripts/validate-documentation-suite.mjs
+
+      - name: Test generator safeguards
+        run: node scripts/test-document-generator.mjs
 
       - name: Exercise all generators
         shell: bash
