@@ -10,11 +10,12 @@ async function appendEventAudit({
   previousStatus = null,
   newStatus = null,
   reason = null,
-  metadata = {}
+  metadata = {},
+  db = prisma
 }) {
   const id = uuidv4();
 
-  await prisma.$executeRaw`
+  await db.$executeRaw`
     INSERT INTO "EventAudit" (
       "id", "eventId", "municipalityId", "action", "actorId", "actorRole",
       "previousStatus", "newStatus", "reason", "metadata"
@@ -35,8 +36,8 @@ async function appendEventAudit({
   return id;
 }
 
-async function listEventAudit({ eventId, municipalityId }) {
-  return prisma.$queryRaw`
+async function listEventAudit({ eventId, municipalityId, db = prisma }) {
+  return db.$queryRaw`
     SELECT
       "id", "eventId", "municipalityId", "action", "actorId", "actorRole",
       "previousStatus", "newStatus", "reason", "metadata", "occurredAt"

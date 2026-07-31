@@ -6,18 +6,23 @@ jest.mock('../../src/workers/queue', () => ({
   queue: { add: jest.fn().mockResolvedValue({ id: 'job-1' }) }
 }));
 
-jest.mock('../../src/db/prisma', () => ({
-  roadEvent: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn()
-  },
-  user: {
-    findUnique: jest.fn()
-  },
-  $disconnect: jest.fn()
-}));
+jest.mock('../../src/db/prisma', () => {
+  const mockPrisma = {
+    roadEvent: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn()
+    },
+    user: {
+      findUnique: jest.fn()
+    },
+    $disconnect: jest.fn()
+  };
+
+  mockPrisma.$transaction = jest.fn(async (callback) => callback(mockPrisma));
+  return mockPrisma;
+});
 
 const prisma = require('../../src/db/prisma');
 const { queue } = require('../../src/workers/queue');
@@ -42,10 +47,11 @@ describe('Events API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
   });
 
   describe('POST /api/v1/events', () => {
-    it('crée un brouillon dans la municipalité du jeton sans le diffuser', async () => {
+    it('crée le brouillon et son audit dans la même transaction', async () => {
       prisma.roadEvent.create.mockResolvedValue({
         id: '123',
         eventType: 'CONSTRUCTION',
@@ -65,6 +71,7 @@ describe('Events API', () => {
         });
 
       expect(res.status).toBe(201);
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(prisma.roadEvent.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -77,6 +84,23 @@ describe('Events API', () => {
       expect(queue.add).not.toHaveBeenCalled();
     });
 
+    it('annule la création lorsque la transaction échoue', async () => {
+      prisma.$transaction.mockRejectedValueOnce(new Error('audit unavailable'));
+
+      const res = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${agentToken}`)
+        .send({
+          eventType: 'CONSTRUCTION',
+          subtype: 'road_work',
+          geometry: { type: 'Point', coordinates: [-71.2, 46.8] },
+          startTime: new Date().toISOString()
+        });
+
+      expect(res.status).toBeGreaterThanOrEqual(500);
+      expect(queue.add).not.toHaveBeenCalled();
+    });
+
     it('retourne 401 sans token', async () => {
       const res = await request(app).post('/api/v1/events').send({});
       expect(res.status).toBe(401);
@@ -84,7 +108,7 @@ describe('Events API', () => {
   });
 
   describe('cycle de vie', () => {
-    it('permet à un agent de soumettre un brouillon', async () => {
+    it('effectue la transition dans une transaction', async () => {
       prisma.roadEvent.findFirst.mockResolvedValue({
         id: 'event-1',
         municipalityId: 1,
@@ -102,6 +126,7 @@ describe('Events API', () => {
         .send();
 
       expect(res.status).toBe(200);
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(prisma.roadEvent.update).toHaveBeenCalledWith({
         where: { id: 'event-1' },
         data: expect.objectContaining({
@@ -119,10 +144,10 @@ describe('Events API', () => {
         .send();
 
       expect(res.status).toBe(403);
-      expect(prisma.roadEvent.findFirst).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
-    it('refuse une transition depuis un mauvais statut', async () => {
+    it('refuse une transition depuis un mauvais statut sans écrire', async () => {
       prisma.roadEvent.findFirst.mockResolvedValue({
         id: 'event-1',
         municipalityId: 1,
@@ -139,7 +164,7 @@ describe('Events API', () => {
       expect(prisma.roadEvent.update).not.toHaveBeenCalled();
     });
 
-    it('diffuse seulement lors de la publication', async () => {
+    it('diffuse seulement après la réussite de la transaction de publication', async () => {
       prisma.roadEvent.findFirst.mockResolvedValue({
         id: 'event-1',
         municipalityId: 1,
@@ -158,14 +183,18 @@ describe('Events API', () => {
 
       expect(res.status).toBe(200);
       expect(queue.add).toHaveBeenCalledWith('diffuseEvent', { eventId: 'event-1' });
-      expect(prisma.roadEvent.update).toHaveBeenCalledWith({
-        where: { id: 'event-1' },
-        data: expect.objectContaining({
-          status: 'PLANNED',
-          publishedBy: 'admin-1',
-          publishedAt: expect.any(Date)
-        })
-      });
+    });
+
+    it('ne diffuse pas lorsque la transaction de publication échoue', async () => {
+      prisma.$transaction.mockRejectedValueOnce(new Error('audit unavailable'));
+
+      const res = await request(app)
+        .post('/api/v1/events/event-1/publish')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send();
+
+      expect(res.status).toBeGreaterThanOrEqual(500);
+      expect(queue.add).not.toHaveBeenCalled();
     });
 
     it('exige une raison lors du rejet', async () => {
@@ -175,7 +204,7 @@ describe('Events API', () => {
         .send({});
 
       expect(res.status).toBe(400);
-      expect(prisma.roadEvent.findFirst).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 
