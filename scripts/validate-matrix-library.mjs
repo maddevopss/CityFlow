@@ -25,6 +25,10 @@ for (const file of files) {
   matrixFiles.set(id, file);
 }
 
+function hasAnySection(content, sections) {
+  return sections.some((section) => content.includes(section));
+}
+
 for (const [id, expectedTitle] of expectedTitles) {
   const file = matrixFiles.get(id);
   if (!file) {
@@ -42,8 +46,16 @@ for (const [id, expectedTitle] of expectedTitles) {
     errors.push(`M${id}: intitulé attendu « ${expectedTitle} » absent du titre`);
   }
 
-  for (const section of ['## Statut', '## Objet', '## Structure minimale', '## Règles de mise à jour', '## Contrôles de cohérence', '## Gouvernance', '## Barrière finale']) {
+  for (const section of ['## Statut', '## Objet', '## Contrôles de cohérence', '## Gouvernance', '## Barrière finale']) {
     if (!content.includes(section)) errors.push(`M${id}: section ${section} absente dans ${file}`);
+  }
+
+  if (!hasAnySection(content, ['## Colonnes obligatoires', '## Structure minimale'])) {
+    errors.push(`M${id}: section de structure absente dans ${file}`);
+  }
+
+  if (!hasAnySection(content, ['## Règles de traçabilité', '## Règles de mise à jour'])) {
+    errors.push(`M${id}: section de règles absente dans ${file}`);
   }
 
   const tableRows = content.split(/\r?\n/u).filter((line) => /^\|.*\|$/u.test(line));
