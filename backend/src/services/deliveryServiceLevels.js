@@ -1,4 +1,3 @@
-const { v4: uuidv4 } = require('uuid');
 const prisma = require('../db/prisma');
 
 const DELIVERY_SLA = Object.freeze({
@@ -54,8 +53,6 @@ async function getDeliveryServiceLevels({ municipalityId, db = prisma }) {
 }
 
 async function createDeliverySlaAlerts({ municipalityId = null, db = prisma } = {}) {
-  const id = uuidv4();
-
   return db.$executeRaw`
     WITH breaches AS (
       SELECT
@@ -92,7 +89,7 @@ async function createDeliverySlaAlerts({ municipalityId = null, db = prisma } = 
       "id", "municipalityId", "outboxEventId", "type", "severity", "message", "details"
     )
     SELECT
-      (${id}::uuid + (ROW_NUMBER() OVER ())::integer),
+      md5(breach."outboxEventId"::text || ':' || breach."type")::uuid,
       breach."municipalityId",
       breach."outboxEventId",
       breach."type",
