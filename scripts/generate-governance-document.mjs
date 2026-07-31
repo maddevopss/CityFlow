@@ -83,7 +83,7 @@ for (const [key, value] of Object.entries(replacements)) {
   content = content.replaceAll(`{{${key}}}`, value);
 }
 
-const unresolved = [...content.matchAll(/{{([A-Z0-9_]+)}}/gu)].map((match) => match[1]);
+const unresolved = [...content.matchAll(/\{\{([A-Z0-9_]+)\}\}/gu)].map((match) => match[1]);
 if (unresolved.length > 0) {
   throw new Error(`Variables non remplacées: ${[...new Set(unresolved)].join(', ')}`);
 }
