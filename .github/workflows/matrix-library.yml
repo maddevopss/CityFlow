@@ -1,0 +1,31 @@
+name: Matrix library
+
+on:
+  pull_request:
+    paths:
+      - 'docs/matrices/**'
+      - 'scripts/validate-matrix-library.mjs'
+      - '.github/workflows/matrix-library.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/matrices/**'
+      - 'scripts/validate-matrix-library.mjs'
+      - '.github/workflows/matrix-library.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate matrix library
+        run: node scripts/validate-matrix-library.mjs
