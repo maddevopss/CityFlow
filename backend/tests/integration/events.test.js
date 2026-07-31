@@ -10,7 +10,7 @@ jest.mock('../../src/db/prisma', () => ({
   roadEvent: {
     create: jest.fn(),
     findMany: jest.fn(),
-    findUnique: jest.fn(),
+    findFirst: jest.fn(),
     update: jest.fn()
   },
   user: {
@@ -20,14 +20,22 @@ jest.mock('../../src/db/prisma', () => ({
 }));
 
 const prisma = require('../../src/db/prisma');
+const { queue } = require('../../src/workers/queue');
 
 describe('Events API', () => {
-  let authToken;
+  let agentToken;
+  let adminToken;
 
   beforeAll(() => {
-    authToken = jwt.sign(
-      { sub: 'user-1', role: 'MUNICIPAL_AGENT', municipalityId: 1 },
-      process.env.JWT_SECRET || 'test-secret',
+    const secret = process.env.JWT_SECRET || 'test-secret';
+    agentToken = jwt.sign(
+      { sub: 'agent-1', role: 'MUNICIPAL_AGENT', municipalityId: 1 },
+      secret,
+      { expiresIn: '1h' }
+    );
+    adminToken = jwt.sign(
+      { sub: 'admin-1', role: 'ADMIN', municipalityId: 1 },
+      secret,
       { expiresIn: '1h' }
     );
   });
@@ -37,17 +45,17 @@ describe('Events API', () => {
   });
 
   describe('POST /api/v1/events', () => {
-    it('crée un événement dans la municipalité du jeton', async () => {
+    it('crée un brouillon dans la municipalité du jeton sans le diffuser', async () => {
       prisma.roadEvent.create.mockResolvedValue({
         id: '123',
         eventType: 'CONSTRUCTION',
         municipalityId: 1,
-        status: 'PLANNED'
+        status: 'DRAFT'
       });
 
       const res = await request(app)
         .post('/api/v1/events')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${agentToken}`)
         .send({
           eventType: 'CONSTRUCTION',
           subtype: 'road_work',
@@ -59,14 +67,115 @@ describe('Events API', () => {
       expect(res.status).toBe(201);
       expect(prisma.roadEvent.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ municipalityId: 1 })
+          data: expect.objectContaining({
+            municipalityId: 1,
+            createdBy: 'agent-1',
+            status: 'DRAFT'
+          })
         })
       );
+      expect(queue.add).not.toHaveBeenCalled();
     });
 
     it('retourne 401 sans token', async () => {
       const res = await request(app).post('/api/v1/events').send({});
       expect(res.status).toBe(401);
+    });
+  });
+
+  describe('cycle de vie', () => {
+    it('permet à un agent de soumettre un brouillon', async () => {
+      prisma.roadEvent.findFirst.mockResolvedValue({
+        id: 'event-1',
+        municipalityId: 1,
+        status: 'DRAFT'
+      });
+      prisma.roadEvent.update.mockResolvedValue({
+        id: 'event-1',
+        municipalityId: 1,
+        status: 'SUBMITTED'
+      });
+
+      const res = await request(app)
+        .post('/api/v1/events/event-1/submit')
+        .set('Authorization', `Bearer ${agentToken}`)
+        .send();
+
+      expect(res.status).toBe(200);
+      expect(prisma.roadEvent.update).toHaveBeenCalledWith({
+        where: { id: 'event-1' },
+        data: expect.objectContaining({
+          status: 'SUBMITTED',
+          submittedBy: 'agent-1',
+          submittedAt: expect.any(Date)
+        })
+      });
+    });
+
+    it('réserve l’approbation aux administrateurs', async () => {
+      const res = await request(app)
+        .post('/api/v1/events/event-1/approve')
+        .set('Authorization', `Bearer ${agentToken}`)
+        .send();
+
+      expect(res.status).toBe(403);
+      expect(prisma.roadEvent.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('refuse une transition depuis un mauvais statut', async () => {
+      prisma.roadEvent.findFirst.mockResolvedValue({
+        id: 'event-1',
+        municipalityId: 1,
+        status: 'DRAFT'
+      });
+
+      const res = await request(app)
+        .post('/api/v1/events/event-1/approve')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send();
+
+      expect(res.status).toBe(409);
+      expect(res.body.currentStatus).toBe('DRAFT');
+      expect(prisma.roadEvent.update).not.toHaveBeenCalled();
+    });
+
+    it('diffuse seulement lors de la publication', async () => {
+      prisma.roadEvent.findFirst.mockResolvedValue({
+        id: 'event-1',
+        municipalityId: 1,
+        status: 'APPROVED'
+      });
+      prisma.roadEvent.update.mockResolvedValue({
+        id: 'event-1',
+        municipalityId: 1,
+        status: 'PLANNED'
+      });
+
+      const res = await request(app)
+        .post('/api/v1/events/event-1/publish')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send();
+
+      expect(res.status).toBe(200);
+      expect(queue.add).toHaveBeenCalledWith('diffuseEvent', { eventId: 'event-1' });
+      expect(prisma.roadEvent.update).toHaveBeenCalledWith({
+        where: { id: 'event-1' },
+        data: expect.objectContaining({
+          status: 'PLANNED',
+          publishedBy: 'admin-1',
+          publishedAt: expect.any(Date)
+        })
+      });
+    });
+
+    it('exige une raison lors du rejet', async () => {
+      const res = await request(app)
+        .post('/api/v1/events/event-1/reject')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({});
+
+      expect(res.status).toBe(400);
+      expect(prisma.roadEvent.findFirst).not.toHaveBeenCalled();
     });
   });
 
@@ -81,7 +190,7 @@ describe('Events API', () => {
 
       const res = await request(app)
         .get('/api/v1/events')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${agentToken}`)
         .query({ municipalityId: 999, status: 'ACTIVE' });
 
       expect(res.status).toBe(200);
