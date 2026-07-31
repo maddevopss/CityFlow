@@ -1,0 +1,58 @@
+name: Operations validation
+
+on:
+  pull_request:
+    paths:
+      - 'observability/**'
+      - 'ops/**'
+      - 'tests/load/**'
+      - 'docs/operations/**'
+      - '.github/workflows/operations-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'observability/**'
+      - 'ops/**'
+      - 'tests/load/**'
+      - 'docs/operations/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-observability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Prometheus rules
+        uses: docker://prom/prometheus:v3.5.0
+        with:
+          args: >-
+            promtool check rules
+            /github/workspace/observability/prometheus/cityflow-alerts.yml
+            /github/workspace/observability/prometheus/cityflow-recording-rules.yml
+
+      - name: Validate Alertmanager configuration
+        uses: docker://prom/alertmanager:v0.28.1
+        with:
+          entrypoint: amtool
+          args: >-
+            check-config
+            /github/workspace/observability/alertmanager/alertmanager.yml
+
+      - name: Validate Grafana dashboard JSON
+        run: |
+          python -m json.tool observability/grafana/dashboards/cityflow-diffusion.json >/dev/null
+
+      - name: Validate shell scripts
+        run: |
+          bash -n ops/postgresql/backup.sh
+          bash -n ops/postgresql/restore.sh
+
+      - name: Reject committed secrets
+        run: |
+          if grep -RInE '(postgres(ql)?://[^[:space:]]+:[^[:space:]]+@|hooks\.slack\.com/services/|sk_live_)' observability ops docs/operations tests/load; then
+            echo 'Potential secret committed in operations files.' >&2
+            exit 1
+          fi
