@@ -29,6 +29,13 @@ const expectedTitles = new Map([
   [19, 'Retrait de service']
 ]);
 
+const acceptedEntrySections = [
+  '## Critères d’entrée',
+  '## Avant déploiement',
+  '## Déclenchement',
+  '## Détection et qualification'
+];
+
 const files = (await readdir(directory)).filter((name) => /^c\d+-.*\.md$/u.test(name));
 const checklistFiles = new Map();
 
@@ -58,8 +65,12 @@ for (const [id, expectedTitle] of expectedTitles) {
     errors.push(`C${id}: intitulé attendu « ${expectedTitle} » absent du titre`);
   }
 
-  for (const section of ['## Statut', '## Objet', '## Critères d’entrée', '## Barrière finale']) {
+  for (const section of ['## Statut', '## Objet', '## Barrière finale']) {
     if (!content.includes(section)) errors.push(`C${id}: section ${section} absente dans ${file}`);
+  }
+
+  if (!acceptedEntrySections.some((section) => content.includes(section))) {
+    errors.push(`C${id}: aucune section d’entrée reconnue dans ${file}`);
   }
 
   const checkboxCount = (content.match(/^- \[ \]/gmu) || []).length;
