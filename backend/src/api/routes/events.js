@@ -32,25 +32,29 @@ router.post('/', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req
   });
 
   await queue.add('diffuseEvent', { eventId: event.id });
-  
+
   const io = req.app.get('io');
-  io.to(`municipality_${event.municipalityId}`).emit('eventChanged', event);
+  if (io) {
+    io.to(`municipality_${event.municipalityId}`).emit('eventChanged', event);
+  }
 
   res.status(201).json(event);
 });
 
-router.get('/', async (req, res) => {
-  const { municipalityId, eventType, status } = req.query;
-  const where = {};
-  if (municipalityId) where.municipalityId = parseInt(municipalityId);
+router.get('/', authenticate, async (req, res) => {
+  const { eventType, status } = req.query;
+  const where = {
+    municipalityId: req.user.municipalityId
+  };
+
   if (eventType) where.eventType = eventType;
   if (status) where.status = status;
-  
+
   const events = await prisma.roadEvent.findMany({
     where,
     orderBy: { startTime: 'asc' }
   });
-  
+
   res.json(events);
 });
 

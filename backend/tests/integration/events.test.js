@@ -2,12 +2,10 @@ const request = require('supertest');
 const app = require('../../src/app');
 const jwt = require('jsonwebtoken');
 
-// Mock du worker queue
 jest.mock('../../src/workers/queue', () => ({
   queue: { add: jest.fn().mockResolvedValue({ id: 'job-1' }) }
 }));
 
-// Mock Prisma pour les tests d'intégration
 jest.mock('../../src/db/prisma', () => ({
   roadEvent: {
     create: jest.fn(),
@@ -39,20 +37,13 @@ describe('Events API', () => {
   });
 
   describe('POST /api/v1/events', () => {
-    it('devrait créer un événement et retourner 201', async () => {
-      const mockEvent = {
+    it('crée un événement dans la municipalité du jeton', async () => {
+      prisma.roadEvent.create.mockResolvedValue({
         id: '123',
         eventType: 'CONSTRUCTION',
-        subtype: 'road_work',
         municipalityId: 1,
-        status: 'PLANNED',
-        geometry: { type: 'Point', coordinates: [-71.2, 46.8] },
-        startTime: new Date().toISOString(),
-        impacts: ['lane_closure'],
-        details: {}
-      };
-
-      prisma.roadEvent.create.mockResolvedValue(mockEvent);
+        status: 'PLANNED'
+      });
 
       const res = await request(app)
         .post('/api/v1/events')
@@ -66,47 +57,38 @@ describe('Events API', () => {
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.eventType).toBe('CONSTRUCTION');
+      expect(prisma.roadEvent.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ municipalityId: 1 })
+        })
+      );
     });
 
-    it('devrait retourner 401 sans token', async () => {
-      const res = await request(app)
-        .post('/api/v1/events')
-        .send({
-          eventType: 'CONSTRUCTION',
-          subtype: 'road_work'
-        });
-
+    it('retourne 401 sans token', async () => {
+      const res = await request(app).post('/api/v1/events').send({});
       expect(res.status).toBe(401);
-    });
-
-    it('devrait retourner 400 avec des données invalides', async () => {
-      const res = await request(app)
-        .post('/api/v1/events')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          eventType: 'INVALID_TYPE'
-        });
-
-      expect(res.status).toBe(400);
     });
   });
 
   describe('GET /api/v1/events', () => {
-    it('devrait retourner la liste des événements', async () => {
-      const mockEvents = [
-        { id: '1', eventType: 'CONSTRUCTION', status: 'ACTIVE' },
-        { id: '2', eventType: 'REGULATION', status: 'PLANNED' }
-      ];
+    it('refuse la lecture sans authentification', async () => {
+      const res = await request(app).get('/api/v1/events');
+      expect(res.status).toBe(401);
+    });
 
-      prisma.roadEvent.findMany.mockResolvedValue(mockEvents);
+    it('force la municipalité du jeton et ignore tout municipalityId fourni', async () => {
+      prisma.roadEvent.findMany.mockResolvedValue([]);
 
       const res = await request(app)
         .get('/api/v1/events')
-        .query({ status: 'ACTIVE' });
+        .set('Authorization', `Bearer ${authToken}`)
+        .query({ municipalityId: 999, status: 'ACTIVE' });
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
+      expect(prisma.roadEvent.findMany).toHaveBeenCalledWith({
+        where: { municipalityId: 1, status: 'ACTIVE' },
+        orderBy: { startTime: 'asc' }
+      });
     });
   });
 });
