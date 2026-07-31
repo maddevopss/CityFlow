@@ -1,0 +1,70 @@
+# T2 — Registre des risques
+
+## Statut
+
+**REGISTRE VIVANT — AUCUNE ABSENCE DE RISQUE PRÉSUMÉE**
+
+## Objet
+
+Maintenir une vue attribuée et révisable des scénarios pouvant nuire aux citoyens, aux municipalités, aux opérations, aux données, à la sécurité ou à la continuité de CityFlow.
+
+## Portée
+
+Le registre couvre les risques institutionnels, juridiques, humains, techniques, opérationnels, financiers, territoriaux, environnementaux, de sécurité, de vie privée et de données.
+
+## Champs minimaux
+
+| Champ | Exigence |
+|---|---|
+| Identifiant | `RSK-AAAA-NNN` unique |
+| Scénario | Cause, événement et conséquence possibles |
+| Catégorie | Domaine principal du risque |
+| Source | Origine du signal ou de l’analyse |
+| Actifs touchés | Services, données, personnes ou territoires concernés |
+| Probabilité | Échelle définie et justifiée |
+| Impact | Échelle définie par dimension |
+| Niveau initial | Résultat avant traitements |
+| Contrôles existants | Mesures déjà en place et preuves |
+| Traitement | éviter, réduire, transférer ou accepter |
+| Responsable | Propriétaire du risque |
+| Échéance | Date du prochain traitement ou réexamen |
+| Niveau résiduel | Niveau après traitements |
+| Statut | ouvert, surveillé, accepté, réalisé ou fermé |
+| Déclencheurs | Signaux imposant une réévaluation |
+| Preuves | Analyses, incidents, tests et décisions liés |
+
+## Entrées
+
+| Identifiant | Scénario | Niveau | Statut | Responsable | Échéance | Traitement | Preuves |
+|---|---|---|---|---|---|---|---|
+| — | Registre initialisé | non évalué | ouvert | Maintenance CityFlow | Première analyse réelle | À définir | Historique Git |
+
+## Règles d’évaluation
+
+- employer des échelles documentées et constantes;
+- distinguer faits, hypothèses et incertitudes;
+- ne pas réduire un niveau sans preuve du contrôle;
+- rendre visible le risque résiduel;
+- attribuer toute acceptation à une autorité compétente;
+- rouvrir un risque lorsque les hypothèses changent.
+
+## Gouvernance
+
+- propriétaire : responsable de la gestion des risques CityFlow;
+- contributeurs : propriétaires de services, données, contrôles et obligations;
+- revue : périodique et à chaque incident, changement majeur ou nouvelle obligation;
+- conservation : historique complet des niveaux et décisions;
+- escalade : tout risque critique sans propriétaire ou échéance bloque la fermeture.
+
+## Preuves attendues
+
+- analyse de scénario;
+- justification des niveaux;
+- preuve des contrôles;
+- décision d’acceptation ou plan de traitement;
+- validations de réduction;
+- suivi des déclencheurs.
+
+## Barrière finale
+
+Un risque n’est pas maîtrisé parce qu’il figure au registre. Toute réduction, acceptation ou fermeture exige des contrôles démontrés, une autorité attribuée et un suivi vérifiable.
