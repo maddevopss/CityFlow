@@ -2,8 +2,8 @@ const request = require('supertest');
 const app = require('../../src/app');
 const jwt = require('jsonwebtoken');
 
-jest.mock('../../src/workers/queue', () => ({
-  queue: { add: jest.fn().mockResolvedValue({ id: 'job-1' }) }
+jest.mock('../../src/services/outbox', () => ({
+  appendOutboxEvent: jest.fn().mockResolvedValue('outbox-1')
 }));
 
 jest.mock('../../src/db/prisma', () => {
@@ -25,7 +25,7 @@ jest.mock('../../src/db/prisma', () => {
 });
 
 const prisma = require('../../src/db/prisma');
-const { queue } = require('../../src/workers/queue');
+const { appendOutboxEvent } = require('../../src/services/outbox');
 
 describe('Events API', () => {
   let agentToken;
@@ -48,6 +48,7 @@ describe('Events API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
+    appendOutboxEvent.mockResolvedValue('outbox-1');
   });
 
   describe('POST /api/v1/events', () => {
@@ -81,7 +82,7 @@ describe('Events API', () => {
           })
         })
       );
-      expect(queue.add).not.toHaveBeenCalled();
+      expect(appendOutboxEvent).not.toHaveBeenCalled();
     });
 
     it('annule la création lorsque la transaction échoue', async () => {
@@ -98,7 +99,7 @@ describe('Events API', () => {
         });
 
       expect(res.status).toBeGreaterThanOrEqual(500);
-      expect(queue.add).not.toHaveBeenCalled();
+      expect(appendOutboxEvent).not.toHaveBeenCalled();
     });
 
     it('retourne 401 sans token', async () => {
@@ -127,14 +128,7 @@ describe('Events API', () => {
 
       expect(res.status).toBe(200);
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-      expect(prisma.roadEvent.update).toHaveBeenCalledWith({
-        where: { id: 'event-1' },
-        data: expect.objectContaining({
-          status: 'SUBMITTED',
-          submittedBy: 'agent-1',
-          submittedAt: expect.any(Date)
-        })
-      });
+      expect(appendOutboxEvent).not.toHaveBeenCalled();
     });
 
     it('réserve l’approbation aux administrateurs', async () => {
@@ -162,9 +156,10 @@ describe('Events API', () => {
       expect(res.status).toBe(409);
       expect(res.body.currentStatus).toBe('DRAFT');
       expect(prisma.roadEvent.update).not.toHaveBeenCalled();
+      expect(appendOutboxEvent).not.toHaveBeenCalled();
     });
 
-    it('diffuse seulement après la réussite de la transaction de publication', async () => {
+    it('écrit la demande de diffusion dans la même transaction que la publication', async () => {
       prisma.roadEvent.findFirst.mockResolvedValue({
         id: 'event-1',
         municipalityId: 1,
@@ -182,11 +177,28 @@ describe('Events API', () => {
         .send();
 
       expect(res.status).toBe(200);
-      expect(queue.add).toHaveBeenCalledWith('diffuseEvent', { eventId: 'event-1' });
+      expect(appendOutboxEvent).toHaveBeenCalledWith(expect.objectContaining({
+        aggregateId: 'event-1',
+        municipalityId: 1,
+        eventType: 'ROAD_EVENT_DIFFUSION_REQUESTED',
+        payload: { eventId: 'event-1' },
+        dedupeKey: 'road-event:event-1:PLANNED',
+        db: prisma
+      }));
     });
 
-    it('ne diffuse pas lorsque la transaction de publication échoue', async () => {
-      prisma.$transaction.mockRejectedValueOnce(new Error('audit unavailable'));
+    it('annule la publication lorsque l’écriture de sortie échoue', async () => {
+      prisma.roadEvent.findFirst.mockResolvedValue({
+        id: 'event-1',
+        municipalityId: 1,
+        status: 'APPROVED'
+      });
+      prisma.roadEvent.update.mockResolvedValue({
+        id: 'event-1',
+        municipalityId: 1,
+        status: 'PLANNED'
+      });
+      appendOutboxEvent.mockRejectedValueOnce(new Error('outbox unavailable'));
 
       const res = await request(app)
         .post('/api/v1/events/event-1/publish')
@@ -194,7 +206,7 @@ describe('Events API', () => {
         .send();
 
       expect(res.status).toBeGreaterThanOrEqual(500);
-      expect(queue.add).not.toHaveBeenCalled();
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     });
 
     it('exige une raison lors du rejet', async () => {
