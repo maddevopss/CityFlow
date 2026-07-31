@@ -45,6 +45,10 @@ Décrire les déclencheurs, canaux de correction et message de remplacement.
 - publication T18 : À compléter
 - matrice M17 : À compléter
 
+## Limites
+
+Préciser les publics non joints, langues non couvertes, canaux indisponibles et incertitudes sur la compréhension.
+
 ## Barrière finale
 
 La diffusion ne prouve ni la réception ni la compréhension; ces effets doivent être évalués selon le contexte.
