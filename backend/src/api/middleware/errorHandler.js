@@ -1,7 +1,8 @@
 const { Prisma } = require('@prisma/client');
+const logger = require('../../logger');
 
 module.exports = (err, req, res, next) => {
-  console.error(err);
+  logger.error(err.message, { stack: err.stack, path: req.path, method: req.method });
 
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === 'P2025') return res.status(404).json({ message: 'Ressource non trouvée' });

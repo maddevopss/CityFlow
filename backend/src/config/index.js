@@ -32,5 +32,6 @@ module.exports = {
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   databaseUrl: process.env.DATABASE_URL,
+  wazeCcpUrl: process.env.WAZE_CCP_URL,
   nodeEnv
 };

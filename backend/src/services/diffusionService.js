@@ -1,14 +1,16 @@
 const axios = require('axios');
 const prisma = require('../db/prisma');
+const config = require('../config');
+const logger = require('../logger');
 
 class DiffusionService {
   async pushToWaze(municipalityId) {
     const municipality = await prisma.municipality.findUnique({
       where: { id: municipalityId }
     });
-    
+
     if (!municipality?.wazeCcpKey) {
-      console.log(`Pas de clé Waze pour la municipalité ${municipalityId}`);
+      logger.info(`Pas de clé Waze pour la municipalité ${municipalityId}`);
       return;
     }
 
@@ -35,15 +37,15 @@ class DiffusionService {
     const geojson = { type: 'FeatureCollection', features };
 
     try {
-      await axios.post(process.env.WAZE_CCP_URL, geojson, {
+      await axios.post(config.wazeCcpUrl, geojson, {
         headers: {
           'Authorization': `Bearer ${municipality.wazeCcpKey}`,
           'Content-Type': 'application/json'
         }
       });
-      console.log(`✅ Diffusion Waze réussie pour municipalité ${municipalityId}`);
+      logger.info(`Diffusion Waze réussie pour municipalité ${municipalityId}`);
     } catch (err) {
-      console.error(`❌ Erreur diffusion Waze:`, err.message);
+      logger.error('Erreur diffusion Waze', { error: err.message });
     }
   }
 }

@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const config = require('../../config');
+const { permitWebhookLimiter } = require('../middleware/rateLimiters');
 
 const router = express.Router();
 
@@ -54,7 +55,7 @@ function verifyPermitWebhook(req, res, next) {
   next();
 }
 
-router.post('/hook', verifyPermitWebhook, async (req, res) => {
+router.post('/hook', permitWebhookLimiter, verifyPermitWebhook, async (req, res) => {
   const { error, value } = permitSchema.validate(req.body, {
     abortEarly: false,
     stripUnknown: true

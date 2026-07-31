@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const app = require('./app');
 const { Server } = require('socket.io');
 const config = require('./config');
+const logger = require('./logger');
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -36,11 +37,26 @@ io.use((socket, next) => {
 io.on('connection', (socket) => {
   const room = `municipality_${socket.user.municipalityId}`;
   socket.join(room);
-  console.log(`Client connecté à ${room}:`, socket.id);
+  logger.info(`Client connecté à ${room}`, { socketId: socket.id });
 });
 
 app.set('io', io);
 
+process.on('unhandledRejection', (reason) => {
+  logger.error('Rejet de promesse non géré', {
+    error: reason instanceof Error ? reason.message : reason,
+    stack: reason instanceof Error ? reason.stack : undefined
+  });
+});
+
+process.on('uncaughtException', (error) => {
+  logger.error('Exception non interceptée, arrêt du processus', {
+    error: error.message,
+    stack: error.stack
+  });
+  process.exit(1);
+});
+
 server.listen(config.port, () => {
-  console.log(`🚀 CityFlow API démarrée sur le port ${config.port}`);
+  logger.info(`🚀 CityFlow API démarrée sur le port ${config.port}`);
 });
