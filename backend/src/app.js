@@ -18,6 +18,7 @@ app.use('/api/v1/auth', require('./api/routes/auth'));
 app.use('/api/v1/events', require('./api/routes/events'));
 app.use('/api/v1/exports', require('./api/routes/exports'));
 app.use('/api/v1/permits', require('./api/routes/permits'));
+app.use('/api/v1/operations', require('./api/routes/operations'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
