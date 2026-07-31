@@ -4,10 +4,11 @@ const jwt = require('jsonwebtoken');
 const prisma = require('../../db/prisma');
 const config = require('../../config');
 const { authenticate } = require('../middleware/auth');
+const { loginLimiter } = require('../middleware/rateLimiters');
 
 const router = express.Router();
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   const user = await prisma.user.findUnique({ where: { email } });
   
