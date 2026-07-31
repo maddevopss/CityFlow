@@ -11,6 +11,10 @@ const {
   listOperationalAlerts,
   acknowledgeOperationalAlert
 } = require('../../services/operationalAlerts');
+const {
+  getDeliveryServiceLevels,
+  createDeliverySlaAlerts
+} = require('../../services/deliveryServiceLevels');
 
 const router = express.Router();
 
@@ -27,6 +31,13 @@ router.get('/diffusion', async (req, res) => {
   ]);
 
   res.json({ summary, deadLetters });
+});
+
+router.get('/diffusion/service-levels', async (req, res) => {
+  const municipalityId = req.user.municipalityId;
+  await createDeliverySlaAlerts({ municipalityId });
+  const serviceLevels = await getDeliveryServiceLevels({ municipalityId });
+  res.json(serviceLevels);
 });
 
 router.post('/diffusion/:id/retry', async (req, res) => {
