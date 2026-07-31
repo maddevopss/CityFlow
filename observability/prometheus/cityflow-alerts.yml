@@ -1,0 +1,73 @@
+groups:
+  - name: cityflow-diffusion
+    interval: 30s
+    rules:
+      - alert: CityFlowDiffusionCritical
+        expr: cityflow_diffusion_health{state="critical"} == 1
+        for: 2m
+        labels:
+          severity: critical
+          service: cityflow
+        annotations:
+          summary: "La diffusion CityFlow est en état critique"
+          description: "La santé globale de la diffusion est critique depuis au moins 2 minutes."
+
+      - alert: CityFlowDiffusionWarning
+        expr: cityflow_diffusion_health{state="warning"} == 1
+        for: 5m
+        labels:
+          severity: warning
+          service: cityflow
+        annotations:
+          summary: "La diffusion CityFlow est dégradée"
+          description: "La santé globale de la diffusion est en avertissement depuis au moins 5 minutes."
+
+      - alert: CityFlowDeadLettersDetected
+        expr: cityflow_diffusion_dead_total > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: cityflow
+        annotations:
+          summary: "Des diffusions sont en file morte"
+          description: "Au moins une diffusion a épuisé ses tentatives et nécessite une intervention."
+
+      - alert: CityFlowProcessingStuck
+        expr: cityflow_diffusion_processing_stuck_total > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: cityflow
+        annotations:
+          summary: "Une diffusion CityFlow semble bloquée"
+          description: "Une ou plusieurs diffusions dépassent le seuil de traitement bloqué."
+
+      - alert: CityFlowCriticalDelay
+        expr: cityflow_diffusion_delay_critical_total > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: cityflow
+        annotations:
+          summary: "Le délai critique de diffusion est dépassé"
+          description: "Une ou plusieurs diffusions dépassent l’objectif critique de livraison."
+
+      - alert: CityFlowHighP95DeliveryTime
+        expr: cityflow_diffusion_delivery_seconds_p95 > 900
+        for: 10m
+        labels:
+          severity: warning
+          service: cityflow
+        annotations:
+          summary: "Le 95e percentile de livraison dépasse 15 minutes"
+          description: "Le délai de livraison au 95e percentile est supérieur à 900 secondes depuis 10 minutes."
+
+      - alert: CityFlowCriticalOperationalAlertsOpen
+        expr: cityflow_operational_alerts_open_critical_total > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: cityflow
+        annotations:
+          summary: "Des alertes opérationnelles critiques sont ouvertes"
+          description: "CityFlow rapporte au moins une alerte opérationnelle critique non acquittée."

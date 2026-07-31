@@ -1,0 +1,80 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Diffusions en attente",
+      "id": 1,
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "targets": [{"expr": "cityflow_diffusion_pending_total", "legendFormat": "En attente", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "orientation": "auto", "textMode": "auto", "colorMode": "value", "graphMode": "area", "justifyMode": "auto"},
+      "fieldConfig": {"defaults": {"mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 1}, {"color": "red", "value": 10}]}}, "overrides": []}
+    },
+    {
+      "type": "stat",
+      "title": "Diffusions bloquées",
+      "id": 2,
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+      "targets": [{"expr": "cityflow_diffusion_processing_stuck_total", "legendFormat": "Bloquées", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "orientation": "auto", "textMode": "auto", "colorMode": "value", "graphMode": "area", "justifyMode": "auto"},
+      "fieldConfig": {"defaults": {"mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []}
+    },
+    {
+      "type": "stat",
+      "title": "File morte",
+      "id": 3,
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
+      "targets": [{"expr": "cityflow_diffusion_dead_total", "legendFormat": "Morts", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "orientation": "auto", "textMode": "auto", "colorMode": "value", "graphMode": "area", "justifyMode": "auto"},
+      "fieldConfig": {"defaults": {"mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []}
+    },
+    {
+      "type": "stat",
+      "title": "Alertes critiques ouvertes",
+      "id": 4,
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
+      "targets": [{"expr": "cityflow_operational_alerts_open_critical_total", "legendFormat": "Critiques", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "orientation": "auto", "textMode": "auto", "colorMode": "value", "graphMode": "area", "justifyMode": "auto"},
+      "fieldConfig": {"defaults": {"mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []}
+    },
+    {
+      "type": "timeseries",
+      "title": "Délais de livraison",
+      "id": 5,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {"expr": "cityflow_diffusion_delivery_seconds_average", "legendFormat": "Moyenne", "refId": "A"},
+        {"expr": "cityflow_diffusion_delivery_seconds_p95", "legendFormat": "95e percentile", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s", "min": 0}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom", "calcs": []}, "tooltip": {"mode": "multi", "sort": "none"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Volumes de diffusion",
+      "id": 6,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {"expr": "cityflow_diffusion_pending_total", "legendFormat": "En attente", "refId": "A"},
+        {"expr": "cityflow_diffusion_processing_total", "legendFormat": "En traitement", "refId": "B"},
+        {"expr": "cityflow_diffusion_processed_total", "legendFormat": "Traitées", "refId": "C"},
+        {"expr": "cityflow_diffusion_dead_total", "legendFormat": "Mortes", "refId": "D"}
+      ],
+      "fieldConfig": {"defaults": {"min": 0}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom", "calcs": []}, "tooltip": {"mode": "multi", "sort": "none"}}
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["cityflow", "diffusion", "municipal"],
+  "templating": {"list": []},
+  "time": {"from": "now-24h", "to": "now"},
+  "timezone": "browser",
+  "title": "CityFlow — Santé de la diffusion",
+  "uid": "cityflow-diffusion",
+  "version": 1
+}
