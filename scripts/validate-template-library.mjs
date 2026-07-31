@@ -46,8 +46,8 @@ for (const [annex, filename] of expectedTemplates) {
     errors.push(`${annex}: section Statut absente dans ${filename}`);
   }
 
-  if (!content.includes('## Barrière finale')) {
-    errors.push(`${annex}: barrière finale absente dans ${filename}`);
+  if (!/^## Barrière(?: finale)?\s*$/m.test(content)) {
+    errors.push(`${annex}: section Barrière absente dans ${filename}`);
   }
 }
 
