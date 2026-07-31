@@ -46,6 +46,10 @@ Documenter l’état final, les écarts et les actions restantes.
 - version T12 : À compléter
 - validation T14 : À compléter
 
+## Limites
+
+Préciser les composants, scénarios, périodes d’observation et dépendances non couverts par ce déploiement.
+
 ## Barrière finale
 
 Un déploiement terminé n’est pas nécessairement réussi; la stabilité et les effets doivent être observés et validés.
