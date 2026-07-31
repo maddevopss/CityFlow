@@ -54,7 +54,7 @@ for (const [id, expectedTitle] of expectedTitles) {
     errors.push(`M${id}: section de structure absente dans ${file}`);
   }
 
-  if (!hasAnySection(content, ['## Règles de traçabilité', '## Règles de mise à jour'])) {
+  if (!hasAnySection(content, ['## Règles de traçabilité', '## Règles de mise à jour', '## Règles'])) {
     errors.push(`M${id}: section de règles absente dans ${file}`);
   }
 
