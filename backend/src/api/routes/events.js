@@ -2,8 +2,8 @@ const express = require('express');
 const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const { authenticate, authorize } = require('../middleware/auth');
-const { queue } = require('../../workers/queue');
 const { appendEventAudit, listEventAudit } = require('../../services/eventAudit');
+const { appendOutboxEvent } = require('../../services/outbox');
 
 const router = express.Router();
 
@@ -57,8 +57,6 @@ async function audit(req, event, action, previousStatus, reason = null, db = pri
 }
 
 async function transition(req, res, { from, to, action, data = {}, diffuse = false, reason = null }) {
-  let updated;
-
   const result = await prisma.$transaction(async (tx) => {
     const event = await findMunicipalEvent(req, res, tx);
     if (!event) return null;
@@ -74,24 +72,32 @@ async function transition(req, res, { from, to, action, data = {}, diffuse = fal
       };
     }
 
-    const next = await tx.roadEvent.update({
+    const updated = await tx.roadEvent.update({
       where: { id: event.id },
       data: { status: to, statusReason: reason, ...data }
     });
 
-    await audit(req, next, action, event.status, reason, tx);
-    return { updated: next };
+    await audit(req, updated, action, event.status, reason, tx);
+
+    if (diffuse) {
+      await appendOutboxEvent({
+        aggregateId: updated.id,
+        municipalityId: updated.municipalityId,
+        eventType: 'ROAD_EVENT_DIFFUSION_REQUESTED',
+        payload: { eventId: updated.id },
+        dedupeKey: `road-event:${updated.id}:${updated.status}`,
+        db: tx
+      });
+    }
+
+    return { updated };
   });
 
   if (!result) return;
   if (result.conflict) return res.status(409).json(result.conflict);
 
-  updated = result.updated;
-
-  if (diffuse) await queue.add('diffuseEvent', { eventId: updated.id });
-
-  emitEventChanged(req, updated);
-  return res.json(updated);
+  emitEventChanged(req, result.updated);
+  return res.json(result.updated);
 }
 
 router.post('/', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => {
