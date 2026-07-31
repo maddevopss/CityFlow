@@ -1,6 +1,7 @@
 const { Worker } = require('bullmq');
 const config = require('../config');
 const diffuseEvent = require('./jobs/diffuseEvent');
+const { startOutboxDispatcher } = require('./outboxDispatcher');
 
 const worker = new Worker('diffusion', diffuseEvent, {
   connection: { url: config.redisUrl }
@@ -14,4 +15,6 @@ worker.on('failed', (job, err) => {
   console.error(`❌ Job ${job.id} échoué:`, err.message);
 });
 
-console.log('⚙️  Worker de diffusion démarré');
+startOutboxDispatcher();
+
+console.log('⚙️  Worker de diffusion et distributeur de sortie démarrés');
