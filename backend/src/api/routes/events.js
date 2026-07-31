@@ -3,6 +3,7 @@ const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const { authenticate, authorize } = require('../middleware/auth');
 const { queue } = require('../../workers/queue');
+const { appendEventAudit, listEventAudit } = require('../../services/eventAudit');
 
 const router = express.Router();
 
@@ -25,10 +26,7 @@ const reasonSchema = Joi.object({
 
 async function findMunicipalEvent(req, res) {
   const event = await prisma.roadEvent.findFirst({
-    where: {
-      id: req.params.id,
-      municipalityId: req.user.municipalityId
-    }
+    where: { id: req.params.id, municipalityId: req.user.municipalityId }
   });
 
   if (!event) {
@@ -41,12 +39,23 @@ async function findMunicipalEvent(req, res) {
 
 function emitEventChanged(req, event) {
   const io = req.app.get('io');
-  if (io) {
-    io.to(`municipality_${event.municipalityId}`).emit('eventChanged', event);
-  }
+  if (io) io.to(`municipality_${event.municipalityId}`).emit('eventChanged', event);
 }
 
-async function transition(req, res, { from, to, data = {}, diffuse = false }) {
+async function audit(req, event, action, previousStatus, reason = null) {
+  await appendEventAudit({
+    eventId: event.id,
+    municipalityId: event.municipalityId,
+    action,
+    actorId: req.user.sub,
+    actorRole: req.user.role,
+    previousStatus,
+    newStatus: event.status,
+    reason
+  });
+}
+
+async function transition(req, res, { from, to, action, data = {}, diffuse = false }) {
   const event = await findMunicipalEvent(req, res);
   if (!event) return;
 
@@ -61,16 +70,12 @@ async function transition(req, res, { from, to, data = {}, diffuse = false }) {
 
   const updated = await prisma.roadEvent.update({
     where: { id: event.id },
-    data: {
-      status: to,
-      statusReason: null,
-      ...data
-    }
+    data: { status: to, statusReason: null, ...data }
   });
 
-  if (diffuse) {
-    await queue.add('diffuseEvent', { eventId: updated.id });
-  }
+  await audit(req, updated, action, event.status);
+
+  if (diffuse) await queue.add('diffuseEvent', { eventId: updated.id });
 
   emitEventChanged(req, updated);
   return res.json(updated);
@@ -89,31 +94,24 @@ router.post('/', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req
     }
   });
 
+  await audit(req, event, 'CREATED', null);
   emitEventChanged(req, event);
   res.status(201).json(event);
 });
 
-router.post('/:id/submit', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => {
-  return transition(req, res, {
-    from: ['DRAFT', 'REJECTED'],
-    to: 'SUBMITTED',
-    data: {
-      submittedBy: req.user.sub,
-      submittedAt: new Date()
-    }
-  });
-});
+router.post('/:id/submit', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => transition(req, res, {
+  from: ['DRAFT', 'REJECTED'],
+  to: 'SUBMITTED',
+  action: 'SUBMITTED',
+  data: { submittedBy: req.user.sub, submittedAt: new Date() }
+}));
 
-router.post('/:id/approve', authenticate, authorize('ADMIN'), async (req, res) => {
-  return transition(req, res, {
-    from: 'SUBMITTED',
-    to: 'APPROVED',
-    data: {
-      approvedBy: req.user.sub,
-      approvedAt: new Date()
-    }
-  });
-});
+router.post('/:id/approve', authenticate, authorize('ADMIN'), async (req, res) => transition(req, res, {
+  from: 'SUBMITTED',
+  to: 'APPROVED',
+  action: 'APPROVED',
+  data: { approvedBy: req.user.sub, approvedAt: new Date() }
+}));
 
 router.post('/:id/reject', authenticate, authorize('ADMIN'), async (req, res) => {
   const { error, value } = reasonSchema.validate(req.body);
@@ -132,53 +130,52 @@ router.post('/:id/reject', authenticate, authorize('ADMIN'), async (req, res) =>
 
   const updated = await prisma.roadEvent.update({
     where: { id: event.id },
-    data: {
-      status: 'REJECTED',
-      statusReason: value.reason
-    }
+    data: { status: 'REJECTED', statusReason: value.reason }
   });
 
+  await audit(req, updated, 'REJECTED', event.status, value.reason);
   emitEventChanged(req, updated);
   return res.json(updated);
 });
 
-router.post('/:id/publish', authenticate, authorize('ADMIN'), async (req, res) => {
-  return transition(req, res, {
-    from: 'APPROVED',
-    to: 'PLANNED',
-    data: {
-      publishedBy: req.user.sub,
-      publishedAt: new Date()
-    },
-    diffuse: true
-  });
-});
+router.post('/:id/publish', authenticate, authorize('ADMIN'), async (req, res) => transition(req, res, {
+  from: 'APPROVED',
+  to: 'PLANNED',
+  action: 'PUBLISHED',
+  data: { publishedBy: req.user.sub, publishedAt: new Date() },
+  diffuse: true
+}));
 
-router.post('/:id/activate', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => {
-  return transition(req, res, {
-    from: 'PLANNED',
-    to: 'ACTIVE',
-    diffuse: true
-  });
-});
+router.post('/:id/activate', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => transition(req, res, {
+  from: 'PLANNED',
+  to: 'ACTIVE',
+  action: 'ACTIVATED',
+  diffuse: true
+}));
 
-router.post('/:id/close', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => {
-  return transition(req, res, {
-    from: ['PLANNED', 'ACTIVE'],
-    to: 'CLOSED',
-    data: {
-      closedBy: req.user.sub,
-      closedAt: new Date()
-    },
-    diffuse: true
+router.post('/:id/close', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => transition(req, res, {
+  from: ['PLANNED', 'ACTIVE'],
+  to: 'CLOSED',
+  action: 'CLOSED',
+  data: { closedBy: req.user.sub, closedAt: new Date() },
+  diffuse: true
+}));
+
+router.get('/:id/audit', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => {
+  const event = await findMunicipalEvent(req, res);
+  if (!event) return;
+
+  const entries = await listEventAudit({
+    eventId: event.id,
+    municipalityId: req.user.municipalityId
   });
+
+  res.json(entries);
 });
 
 router.get('/', authenticate, async (req, res) => {
   const { eventType, status } = req.query;
-  const where = {
-    municipalityId: req.user.municipalityId
-  };
+  const where = { municipalityId: req.user.municipalityId };
 
   if (eventType) where.eventType = eventType;
   if (status) where.status = status;
