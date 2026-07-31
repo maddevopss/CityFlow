@@ -1,0 +1,37 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: operations-warning
+  group_by: [alertname, severity]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity="critical"
+      receiver: operations-critical
+      group_wait: 10s
+      repeat_interval: 30m
+    - matchers:
+        - severity="warning"
+      receiver: operations-warning
+
+inhibit_rules:
+  - source_matchers:
+      - severity="critical"
+    target_matchers:
+      - severity="warning"
+    equal: [alertname]
+
+receivers:
+  - name: operations-warning
+    webhook_configs:
+      - url_file: /run/secrets/cityflow_warning_webhook_url
+        send_resolved: true
+        max_alerts: 20
+  - name: operations-critical
+    webhook_configs:
+      - url_file: /run/secrets/cityflow_critical_webhook_url
+        send_resolved: true
+        max_alerts: 20
