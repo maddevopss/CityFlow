@@ -4,6 +4,7 @@ const {
   markOutboxProcessed,
   markOutboxFailed
 } = require('../services/outbox');
+const logger = require('../logger');
 
 let running = false;
 
@@ -27,7 +28,7 @@ async function dispatchOutboxBatch() {
         await markOutboxProcessed(entry.id);
       } catch (error) {
         await markOutboxFailed(entry.id, error);
-        console.error(`❌ Sortie ${entry.id} non distribuée:`, error.message);
+        logger.error(`Sortie ${entry.id} non distribuée`, { error: error.message });
       }
     }
   } finally {
@@ -38,13 +39,13 @@ async function dispatchOutboxBatch() {
 function startOutboxDispatcher({ intervalMs = 2000 } = {}) {
   const timer = setInterval(() => {
     dispatchOutboxBatch().catch(error => {
-      console.error('❌ Échec du distributeur de sortie:', error.message);
+      logger.error('Échec du distributeur de sortie', { error: error.message });
     });
   }, intervalMs);
 
   timer.unref();
   dispatchOutboxBatch().catch(error => {
-    console.error('❌ Échec initial du distributeur de sortie:', error.message);
+    logger.error('Échec initial du distributeur de sortie', { error: error.message });
   });
 
   return timer;

@@ -1,11 +1,12 @@
 const { createDeliverySlaAlerts } = require('../services/deliveryServiceLevels');
+const defaultLogger = require('../logger');
 
 const DEFAULT_INTERVAL_MS = 60_000;
 
 function createDeliverySlaMonitor({
   intervalMs = Number(process.env.DELIVERY_SLA_MONITOR_INTERVAL_MS) || DEFAULT_INTERVAL_MS,
   evaluate = createDeliverySlaAlerts,
-  logger = console,
+  logger = defaultLogger,
   runImmediately = true
 } = {}) {
   let timer = null;
