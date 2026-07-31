@@ -3,7 +3,7 @@ global:
   evaluation_interval: 30s
   external_labels:
     system: cityflow
-    environment: ${CITYFLOW_ENVIRONMENT:-local}
+    environment: local
 
 rule_files:
   - /etc/prometheus/rules/*.yml
@@ -14,7 +14,7 @@ scrape_configs:
     metrics_path: /metrics
     authorization:
       type: Bearer
-      credentials: ${CITYFLOW_METRICS_TOKEN}
+      credentials_file: /run/secrets/cityflow_metrics_token
     static_configs:
       - targets:
           - host.docker.internal:3000
