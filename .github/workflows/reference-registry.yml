@@ -1,0 +1,38 @@
+name: Reference registry
+
+on:
+  pull_request:
+    paths:
+      - 'docs/referentiels/**'
+      - 'docs/references/**'
+      - 'scripts/validate-reference-registry.mjs'
+      - '.github/workflows/reference-registry.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/referentiels/**'
+      - 'docs/references/**'
+      - 'scripts/validate-reference-registry.mjs'
+      - '.github/workflows/reference-registry.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-reference-registry:
+    name: Validate reference registry
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate R1 to R20
+        run: node scripts/validate-reference-registry.mjs
