@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON, Popup } from 'react-leaflet';
+import React from 'react';
+import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
 import { getEventsGeoJSON } from '../services/eventService';
-import type { FeatureCollection } from 'geojson';
+import type { Feature } from 'geojson';
+import type { Layer, Path } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const typeColors: Record<string, string> = {
@@ -19,10 +20,10 @@ const Dashboard: React.FC = () => {
     queryFn: () => getEventsGeoJSON({ status: 'ACTIVE,PLANNED' })
   });
 
-  const onEachFeature = (feature: any, layer: any) => {
+  const onEachFeature = (feature: Feature, layer: Layer) => {
     if (feature.properties) {
       const color = typeColors[feature.properties.eventType] || '#000';
-      layer.setStyle({
+      (layer as Path).setStyle({
         color: color,
         weight: 3,
         opacity: 0.8

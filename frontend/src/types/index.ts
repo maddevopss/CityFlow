@@ -15,7 +15,7 @@ export interface RoadEvent {
   startTime: string;
   endTime?: string;
   impacts: string[];
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   sourceType: string;
   sourceRef?: string;
   status: 'DRAFT' | 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'TEMP';
