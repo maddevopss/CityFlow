@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: cityflow-db
+    environment:
+      POSTGRES_USER: cityflow
+      POSTGRES_PASSWORD: cityflow_secret
+      POSTGRES_DB: cityflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cityflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cityflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: cityflow-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - cityflow-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/backend/Dockerfile
+    container_name: cityflow-api
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://cityflow:cityflow_secret@postgres:5432/cityflow
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev_secret_key_change_in_production
+      PORT: 3000
+      FRONTEND_URL: http://localhost:5173
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run dev"
+    networks:
+      - cityflow-network
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: ../docker/backend/Dockerfile
+    container_name: cityflow-worker
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://cityflow:cityflow_secret@postgres:5432/cityflow
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev_secret_key_change_in_production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: npm run worker
+    networks:
+      - cityflow-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/frontend/Dockerfile
+    container_name: cityflow-web
+    environment:
+      VITE_API_URL: http://localhost:3000/api/v1
+      VITE_WS_URL: ws://localhost:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - cityflow-network
+
+volumes:
+  postgres_data:
+
+networks:
+  cityflow-network:
+    driver: bridge
