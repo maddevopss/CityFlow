@@ -13,6 +13,11 @@ jest.mock('../../src/services/operationalAlerts', () => ({
   acknowledgeOperationalAlert: jest.fn()
 }));
 
+jest.mock('../../src/services/deliveryServiceLevels', () => ({
+  getDeliveryServiceLevels: jest.fn(),
+  createDeliverySlaAlerts: jest.fn()
+}));
+
 const app = require('../../src/app');
 const {
   getOutboxSummary,
@@ -24,6 +29,10 @@ const {
   listOperationalAlerts,
   acknowledgeOperationalAlert
 } = require('../../src/services/operationalAlerts');
+const {
+  getDeliveryServiceLevels,
+  createDeliverySlaAlerts
+} = require('../../src/services/deliveryServiceLevels');
 
 describe('Operations API', () => {
   let adminToken;
@@ -66,6 +75,32 @@ describe('Operations API', () => {
     expect(res.status).toBe(200);
     expect(getOutboxSummary).toHaveBeenCalledWith({ municipalityId: 1 });
     expect(listDeadOutboxEvents).toHaveBeenCalledWith({ municipalityId: 1 });
+  });
+
+  it('calcule les niveaux de service et crée les alertes pour la municipalité du jeton', async () => {
+    createDeliverySlaAlerts.mockResolvedValue(2);
+    getDeliveryServiceLevels.mockResolvedValue({
+      health: 'WARNING',
+      metrics: { warningCount: 2 }
+    });
+
+    const res = await request(app)
+      .get('/api/v1/operations/diffusion/service-levels')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.health).toBe('WARNING');
+    expect(createDeliverySlaAlerts).toHaveBeenCalledWith({ municipalityId: 1 });
+    expect(getDeliveryServiceLevels).toHaveBeenCalledWith({ municipalityId: 1 });
+  });
+
+  it('interdit les niveaux de service aux agents non administrateurs', async () => {
+    const res = await request(app)
+      .get('/api/v1/operations/diffusion/service-levels')
+      .set('Authorization', `Bearer ${agentToken}`);
+
+    expect(res.status).toBe(403);
+    expect(createDeliverySlaAlerts).not.toHaveBeenCalled();
   });
 
   it('relance uniquement une diffusion morte de la municipalité du jeton', async () => {
