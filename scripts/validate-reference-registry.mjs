@@ -57,7 +57,7 @@ for (let index = 1; index <= 20; index += 1) {
     errors.push(`${referenceId}: section Barrière ou Fermeture absente dans ${relativePath}`);
   }
 
-  const explicitOpenVerdict = new RegExp(`\\*\\*${referenceId} NON FERMÉ\\b`, 'i');
+  const explicitOpenVerdict = new RegExp(`\\*\\*${referenceId} NON FERMÉ(?=\\s|—|\\.|\\*)`, 'iu');
   if (!explicitOpenVerdict.test(content)) {
     errors.push(`${referenceId}: verdict explicite « ${referenceId} NON FERMÉ » absent dans ${relativePath}`);
   }
