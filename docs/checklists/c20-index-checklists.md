@@ -22,11 +22,11 @@ Fournir un point d’entrée unique vers les checklists opérationnelles C1 à C
 | C8 | Audit | [Ouvrir](./c8-audit.md) |
 | C9 | Publication | [Ouvrir](./c9-publication.md) |
 | C10 | Archivage | [Ouvrir](./c10-archivage.md) |
-| C11 | Changement | [Ouvrir](./c11-changement.md) |
-| C12 | Revue de sécurité | [Ouvrir](./c12-revue-securite.md) |
-| C13 | Gestion des données | [Ouvrir](./c13-gestion-donnees.md) |
-| C14 | Intégration fournisseur | [Ouvrir](./c14-integration-fournisseur.md) |
-| C15 | Mise en production | [Ouvrir](./c15-mise-production.md) |
+| C11 | Changement | [Ouvrir](./c11-checklist-changement.md) |
+| C12 | Revue de sécurité | [Ouvrir](./c12-checklist-revue-securite.md) |
+| C13 | Gestion des données | [Ouvrir](./c13-checklist-gestion-donnees.md) |
+| C14 | Intégration fournisseur | [Ouvrir](./c14-checklist-fournisseur.md) |
+| C15 | Mise en production | [Ouvrir](./c15-checklist-mise-production.md) |
 | C16 | Accessibilité | [Ouvrir](./c16-accessibilite.md) |
 | C17 | Continuité opérationnelle | [Ouvrir](./c17-continuite-operationnelle.md) |
 | C18 | Communication | [Ouvrir](./c18-communication.md) |
