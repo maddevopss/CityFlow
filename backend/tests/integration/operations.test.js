@@ -7,12 +7,23 @@ jest.mock('../../src/services/outbox', () => ({
   retryDeadOutboxEvent: jest.fn()
 }));
 
+jest.mock('../../src/services/operationalAlerts', () => ({
+  getAlertSummary: jest.fn(),
+  listOperationalAlerts: jest.fn(),
+  acknowledgeOperationalAlert: jest.fn()
+}));
+
 const app = require('../../src/app');
 const {
   getOutboxSummary,
   listDeadOutboxEvents,
   retryDeadOutboxEvent
 } = require('../../src/services/outbox');
+const {
+  getAlertSummary,
+  listOperationalAlerts,
+  acknowledgeOperationalAlert
+} = require('../../src/services/operationalAlerts');
 
 describe('Operations API', () => {
   let adminToken;
@@ -36,9 +47,9 @@ describe('Operations API', () => {
     jest.clearAllMocks();
   });
 
-  it('réserve la santé de diffusion aux administrateurs', async () => {
+  it('réserve les opérations aux administrateurs', async () => {
     const res = await request(app)
-      .get('/api/v1/operations/diffusion')
+      .get('/api/v1/operations/alerts')
       .set('Authorization', `Bearer ${agentToken}`);
 
     expect(res.status).toBe(403);
@@ -71,5 +82,42 @@ describe('Operations API', () => {
       municipalityId: 1,
       actorId: '11111111-1111-4111-8111-111111111111'
     });
+  });
+
+  it('retourne uniquement les alertes de la municipalité du jeton', async () => {
+    getAlertSummary.mockResolvedValue([{ status: 'OPEN', severity: 'CRITICAL', count: 1 }]);
+    listOperationalAlerts.mockResolvedValue([{ id: 'alert-1', status: 'OPEN' }]);
+
+    const res = await request(app)
+      .get('/api/v1/operations/alerts?status=OPEN')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(getAlertSummary).toHaveBeenCalledWith({ municipalityId: 1 });
+    expect(listOperationalAlerts).toHaveBeenCalledWith({ municipalityId: 1, status: 'OPEN' });
+  });
+
+  it('acquitte une alerte avec la municipalité et l’acteur du jeton', async () => {
+    const id = '44444444-4444-4444-8444-444444444444';
+    acknowledgeOperationalAlert.mockResolvedValue({ id, status: 'ACKNOWLEDGED' });
+
+    const res = await request(app)
+      .post(`/api/v1/operations/alerts/${id}/acknowledge`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(acknowledgeOperationalAlert).toHaveBeenCalledWith({
+      id,
+      municipalityId: 1,
+      actorId: '11111111-1111-4111-8111-111111111111'
+    });
+  });
+
+  it('refuse un statut d’alerte non autorisé', async () => {
+    const res = await request(app)
+      .get('/api/v1/operations/alerts?status=DELETED')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(400);
   });
 });
