@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "windowHours": 24,
+  "checkEveryMinutes": 15,
+  "thresholds": {
+    "errorRatePercent": 1,
+    "p95Ms": 750,
+    "availabilityPercent": 99.5
+  },
+  "rollbackOnCritical": true
+}
