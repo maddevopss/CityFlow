@@ -11,7 +11,8 @@ const validators = [
   'validate-checklist-library.mjs',
   'validate-matrix-library.mjs',
   'validate-document-templates.mjs',
-  'validate-systeme-mad-alignment.mjs'
+  'validate-systeme-mad-alignment.mjs',
+  'validate-traceability.mjs'
 ];
 
 async function exists(path) {
