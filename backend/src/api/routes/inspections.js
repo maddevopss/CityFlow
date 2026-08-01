@@ -22,6 +22,17 @@ const completeInspectionSchema = Joi.object({
 
 const assignmentSchema = Joi.object({ inspectorId: Joi.string().uuid().required() });
 
+const listInspectionSchema = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  pageSize: Joi.number().integer().min(1).max(100).default(25),
+  status: Joi.string().valid('SCHEDULED', 'COMPLETED', 'CANCELLED'),
+  inspectionType: Joi.string().valid('PRE_WORK', 'IN_PROGRESS', 'FINAL', 'COMPLAINT'),
+  assignedTo: Joi.string().uuid(),
+  scheduledFrom: Joi.date().iso(),
+  scheduledTo: Joi.date().iso().min(Joi.ref('scheduledFrom')),
+  q: Joi.string().trim().min(2).max(100)
+});
+
 function validate(schema) {
   return (req, res, next) => {
     const { error, value } = schema.validate(req.body, { abortEarly: false, stripUnknown: true });
@@ -48,21 +59,66 @@ router.get('/inspectors', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
-  const status = req.query.status;
-  const allowedStatuses = ['SCHEDULED', 'COMPLETED', 'CANCELLED'];
-  if (status && !allowedStatuses.includes(status)) {
-    return res.status(400).json({ message: 'Statut d’inspection invalide' });
+  const { error, value } = listInspectionSchema.validate(req.query, {
+    abortEarly: false,
+    stripUnknown: true,
+    convert: true
+  });
+
+  if (error) {
+    return res.status(400).json({
+      message: 'Filtres d’inspection invalides',
+      details: error.details.map(detail => detail.message)
+    });
   }
 
-  const inspections = await prisma.inspection.findMany({
-    where: {
-      municipalityId: req.user.municipalityId,
-      ...(status ? { status } : {}),
-      ...(req.user.role === 'INSPECTOR' ? { assignedTo: req.user.sub } : {})
-    },
-    orderBy: { scheduledAt: 'asc' }
+  const { page, pageSize, status, inspectionType, assignedTo, scheduledFrom, scheduledTo, q } = value;
+  const where = {
+    municipalityId: req.user.municipalityId,
+    ...(status ? { status } : {}),
+    ...(inspectionType ? { inspectionType } : {}),
+    ...(assignedTo ? { assignedTo } : {}),
+    ...(scheduledFrom || scheduledTo
+      ? {
+          scheduledAt: {
+            ...(scheduledFrom ? { gte: new Date(scheduledFrom) } : {}),
+            ...(scheduledTo ? { lte: new Date(scheduledTo) } : {})
+          }
+        }
+      : {}),
+    ...(q
+      ? {
+          OR: [
+            { address: { contains: q, mode: 'insensitive' } },
+            { notes: { contains: q, mode: 'insensitive' } },
+            { findings: { contains: q, mode: 'insensitive' } }
+          ]
+        }
+      : {}),
+    ...(req.user.role === 'INSPECTOR' ? { assignedTo: req.user.sub } : {})
+  };
+
+  const [total, inspections] = await prisma.$transaction([
+    prisma.inspection.count({ where }),
+    prisma.inspection.findMany({
+      where,
+      orderBy: [{ scheduledAt: 'asc' }, { id: 'asc' }],
+      skip: (page - 1) * pageSize,
+      take: pageSize
+    })
+  ]);
+
+  res.json({
+    items: inspections,
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+      hasNextPage: page * pageSize < total,
+      hasPreviousPage: page > 1
+    }
   });
-  res.json(inspections);
 });
 
 router.post('/', validate(createInspectionSchema), async (req, res) => {

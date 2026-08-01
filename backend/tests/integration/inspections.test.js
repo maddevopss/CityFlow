@@ -2,7 +2,9 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
+  $transaction: jest.fn(operations => Promise.all(operations)),
   inspection: {
+    count: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
     findFirst: jest.fn(),
@@ -34,6 +36,7 @@ describe('Inspections API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.inspection.count.mockResolvedValue(0);
   });
 
   it('refuse une requête sans authentification', async () => {
@@ -51,6 +54,7 @@ describe('Inspections API', () => {
   });
 
   it('liste uniquement les inspections de la municipalité du jeton', async () => {
+    prisma.inspection.count.mockResolvedValue(1);
     prisma.inspection.findMany.mockResolvedValue([{ id: inspectionId, municipalityId: 7 }]);
 
     const res = await request(app)
@@ -58,9 +62,16 @@ describe('Inspections API', () => {
       .set('Authorization', `Bearer ${agentToken}`);
 
     expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.pagination).toEqual(expect.objectContaining({ page: 1, pageSize: 25, total: 1, totalPages: 1 }));
+    expect(prisma.inspection.count).toHaveBeenCalledWith({
+      where: { municipalityId: 7, status: 'SCHEDULED' }
+    });
     expect(prisma.inspection.findMany).toHaveBeenCalledWith({
       where: { municipalityId: 7, status: 'SCHEDULED' },
-      orderBy: { scheduledAt: 'asc' }
+      orderBy: [{ scheduledAt: 'asc' }, { id: 'asc' }],
+      skip: 0,
+      take: 25
     });
   });
 
@@ -72,10 +83,47 @@ describe('Inspections API', () => {
       .set('Authorization', `Bearer ${agentToken}`);
 
     expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      items: [],
+      pagination: {
+        page: 1,
+        pageSize: 25,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false
+      }
+    });
     expect(prisma.inspection.findMany).toHaveBeenCalledWith({
       where: { municipalityId: 7 },
-      orderBy: { scheduledAt: 'asc' }
+      orderBy: [{ scheduledAt: 'asc' }, { id: 'asc' }],
+      skip: 0,
+      take: 25
     });
+  });
+
+  it('applique pagination, type et recherche', async () => {
+    prisma.inspection.count.mockResolvedValue(26);
+    prisma.inspection.findMany.mockResolvedValue([]);
+
+    const res = await request(app)
+      .get('/api/v1/inspections?page=2&pageSize=10&inspectionType=FINAL&q=Principale')
+      .set('Authorization', `Bearer ${agentToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.pagination).toEqual(expect.objectContaining({
+      page: 2,
+      pageSize: 10,
+      total: 26,
+      totalPages: 3,
+      hasNextPage: true,
+      hasPreviousPage: true
+    }));
+    expect(prisma.inspection.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ municipalityId: 7, inspectionType: 'FINAL', OR: expect.any(Array) }),
+      skip: 10,
+      take: 10
+    }));
   });
 
   it('refuse un statut de filtre inconnu', async () => {

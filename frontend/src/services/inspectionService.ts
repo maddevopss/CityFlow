@@ -3,14 +3,43 @@ import type {
   CompleteInspectionInput,
   CreateInspectionInput,
   Inspection,
-  InspectionStatus
+  InspectionStatus,
+  InspectionType
 } from '../types';
 
-export const getInspections = async (status?: InspectionStatus) => {
-  const { data } = await api.get<Inspection[]>('/inspections', {
-    params: status ? { status } : undefined
-  });
+export interface InspectionListFilters {
+  page?: number;
+  pageSize?: number;
+  status?: InspectionStatus;
+  inspectionType?: InspectionType;
+  assignedTo?: string;
+  scheduledFrom?: string;
+  scheduledTo?: string;
+  q?: string;
+}
+
+export interface InspectionListResponse {
+  items: Inspection[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+export const getInspectionsPage = async (filters: InspectionListFilters = {}) => {
+  const { data } = await api.get<InspectionListResponse>('/inspections', { params: filters });
   return data;
+};
+
+// Contrat conservé pour les écrans existants; les nouveaux écrans peuvent utiliser
+// getInspectionsPage afin d'exploiter toute la métadonnée de pagination.
+export const getInspections = async (status?: InspectionStatus) => {
+  const data = await getInspectionsPage({ status, page: 1, pageSize: 100 });
+  return data.items;
 };
 
 export const getInspectionById = async (id: string) => {

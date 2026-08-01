@@ -22,13 +22,13 @@ beforeEach(() => {
 });
 
 describe('inspectionService', () => {
-  it('liste les inspections avec un filtre de statut', async () => {
+  it('liste les inspections avec un filtre de statut et la pagination par défaut', async () => {
     mockedGet.mockResolvedValueOnce({ data: [] });
 
     await getInspections('SCHEDULED');
 
     expect(mockedGet).toHaveBeenCalledWith('/inspections', {
-      params: { status: 'SCHEDULED' }
+      params: { status: 'SCHEDULED', page: 1, pageSize: 100 }
     });
   });
 
