@@ -1,0 +1,16 @@
+name: Production readiness
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check scripts/governance/production-readiness.mjs
+      - run: node scripts/governance/production-readiness.mjs > production-readiness.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-readiness
+          path: production-readiness.json
+          retention-days: 30
