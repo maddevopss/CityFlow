@@ -6,6 +6,7 @@ on:
       - phase3/security
     paths:
       - '.github/workflows/frontend-security-refresh.yml'
+      - 'frontend/package.json'
 
 permissions:
   contents: write
