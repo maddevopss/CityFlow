@@ -33,7 +33,7 @@ export const loadEscalationFilters = (storage: Pick<Storage, 'getItem'>, key: st
 export const saveEscalationFilters = (storage: Pick<Storage, 'setItem'>, key: string, filters: { source: string; status: string }) =>
   storage.setItem(key, JSON.stringify(filters));
 
-const csvEscape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+const csvEscape = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
 
 export const exportEscalationRunsCsv = (runs: Array<Record<string, unknown>>): string => {
   const headers = ['completedAt', 'source', 'status', 'scanned', 'candidates', 'notificationsCreated', 'durationMs', 'errorMessage'];
