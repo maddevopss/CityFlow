@@ -17,6 +17,7 @@ export interface CitizenServiceLevelResponse { generatedAt: string; summary: Rec
 export interface CitizenEscalationRun { id: string; source: string; status: 'SUCCESS' | 'FAILED'; scanned: number; candidates: number; notificationsCreated: number; durationMs: number; errorMessage?: string | null; startedAt: string; completedAt: string; }
 export interface CitizenEscalationRetention { retentionDays: number; intervalMs: number; }
 export interface CitizenEscalationHistoryResponse { items: CitizenEscalationRun[]; limit: number; retention: CitizenEscalationRetention; }
+export interface CitizenEscalationRunResponse { generatedAt: string; scanned: number; candidates: number; created: number; }
 
 export const citizenRequestDetailPath = (id: string) => `/municipal/citizen-requests/${encodeURIComponent(id)}`;
 export const createCitizenRequest = async (input: CreateCitizenRequestInput) => (await api.post<CitizenRequest>('/citizen/requests', input)).data;
@@ -29,3 +30,4 @@ export const getMunicipalCitizenRequests = async (filters: MunicipalCitizenReque
 export const bulkAssignCitizenRequests = async (requestIds: string[], team: string) => (await api.post<BulkAssignmentResponse>('/municipal/citizen-requests/bulk-assign', { requestIds, team: team.trim() })).data;
 export const getCitizenRequestServiceLevels = async (level?: CitizenServiceLevel, limit = 100) => (await api.get<CitizenServiceLevelResponse>('/municipal/citizen-requests/service-levels', { params: { level, limit } })).data;
 export const getCitizenEscalationHistory = async (limit = 25) => (await api.get<CitizenEscalationHistoryResponse>('/municipal/citizen-requests/escalations/history', { params: { limit } })).data;
+export const runCitizenEscalations = async () => (await api.post<CitizenEscalationRunResponse>('/municipal/citizen-requests/escalations/run')).data;

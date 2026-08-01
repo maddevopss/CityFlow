@@ -1,6 +1,6 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getCitizenEscalationHistory } from '../services/citizenRequestService';
+import React, { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getCitizenEscalationHistory, runCitizenEscalations } from '../services/citizenRequestService';
 
 const formatDate = (value: string) => new Intl.DateTimeFormat('fr-CA', {
   dateStyle: 'medium',
@@ -14,10 +14,27 @@ const formatInterval = (intervalMs: number) => {
 };
 
 const CitizenEscalationHistoryPage: React.FC = () => {
+  const queryClient = useQueryClient();
+  const [runMessage, setRunMessage] = useState<string | null>(null);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['citizen-escalation-history', 50],
     queryFn: () => getCitizenEscalationHistory(50)
   });
+  const runMutation = useMutation({
+    mutationFn: runCitizenEscalations,
+    onSuccess: async (result) => {
+      setRunMessage(`${result.scanned} demande(s) analysée(s), ${result.candidates} candidate(s), ${result.created} alerte(s) créée(s).`);
+      await queryClient.invalidateQueries({ queryKey: ['citizen-escalation-history'] });
+    },
+    onError: () => setRunMessage('Le cycle manuel a échoué. Consultez les journaux du service avant de réessayer.')
+  });
+
+  const handleManualRun = () => {
+    const confirmed = window.confirm('Lancer maintenant un cycle d’escalade pour votre municipalité?');
+    if (!confirmed) return;
+    setRunMessage(null);
+    runMutation.mutate();
+  };
 
   return (
     <section className="p-6 space-y-6">
@@ -26,10 +43,21 @@ const CitizenEscalationHistoryPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Historique des escalades citoyennes</h1>
           <p className="mt-1 text-sm text-gray-600">Suivi des cycles automatiques, des volumes traités et des erreurs par municipalité.</p>
         </div>
-        <button type="button" onClick={() => void refetch()} className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-cityflow-500">
-          Actualiser
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={handleManualRun} disabled={runMutation.isPending} className="rounded-lg bg-cityflow-600 px-4 py-2 text-sm font-medium text-white hover:bg-cityflow-700 focus:outline-none focus:ring-2 focus:ring-cityflow-500 disabled:cursor-not-allowed disabled:opacity-60">
+            {runMutation.isPending ? 'Cycle en cours…' : 'Lancer un cycle'}
+          </button>
+          <button type="button" onClick={() => void refetch()} className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-cityflow-500">
+            Actualiser
+          </button>
+        </div>
       </header>
+
+      {runMessage ? (
+        <div role="status" aria-live="polite" className={`rounded-lg border p-4 text-sm ${runMutation.isError ? 'border-red-200 bg-red-50 text-red-800' : 'border-green-200 bg-green-50 text-green-800'}`}>
+          {runMessage}
+        </div>
+      ) : null}
 
       {data?.retention ? (
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
