@@ -1,0 +1,93 @@
+openapi: 3.1.0
+info:
+  title: CityFlow Permits API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+paths:
+  /permit-applications:
+    get:
+      summary: Lister les demandes de permis
+      parameters:
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: pageSize, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+        - { in: query, name: status, schema: { $ref: '#/components/schemas/PermitStatus' } }
+        - { in: query, name: q, schema: { type: string, minLength: 2, maxLength: 100 } }
+      responses:
+        '200': { description: Liste paginée }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      summary: Créer une demande
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePermitApplication' }
+      responses:
+        '201': { description: Demande créée }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /permit-applications/{id}:
+    get:
+      summary: Consulter une demande
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Demande, pièces et décisions }
+        '404': { description: Introuvable }
+  /permit-applications/{id}/submit:
+    post:
+      summary: Soumettre une demande
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Demande soumise }
+        '409': { description: Transition interdite }
+  /permit-applications/{id}/decision:
+    post:
+      summary: Rendre une décision
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, reason]
+              properties:
+                decision: { type: string, enum: [APPROVED, REJECTED, INFORMATION_REQUIRED] }
+                reason: { type: string, minLength: 3, maxLength: 4000 }
+                conditions: { type: array, maxItems: 50, items: { type: string, maxLength: 500 } }
+                expiresAt: { type: [string, 'null'], format: date-time }
+      responses:
+        '200': { description: Décision enregistrée }
+        '403': { description: Rôle insuffisant }
+        '409': { description: Transition interdite }
+  /permit-applications/{id}/issue:
+    post:
+      summary: Délivrer un permis approuvé
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Permis délivré }
+        '409': { description: Demande non approuvée }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    PermitStatus: { type: string, enum: [DRAFT, SUBMITTED, UNDER_REVIEW, INFORMATION_REQUIRED, APPROVED, REJECTED, ISSUED, SUSPENDED, EXPIRED, CLOSED] }
+    CreatePermitApplication:
+      type: object
+      required: [applicantName, applicantEmail, permitType, address, description]
+      properties:
+        applicantName: { type: string, minLength: 2, maxLength: 200 }
+        applicantEmail: { type: string, format: email, maxLength: 254 }
+        permitType: { type: string, minLength: 2, maxLength: 100 }
+        address: { type: string, minLength: 3, maxLength: 300 }
+        description: { type: string, minLength: 3, maxLength: 8000 }
+  responses:
+    ValidationError: { description: Entrée invalide }
+    Unauthorized: { description: Authentification requise }
