@@ -64,6 +64,20 @@ describe('Inspections API', () => {
     });
   });
 
+  it('liste sans filtre de statut', async () => {
+    prisma.inspection.findMany.mockResolvedValue([]);
+
+    const res = await request(app)
+      .get('/api/v1/inspections')
+      .set('Authorization', `Bearer ${agentToken}`);
+
+    expect(res.status).toBe(200);
+    expect(prisma.inspection.findMany).toHaveBeenCalledWith({
+      where: { municipalityId: 7 },
+      orderBy: { scheduledAt: 'asc' }
+    });
+  });
+
   it('refuse un statut de filtre inconnu', async () => {
     const res = await request(app)
       .get('/api/v1/inspections?status=DELETED')
@@ -96,6 +110,24 @@ describe('Inspections API', () => {
     });
   });
 
+  it('normalise les champs optionnels absents à null', async () => {
+    prisma.inspection.create.mockResolvedValue({ id: inspectionId, status: 'SCHEDULED' });
+
+    const res = await request(app)
+      .post('/api/v1/inspections')
+      .set('Authorization', `Bearer ${agentToken}`)
+      .send({
+        scheduledAt: '2026-08-10T14:00:00.000Z',
+        address: '200 rue Principale',
+        inspectionType: 'PRE_WORK'
+      });
+
+    expect(res.status).toBe(201);
+    expect(prisma.inspection.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ permitId: null, notes: null })
+    });
+  });
+
   it('refuse les données de création invalides', async () => {
     const res = await request(app)
       .post('/api/v1/inspections')
@@ -104,6 +136,26 @@ describe('Inspections API', () => {
 
     expect(res.status).toBe(400);
     expect(prisma.inspection.create).not.toHaveBeenCalled();
+  });
+
+  it('retourne une inspection de la municipalité du jeton', async () => {
+    prisma.inspection.findFirst.mockResolvedValue({ id: inspectionId, municipalityId: 7 });
+
+    const res = await request(app)
+      .get(`/api/v1/inspections/${inspectionId}`)
+      .set('Authorization', `Bearer ${agentToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(inspectionId);
+  });
+
+  it('refuse un identifiant invalide en consultation', async () => {
+    const res = await request(app)
+      .get('/api/v1/inspections/invalide')
+      .set('Authorization', `Bearer ${agentToken}`);
+
+    expect(res.status).toBe(400);
+    expect(prisma.inspection.findFirst).not.toHaveBeenCalled();
   });
 
   it('ne retourne pas une inspection d’une autre municipalité', async () => {
@@ -137,6 +189,38 @@ describe('Inspections API', () => {
         completedBy: '11111111-1111-4111-8111-111111111111'
       })
     });
+  });
+
+  it('refuse un identifiant invalide à la fermeture', async () => {
+    const res = await request(app)
+      .post('/api/v1/inspections/invalide/complete')
+      .set('Authorization', `Bearer ${agentToken}`)
+      .send({ outcome: 'COMPLIANT', findings: 'Constat valide.' });
+
+    expect(res.status).toBe(400);
+    expect(prisma.inspection.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('retourne 404 lorsqu’une inspection à fermer est absente', async () => {
+    prisma.inspection.findFirst.mockResolvedValue(null);
+
+    const res = await request(app)
+      .post(`/api/v1/inspections/${inspectionId}/complete`)
+      .set('Authorization', `Bearer ${agentToken}`)
+      .send({ outcome: 'NON_COMPLIANT', findings: 'Inspection introuvable.' });
+
+    expect(res.status).toBe(404);
+    expect(prisma.inspection.update).not.toHaveBeenCalled();
+  });
+
+  it('refuse les données de fermeture invalides', async () => {
+    const res = await request(app)
+      .post(`/api/v1/inspections/${inspectionId}/complete`)
+      .set('Authorization', `Bearer ${agentToken}`)
+      .send({ outcome: 'AUTRE', findings: 'x' });
+
+    expect(res.status).toBe(400);
+    expect(prisma.inspection.findFirst).not.toHaveBeenCalled();
   });
 
   it('refuse de terminer une inspection déjà fermée', async () => {
