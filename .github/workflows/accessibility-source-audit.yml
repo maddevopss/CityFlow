@@ -1,0 +1,13 @@
+name: Accessibility source audit
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/audit-accessibility-source.mjs
