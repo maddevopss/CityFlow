@@ -86,7 +86,7 @@ if (impactLine === 'oui') {
   }
 }
 
-const derogationSection = body.match(/^## Dérogation\s*$([\s\S]*?)(?=^## |\z)/mi)?.[1]?.trim() ?? '';
+const derogationSection = body.match(/^## Dérogation\s*$([\s\S]*?)(?=^## |$)/mi)?.[1]?.trim() ?? '';
 if (!derogationSection) errors.push('La section Dérogation doit indiquer « Aucune » ou une dérogation complète.');
 
 if ((pullRequest.changed_files ?? 0) > 100) {
