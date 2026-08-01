@@ -1,0 +1,22 @@
+name: Data retention engine
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Générer le plan de rétention
+        run: |
+          node backend/scripts/retention-plan.js > retention-plan.json
+          grep -q '"action": "dry-run"' retention-plan.json
+          grep -q '"legalHold": true' retention-plan.json
