@@ -2,7 +2,9 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
+  $transaction: jest.fn(operations => Promise.all(operations)),
   inspection: {
+    count: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
     findFirst: jest.fn(),
@@ -32,7 +34,10 @@ describe('Inspection assignments API', () => {
     { expiresIn: '1h' }
   );
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    prisma.inspection.count.mockResolvedValue(0);
+  });
 
   it('liste seulement les inspecteurs actifs de la municipalité', async () => {
     prisma.user.findMany.mockResolvedValue([{ id: inspectorId, fullName: 'Alice Inspectrice' }]);
@@ -127,9 +132,12 @@ describe('Inspection assignments API', () => {
       .set('Authorization', `Bearer ${inspectorToken}`);
 
     expect(res.status).toBe(200);
+    expect(res.body.items).toEqual([]);
     expect(prisma.inspection.findMany).toHaveBeenCalledWith({
       where: { municipalityId: 7, status: 'SCHEDULED', assignedTo: inspectorId },
-      orderBy: { scheduledAt: 'asc' }
+      orderBy: [{ scheduledAt: 'asc' }, { id: 'asc' }],
+      skip: 0,
+      take: 25
     });
   });
 });
