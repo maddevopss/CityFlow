@@ -4,6 +4,7 @@ const logger = require('../logger');
 const diffuseEvent = require('./jobs/diffuseEvent');
 const { startOutboxDispatcher } = require('./outboxDispatcher');
 const { startDeliverySlaMonitor } = require('./deliverySlaMonitor');
+const { startCitizenRequestEscalationScheduler } = require('./citizenRequestEscalationScheduler');
 
 const worker = new Worker('diffusion', diffuseEvent, {
   connection: { url: config.redisUrl }
@@ -19,10 +20,12 @@ worker.on('failed', (job, err) => {
 
 startOutboxDispatcher();
 const deliverySlaMonitor = startDeliverySlaMonitor();
+const citizenEscalationScheduler = startCitizenRequestEscalationScheduler();
 
 async function shutdown(signal) {
   logger.info(`Arrêt du worker reçu (${signal})`);
   deliverySlaMonitor.stop();
+  citizenEscalationScheduler.stop();
   await worker.close();
   process.exit(0);
 }
@@ -45,4 +48,4 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-logger.info('Worker de diffusion, distributeur de sortie et surveillance des objectifs démarrés');
+logger.info('Worker de diffusion, distributeur de sortie et surveillances périodiques démarrés');
