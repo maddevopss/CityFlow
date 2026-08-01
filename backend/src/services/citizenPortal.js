@@ -56,7 +56,7 @@ function transitionCitizenRequest(request, nextStatus, actor) {
   return { ...request, status: normalized, statusChangedAt: new Date().toISOString(), statusChangedBy: actor?.id || null };
 }
 
-function citizenTimeline(request) {
+function citizenTimeline(request, messagesOverride) {
   const events = (request.events || [])
     .filter(Boolean)
     .map(event => ({
@@ -67,7 +67,8 @@ function citizenTimeline(request) {
       metadata: event.metadata || null
     }))
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-  const messages = (request.messages || [])
+  const sourceMessages = Array.isArray(messagesOverride) ? messagesOverride : (request.messages || []);
+  const messages = sourceMessages
     .filter(Boolean)
     .map(message => ({
       id: message.id,
