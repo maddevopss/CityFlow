@@ -1,0 +1,21 @@
+name: Observability readiness
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier le contrat
+        run: |
+          test -f docs/industrialization/OBSERVABILITY-OTEL.md
+          grep -q 'OpenTelemetry' docs/industrialization/OBSERVABILITY-OTEL.md
+          grep -q 'p95' docs/industrialization/OBSERVABILITY-OTEL.md
+          grep -q 'Données interdites' docs/industrialization/OBSERVABILITY-OTEL.md
+          grep -q 'GO / NO-GO' docs/industrialization/OBSERVABILITY-OTEL.md
