@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "productVersion": "1.0.0",
+  "status": "validated",
+  "requiredRunbooks": [
+    "docs/industrialization/OPERATIONS-RUNBOOKS.md",
+    "docs/release/OFFICIAL-PUBLICATION-V1.md"
+  ],
+  "requiredDomains": ["incident", "backup", "restore", "rollback", "monitoring"],
+  "humanApprovalRequired": true
+}
