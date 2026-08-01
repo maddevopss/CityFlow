@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "productLine": "1.x",
+  "supportWindowDays": 365,
+  "criticalResponseMinutes": 30,
+  "securityPatchTargetDays": 7,
+  "allowedChangeTypes": ["fix", "security", "documentation", "dependencies"],
+  "breakingChangesForbidden": true,
+  "releaseGateRequired": true
+}
