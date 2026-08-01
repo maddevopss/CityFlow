@@ -1,0 +1,20 @@
+name: Institutional closure
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate closure contract
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=JSON.parse(fs.readFileSync('config/institutional-closure.json','utf8'));
+          if(c.productVersion!=='1.0.0'||c.developmentPhase!=='closed'||c.maintenanceCycle!=='open'||!c.humanApprovalRequired||!c.automaticPublicationForbidden) process.exit(1);
+          for(const p of c.requiredArtifacts){if(!fs.existsSync(p)){console.error(`Missing ${p}`);process.exit(1)}}
+          console.log('Institutional closure contract valid');
+          NODE
