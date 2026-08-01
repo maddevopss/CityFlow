@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "stableLine": "1.x",
+  "nextPatch": "1.0.1",
+  "allowedChangeTypes": ["security", "bugfix", "documentation", "dependency"],
+  "forbidBreakingChanges": true,
+  "backportReviewRequired": true,
+  "releaseGateRequired": true,
+  "supportWindowDays": 365
+}
