@@ -7,6 +7,12 @@ const formatDate = (value: string) => new Intl.DateTimeFormat('fr-CA', {
   timeStyle: 'short'
 }).format(new Date(value));
 
+const formatInterval = (intervalMs: number) => {
+  const hours = Math.round(intervalMs / (60 * 60 * 1000));
+  if (hours >= 24 && hours % 24 === 0) return `tous les ${hours / 24} jour${hours / 24 > 1 ? 's' : ''}`;
+  return `toutes les ${Math.max(1, hours)} heure${hours > 1 ? 's' : ''}`;
+};
+
 const CitizenEscalationHistoryPage: React.FC = () => {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['citizen-escalation-history', 50],
@@ -25,9 +31,11 @@ const CitizenEscalationHistoryPage: React.FC = () => {
         </button>
       </header>
 
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-        Les cycles sont conservés pendant 90 jours par défaut. Cette durée peut être ajustée par configuration du déploiement.
-      </div>
+      {data?.retention ? (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+          Configuration effective : conservation pendant <strong>{data.retention.retentionDays} jours</strong>, avec nettoyage {formatInterval(data.retention.intervalMs)}.
+        </div>
+      ) : null}
 
       {isLoading ? <p className="text-sm text-gray-600">Chargement de l’historique…</p> : null}
       {isError ? <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">Impossible de charger l’historique des escalades.</div> : null}
