@@ -1,0 +1,12 @@
+name: Restore drill
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash -n scripts/operations/restore-drill.sh
+      - run: grep -q 'production.*interdite' scripts/operations/restore-drill.sh
+      - run: grep -q 'sha256sum -c' scripts/operations/restore-drill.sh
