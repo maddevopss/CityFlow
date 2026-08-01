@@ -20,17 +20,19 @@ const issuance = {
 };
 
 function token(role, municipalityId = 7) {
-  const payload = {
+  return jwt.sign({
     sub: '22222222-2222-4222-8222-222222222222',
-    role
-  };
-  if (municipalityId !== undefined) payload.municipalityId = municipalityId;
-  return jwt.sign(payload, config.jwtSecret);
+    role,
+    municipalityId
+  }, config.jwtSecret);
 }
 
 const managerToken = token('MANAGER');
 const viewerToken = token('VIEWER');
-const noMunicipalityToken = token('MANAGER', undefined);
+const noMunicipalityToken = jwt.sign({
+  sub: '22222222-2222-4222-8222-222222222222',
+  role: 'MANAGER'
+}, config.jwtSecret);
 
 beforeEach(() => {
   jest.clearAllMocks();
