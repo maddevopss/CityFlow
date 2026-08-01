@@ -1,3 +1,4 @@
+// Relance CI : la suite reste fonctionnellement inchangée.
 const {
   normalizeCitizenRequest,
   assertCitizenOwnership,
