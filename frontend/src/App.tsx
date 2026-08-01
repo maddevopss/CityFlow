@@ -21,6 +21,7 @@ import CitizenPortalPage from './pages/CitizenPortalPage';
 import MunicipalCitizenRequestsPage from './pages/MunicipalCitizenRequestsPage';
 import MunicipalCitizenRequestDetailPage from './pages/MunicipalCitizenRequestDetailPage';
 import CitizenServiceLevelsPage from './pages/CitizenServiceLevelsPage';
+import CitizenEscalationHistoryPage from './pages/CitizenEscalationHistoryPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
@@ -46,6 +47,7 @@ const App: React.FC = () => (
             <Route path="/citizen" element={<ProtectedRoute requiredRole="VIEWER"><CitizenPortalPage /></ProtectedRoute>} />
             <Route path="/municipal/citizen-requests" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><MunicipalCitizenRequestsPage /></ProtectedRoute>} />
             <Route path="/municipal/citizen-requests/service-levels" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><CitizenServiceLevelsPage /></ProtectedRoute>} />
+            <Route path="/municipal/citizen-requests/escalations/history" element={<ProtectedRoute requiredRole="MANAGER"><CitizenEscalationHistoryPage /></ProtectedRoute>} />
             <Route path="/municipal/citizen-requests/:id" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><MunicipalCitizenRequestDetailPage /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute requiredRole="VIEWER"><NotificationsPage /></ProtectedRoute>} />
           </Route>
