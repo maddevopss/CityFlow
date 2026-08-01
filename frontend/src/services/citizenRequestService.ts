@@ -14,6 +14,8 @@ export interface MunicipalCitizenRequestListResponse { items: CitizenRequest[]; 
 export interface BulkAssignmentResponse { updated: number; team: string; requestIds: string[]; }
 export interface CitizenServiceLevelItem extends CitizenRequest { serviceLevel: { level: CitizenServiceLevel; targetHours: number; dueAt: string; elapsedHours: number; hoursRemaining: number } }
 export interface CitizenServiceLevelResponse { generatedAt: string; summary: Record<CitizenServiceLevel, number>; items: CitizenServiceLevelItem[]; }
+export interface CitizenEscalationRun { id: string; source: string; status: 'SUCCESS' | 'FAILED'; scanned: number; candidates: number; notificationsCreated: number; durationMs: number; errorMessage?: string | null; startedAt: string; completedAt: string; }
+export interface CitizenEscalationHistoryResponse { items: CitizenEscalationRun[]; limit: number; }
 
 export const citizenRequestDetailPath = (id: string) => `/municipal/citizen-requests/${encodeURIComponent(id)}`;
 export const createCitizenRequest = async (input: CreateCitizenRequestInput) => (await api.post<CitizenRequest>('/citizen/requests', input)).data;
@@ -25,3 +27,4 @@ export const getMunicipalCitizenRequestSummary = async () => (await api.get<Muni
 export const getMunicipalCitizenRequests = async (filters: MunicipalCitizenRequestFilters = {}) => (await api.get<MunicipalCitizenRequestListResponse>('/municipal/citizen-requests', { params: filters })).data;
 export const bulkAssignCitizenRequests = async (requestIds: string[], team: string) => (await api.post<BulkAssignmentResponse>('/municipal/citizen-requests/bulk-assign', { requestIds, team: team.trim() })).data;
 export const getCitizenRequestServiceLevels = async (level?: CitizenServiceLevel, limit = 100) => (await api.get<CitizenServiceLevelResponse>('/municipal/citizen-requests/service-levels', { params: { level, limit } })).data;
+export const getCitizenEscalationHistory = async (limit = 25) => (await api.get<CitizenEscalationHistoryResponse>('/municipal/citizen-requests/escalations/history', { params: { limit } })).data;
