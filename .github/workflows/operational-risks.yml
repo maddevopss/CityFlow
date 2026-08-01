@@ -1,0 +1,10 @@
+name: Operational risks
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node -e "const p=require('./config/operational-risks.json'); const ids=new Set(); for(const r of p.risks||[]){ if(ids.has(r.id)||!r.owner||!r.mitigation||r.probability<1||r.probability>5||r.impact<1||r.impact>5) process.exit(1); ids.add(r.id) }"
