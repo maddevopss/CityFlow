@@ -21,6 +21,7 @@ app.use('/api/v1/events', require('./api/routes/events'));
 app.use('/api/v1/exports', require('./api/routes/exports'));
 app.use('/api/v1/permits', require('./api/routes/permits'));
 app.use('/api/v1/operations', require('./api/routes/operations'));
+app.use('/api/v1/municipal/citizen-requests/escalations', require('./api/routes/citizenRequestEscalations'));
 app.use('/api/v1/municipal/citizen-requests', require('./api/routes/municipalCitizenRequests'));
 app.use('/api/v1/citizen/requests/:requestId/messages', require('./api/routes/citizenMessages'));
 app.use('/api/v1/citizen/requests', require('./api/routes/citizenRequests'));
