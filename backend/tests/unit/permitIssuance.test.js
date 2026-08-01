@@ -1,6 +1,6 @@
-const appendEventAudit = jest.fn().mockResolvedValue('audit-id');
+const mockAppendEventAudit = jest.fn().mockResolvedValue('audit-id');
 
-jest.mock('../../src/services/eventAudit', () => ({ appendEventAudit }));
+jest.mock('../../src/services/eventAudit', () => ({ appendEventAudit: mockAppendEventAudit }));
 
 const {
   buildIssuanceNumber,
@@ -44,7 +44,7 @@ function createDb({
 }
 
 beforeEach(() => {
-  appendEventAudit.mockClear();
+  mockAppendEventAudit.mockClear();
 });
 
 test('construit un numéro de délivrance municipal stable', () => {
@@ -67,7 +67,7 @@ test('délivre un permis approuvé, conforme et payé', async () => {
     actorId: '11111111-1111-4111-8111-111111111111',
     actorRole: 'MANAGER'
   })).resolves.toMatchObject({ permitId: issuance.permitId, issuanceNumber: issuance.issuanceNumber });
-  expect(appendEventAudit).toHaveBeenCalledWith(expect.objectContaining({
+  expect(mockAppendEventAudit).toHaveBeenCalledWith(expect.objectContaining({
     eventId: issuance.permitId,
     municipalityId: 7,
     action: 'PERMIT_ISSUED',
@@ -84,7 +84,7 @@ test('accepte aussi une dispense de frais', async () => {
     actorId: '11111111-1111-4111-8111-111111111111',
     actorRole: 'ADMIN'
   })).resolves.toMatchObject({ permitId: issuance.permitId });
-  expect(appendEventAudit).toHaveBeenCalledWith(expect.objectContaining({
+  expect(mockAppendEventAudit).toHaveBeenCalledWith(expect.objectContaining({
     metadata: expect.objectContaining({ feeStatus: 'WAIVED' })
   }));
 });
@@ -99,7 +99,7 @@ test('retourne la délivrance existante de façon idempotente', async () => {
     actorRole: 'ADMIN'
   })).resolves.toEqual(existing);
   expect(tx.$queryRawUnsafe).toHaveBeenCalledTimes(1);
-  expect(appendEventAudit).not.toHaveBeenCalled();
+  expect(mockAppendEventAudit).not.toHaveBeenCalled();
 });
 
 test('bloque un permis introuvable', async () => {
