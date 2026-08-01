@@ -13,7 +13,7 @@ const {
 
 const router = express.Router();
 const municipalRoles = ['ADMIN', 'AGENT', 'MANAGER'];
-const idSchema = Joi.string().uuid().required();
+const idParamsSchema = Joi.object({ id: Joi.string().uuid().required() });
 const createSchema = Joi.object({
   title: Joi.string().trim().min(5).max(140).required(),
   description: Joi.string().trim().min(10).max(5000).required(),
@@ -44,61 +44,41 @@ function validate(schema, source = 'body') {
 router.use(authenticate);
 
 router.post('/', validate(createSchema), async (req, res) => {
-  const normalized = normalizeCitizenRequest(req.body, {
-    id: req.user.sub,
-    municipalityId: req.user.municipalityId
-  });
+  const normalized = normalizeCitizenRequest(req.body, { id: req.user.sub, municipalityId: req.user.municipalityId });
   const created = await prisma.$transaction(async tx => {
     const request = await tx.citizenRequest.create({ data: normalized });
-    await tx.citizenRequestEvent.create({
-      data: {
-        municipalityId: request.municipalityId,
-        requestId: request.id,
-        type: 'REQUEST_CREATED',
-        status: request.status,
-        actorId: req.user.sub,
-        metadata: { category: request.category }
-      }
-    });
+    await tx.citizenRequestEvent.create({ data: { municipalityId: request.municipalityId, requestId: request.id, type: 'REQUEST_CREATED', status: request.status, actorId: req.user.sub, metadata: { category: request.category } } });
     return request;
   });
   res.status(201).json(created);
 });
 
-router.get('/:id', validate(idSchema, 'params'), async (req, res) => {
-  const request = await prisma.citizenRequest.findFirst({
-    where: { id: req.params.id, municipalityId: req.user.municipalityId },
-    include: { events: true, messages: true }
-  });
+router.get('/:id', validate(idParamsSchema, 'params'), async (req, res) => {
+  const request = await prisma.citizenRequest.findFirst({ where: { id: req.params.id, municipalityId: req.user.municipalityId }, include: { events: true, messages: true } });
   if (req.user.role === 'CITIZEN') assertCitizenOwnership(request, { id: req.user.sub, municipalityId: req.user.municipalityId });
   if (!request) return res.status(404).json({ message: 'Demande introuvable' });
   res.json(citizenTimeline(request, request.messages));
 });
 
-router.post('/:id/assign', authorize(...municipalRoles), validate(idSchema, 'params'), validate(assignSchema), async (req, res) => {
+router.post('/:id/assign', authorize(...municipalRoles), validate(idParamsSchema, 'params'), validate(assignSchema), async (req, res) => {
   const existing = await prisma.citizenRequest.findFirst({ where: { id: req.params.id, municipalityId: req.user.municipalityId } });
   if (!existing) return res.status(404).json({ message: 'Demande introuvable' });
-  const next = transitionCitizenRequest({ ...existing, status: existing.status === 'SUBMITTED' ? 'ACKNOWLEDGED' : existing.status }, 'IN_REVIEW', req.user);
+  const source = existing.status === 'SUBMITTED' ? { ...existing, status: 'ACKNOWLEDGED' } : existing;
+  const next = transitionCitizenRequest(source, 'IN_REVIEW', req.user);
   const updated = await prisma.$transaction(async tx => {
-    const request = await tx.citizenRequest.update({
-      where: { id: existing.id },
-      data: { status: next.status, assignedTeam: req.body.team, assignedAt: new Date(), assignedBy: req.user.sub }
-    });
+    const request = await tx.citizenRequest.update({ where: { id: existing.id }, data: { status: next.status, assignedTeam: req.body.team, assignedAt: new Date(), assignedBy: req.user.sub } });
     await tx.citizenRequestEvent.create({ data: { municipalityId: request.municipalityId, requestId: request.id, type: 'REQUEST_ASSIGNED', status: request.status, actorId: req.user.sub, metadata: { team: req.body.team } } });
     return request;
   });
   res.json(updated);
 });
 
-router.post('/:id/status', authorize(...municipalRoles), validate(idSchema, 'params'), validate(statusSchema), async (req, res) => {
+router.post('/:id/status', authorize(...municipalRoles), validate(idParamsSchema, 'params'), validate(statusSchema), async (req, res) => {
   const existing = await prisma.citizenRequest.findFirst({ where: { id: req.params.id, municipalityId: req.user.municipalityId } });
   if (!existing) return res.status(404).json({ message: 'Demande introuvable' });
   const next = transitionCitizenRequest(existing, req.body.status, req.user);
   const updated = await prisma.$transaction(async tx => {
-    const request = await tx.citizenRequest.update({
-      where: { id: existing.id },
-      data: { status: next.status, resolution: req.body.resolution || existing.resolution, resolvedAt: next.status === 'RESOLVED' ? new Date() : existing.resolvedAt }
-    });
+    const request = await tx.citizenRequest.update({ where: { id: existing.id }, data: { status: next.status, resolution: req.body.resolution || existing.resolution, resolvedAt: next.status === 'RESOLVED' ? new Date() : existing.resolvedAt } });
     await tx.citizenRequestEvent.create({ data: { municipalityId: request.municipalityId, requestId: request.id, type: 'STATUS_CHANGED', status: request.status, actorId: req.user.sub, metadata: {} } });
     await tx.notification.create({ data: { municipalityId: request.municipalityId, recipientId: request.citizenId, eventType: 'REQUEST_UPDATED', resourceType: 'CITIZEN_REQUEST', resourceId: request.id, title: 'Mise à jour de votre demande', body: `Statut: ${request.status}`, channels: ['IN_APP'] } });
     return request;
