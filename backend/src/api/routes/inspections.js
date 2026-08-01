@@ -17,7 +17,7 @@ const createInspectionSchema = Joi.object({
 const completeInspectionSchema = Joi.object({
   outcome: Joi.string().valid('COMPLIANT', 'NON_COMPLIANT', 'FOLLOW_UP_REQUIRED').required(),
   findings: Joi.string().trim().min(3).max(8000).required(),
-  completedAt: Joi.date().iso().default(() => new Date(), 'current timestamp')
+  completedAt: Joi.date().iso().default(() => new Date())
 });
 
 function validate(schema) {
