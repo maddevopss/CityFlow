@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "productVersion": "1.0.0",
+  "minimumScore": 95,
+  "requiredEvidence": [
+    "config/operations-procedures-final.json",
+    "config/escalation-chain.json",
+    "config/support-maintenance-contract.json",
+    "config/post-release-change-traceability.json",
+    "config/final-document-integrity.json",
+    "config/institutional-closure.json"
+  ],
+  "humanApprovalRequired": true,
+  "automaticClosureForbidden": true
+}
