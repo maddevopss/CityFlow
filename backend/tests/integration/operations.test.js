@@ -119,6 +119,16 @@ describe('Operations API', () => {
     });
   });
 
+  it('retourne 404 quand la diffusion morte n’existe plus', async () => {
+    retryDeadOutboxEvent.mockResolvedValue(null);
+
+    const res = await request(app)
+      .post('/api/v1/operations/diffusion/33333333-3333-4333-8333-333333333333/retry')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(404);
+  });
+
   it('retourne uniquement les alertes de la municipalité du jeton', async () => {
     getAlertSummary.mockResolvedValue([{ status: 'OPEN', severity: 'CRITICAL', count: 1 }]);
     listOperationalAlerts.mockResolvedValue([{ id: 'alert-1', status: 'OPEN' }]);
@@ -146,6 +156,16 @@ describe('Operations API', () => {
       municipalityId: 1,
       actorId: '11111111-1111-4111-8111-111111111111'
     });
+  });
+
+  it('retourne 404 quand l’alerte ouverte n’existe plus', async () => {
+    acknowledgeOperationalAlert.mockResolvedValue(null);
+
+    const res = await request(app)
+      .post('/api/v1/operations/alerts/44444444-4444-4444-8444-444444444444/acknowledge')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(404);
   });
 
   it('refuse un statut d’alerte non autorisé', async () => {
