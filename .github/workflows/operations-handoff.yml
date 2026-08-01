@@ -1,0 +1,20 @@
+name: Operations handoff
+on:
+  pull_request:
+    paths:
+      - config/operations-handoff.json
+      - .github/workflows/operations-handoff.yml
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node - <<'NODE'
+          const fs=require('fs'); const c=require('./config/operations-handoff.json');
+          const missing=c.requiredRunbooks.filter(p=>!fs.existsSync(p));
+          if(Object.keys(c.owners).length<4||missing.length||c.supportWindowDays<30) process.exit(1);
+          console.log({owners:c.owners,missing});
+          NODE
