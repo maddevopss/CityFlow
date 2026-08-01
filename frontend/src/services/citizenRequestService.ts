@@ -12,6 +12,7 @@ export interface MunicipalCitizenRequestSummary { generatedAt: string; total: nu
 export interface MunicipalCitizenRequestListResponse { items: CitizenRequest[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
 export interface BulkAssignmentResponse { updated: number; team: string; requestIds: string[]; }
 
+export const citizenRequestDetailPath = (id: string) => `/municipal/citizen-requests/${encodeURIComponent(id)}`;
 export const createCitizenRequest = async (input: CreateCitizenRequestInput) => (await api.post<CitizenRequest>('/citizen/requests', input)).data;
 export const getCitizenRequestTimeline = async (id: string) => (await api.get<CitizenTimelineResponse>(`/citizen/requests/${id}`)).data;
 export const updateCitizenRequestStatus = async (id: string, status: CitizenRequestStatus, resolution?: string) => (await api.post<CitizenRequest>(`/citizen/requests/${id}/status`, { status, resolution: resolution?.trim() || undefined })).data;
