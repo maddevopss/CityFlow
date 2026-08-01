@@ -1,0 +1,35 @@
+name: Performance load
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          test -f performance/k6/smoke.js
+          grep -q "p(95)<500" performance/k6/smoke.js
+          grep -q "rate<0.01" performance/k6/smoke.js
+
+  staging-smoke:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grafana/setup-k6-action@v1
+      - name: Vérifier les secrets
+        env:
+          CITYFLOW_API_URL: ${{ secrets.CITYFLOW_STAGING_API_URL }}
+        run: test -n "$CITYFLOW_API_URL"
+      - uses: grafana/run-k6-action@v1
+        with:
+          path: performance/k6/smoke.js
+        env:
+          CITYFLOW_API_URL: ${{ secrets.CITYFLOW_STAGING_API_URL }}
+          CITYFLOW_E2E_TOKEN: ${{ secrets.CITYFLOW_E2E_PERFORMANCE_TOKEN }}
