@@ -17,11 +17,10 @@ import InspectionDetail from './pages/InspectionDetail';
 import InspectionCalendar from './pages/InspectionCalendar';
 import InspectionDashboard from './pages/InspectionDashboard';
 import InspectionTrends from './pages/InspectionTrends';
+import PermitApplicationsPage from './pages/PermitApplicationsPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 5 * 60 * 1000, retry: 2 } }
-});
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 5 * 60 * 1000, retry: 2 } } });
 
 const App: React.FC = () => (
   <QueryClientProvider client={queryClient}>
@@ -35,6 +34,7 @@ const App: React.FC = () => (
             <Route path="/events/new" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><CreateEvent /></ProtectedRoute>} />
             <Route path="/events/:id/edit" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><EditEvent /></ProtectedRoute>} />
             <Route path="/exports" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><Exports /></ProtectedRoute>} />
+            <Route path="/permits" element={<ProtectedRoute requiredRole="PERMIT_REVIEWER"><PermitApplicationsPage /></ProtectedRoute>} />
             <Route path="/inspections" element={<ProtectedRoute requiredRole="INSPECTOR"><InspectionsPage /></ProtectedRoute>} />
             <Route path="/inspections/dashboard" element={<ProtectedRoute requiredRole="INSPECTOR"><InspectionDashboard /></ProtectedRoute>} />
             <Route path="/inspections/trends" element={<ProtectedRoute requiredRole="INSPECTOR"><InspectionTrends /></ProtectedRoute>} />
