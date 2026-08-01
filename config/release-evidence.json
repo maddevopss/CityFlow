@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "evidence": [
+    ".github/workflows/security-suite.yml",
+    ".github/workflows/production-readiness.yml",
+    ".github/workflows/migration-readiness.yml",
+    ".github/workflows/v1-release-gate.yml",
+    "config/release-manifest.json"
+  ],
+  "minimumEvidence": 5
+}
