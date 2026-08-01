@@ -3,13 +3,35 @@ import type {
   CompleteInspectionInput,
   CreateInspectionInput,
   Inspection,
-  InspectionStatus
+  InspectionStatus,
+  InspectionType
 } from '../types';
 
-export const getInspections = async (status?: InspectionStatus) => {
-  const { data } = await api.get<Inspection[]>('/inspections', {
-    params: status ? { status } : undefined
-  });
+export interface InspectionListFilters {
+  page?: number;
+  pageSize?: number;
+  status?: InspectionStatus;
+  inspectionType?: InspectionType;
+  assignedTo?: string;
+  scheduledFrom?: string;
+  scheduledTo?: string;
+  q?: string;
+}
+
+export interface InspectionListResponse {
+  items: Inspection[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+export const getInspections = async (filters: InspectionListFilters = {}) => {
+  const { data } = await api.get<InspectionListResponse>('/inspections', { params: filters });
   return data;
 };
 
