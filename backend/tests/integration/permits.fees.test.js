@@ -246,7 +246,7 @@ test('refuse un motif de dispense trop court', async () => {
   const response = await request(app)
     .post(`/api/v1/permits/${permitId}/fees/waive`)
     .set('Authorization', `Bearer ${managerToken}`)
-    .send({ reason: 'Trop court' });
+    .send({ reason: 'Court' });
 
   expect(response.status).toBe(400);
   expect(waivePermitFee).not.toHaveBeenCalled();
