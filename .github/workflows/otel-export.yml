@@ -1,0 +1,13 @@
+name: OTLP export
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check backend/scripts/validate-otel-config.js
+      - run: OTEL_EXPORTER_OTLP_ENDPOINT=https://otel.example.invalid node backend/scripts/validate-otel-config.js
+      - run: |
+          if NODE_ENV=production OTEL_EXPORTER_OTLP_ENDPOINT=http://otel.example.invalid node backend/scripts/validate-otel-config.js; then exit 1; fi
