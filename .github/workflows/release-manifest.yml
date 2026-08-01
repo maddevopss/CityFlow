@@ -1,0 +1,10 @@
+name: Release manifest
+on: [pull_request]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: node -e "const m=require('./config/release-manifest.json'); if(m.version!=='1.0.0'||m.channel!=='stable'||m.minimumReadinessScore<85||m.requiredModules.length<6) process.exit(1)"

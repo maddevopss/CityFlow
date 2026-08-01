@@ -1,0 +1,7 @@
+{
+  "version": "1.0.0",
+  "channel": "stable",
+  "minimumReadinessScore": 85,
+  "requiredModules": ["inspections","permits","assets","public-works","citizen-reports","executive-dashboard"],
+  "requiredGates": ["security","quality","observability","disaster-recovery","data-governance","operations","accessibility"]
+}
