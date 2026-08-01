@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "kpis": [
+    {"id":"KPI-INSPECTIONS-COMPLETION","name":"Taux d’inspections terminées","formula":"completed / total * 100","frequency":"daily","source":"inspections","owner":"operations"},
+    {"id":"KPI-PERMITS-LEAD-TIME","name":"Délai moyen des permis","formula":"avg(decidedAt - submittedAt)","frequency":"weekly","source":"permits","owner":"permits"},
+    {"id":"KPI-WORK-ORDERS-OVERDUE","name":"Ordres de travail en retard","formula":"count(dueAt < now and status != COMPLETED)","frequency":"daily","source":"work-orders","owner":"public-works"}
+  ]
+}
