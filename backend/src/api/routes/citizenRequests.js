@@ -2,9 +2,9 @@
 
 const express = require('express');
 const Joi = require('joi');
-const rateLimit = require('express-rate-limit');
 const prisma = require('../../db/prisma');
 const { authenticate, authorize } = require('../middleware/auth');
+const { citizenWriteLimiter, citizenReadLimiter } = require('../middleware/rateLimiters');
 const {
   normalizeCitizenRequest,
   assertCitizenOwnership,
@@ -42,19 +42,9 @@ function validate(schema, source = 'body') {
   };
 }
 
-const citizenRequestsRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => (req.user && req.user.sub ? req.user.sub : req.ip),
-  message: { message: 'Trop de requêtes, veuillez réessayer plus tard.' }
-});
-
 router.use(authenticate);
-router.use(citizenRequestsRateLimiter);
 
-router.post('/', validate(createSchema), async (req, res) => {
+router.post('/', citizenWriteLimiter, validate(createSchema), async (req, res) => {
   const normalized = normalizeCitizenRequest(req.body, { id: req.user.sub, municipalityId: req.user.municipalityId });
   const created = await prisma.$transaction(async tx => {
     const request = await tx.citizenRequest.create({ data: normalized });
@@ -64,14 +54,14 @@ router.post('/', validate(createSchema), async (req, res) => {
   res.status(201).json(created);
 });
 
-router.get('/:id', validate(idParamsSchema, 'params'), async (req, res) => {
+router.get('/:id', citizenReadLimiter, validate(idParamsSchema, 'params'), async (req, res) => {
   const request = await prisma.citizenRequest.findFirst({ where: { id: req.params.id, municipalityId: req.user.municipalityId }, include: { events: true, messages: true } });
   if (req.user.role === 'CITIZEN') assertCitizenOwnership(request, { id: req.user.sub, municipalityId: req.user.municipalityId });
   if (!request) return res.status(404).json({ message: 'Demande introuvable' });
   res.json(citizenTimeline(request, request.messages));
 });
 
-router.post('/:id/assign', authorize(...municipalRoles), validate(idParamsSchema, 'params'), validate(assignSchema), async (req, res) => {
+router.post('/:id/assign', citizenWriteLimiter, authorize(...municipalRoles), validate(idParamsSchema, 'params'), validate(assignSchema), async (req, res) => {
   const existing = await prisma.citizenRequest.findFirst({ where: { id: req.params.id, municipalityId: req.user.municipalityId } });
   if (!existing) return res.status(404).json({ message: 'Demande introuvable' });
   const source = existing.status === 'SUBMITTED' ? { ...existing, status: 'ACKNOWLEDGED' } : existing;
@@ -84,7 +74,7 @@ router.post('/:id/assign', authorize(...municipalRoles), validate(idParamsSchema
   res.json(updated);
 });
 
-router.post('/:id/status', authorize(...municipalRoles), validate(idParamsSchema, 'params'), validate(statusSchema), async (req, res) => {
+router.post('/:id/status', citizenWriteLimiter, authorize(...municipalRoles), validate(idParamsSchema, 'params'), validate(statusSchema), async (req, res) => {
   const existing = await prisma.citizenRequest.findFirst({ where: { id: req.params.id, municipalityId: req.user.municipalityId } });
   if (!existing) return res.status(404).json({ message: 'Demande introuvable' });
   const next = transitionCitizenRequest(existing, req.body.status, req.user);
