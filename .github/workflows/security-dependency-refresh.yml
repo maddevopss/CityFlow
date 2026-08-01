@@ -1,0 +1,57 @@
+name: Security dependency refresh
+
+on:
+  push:
+    branches:
+      - phase3/security
+    paths:
+      - '.github/workflows/security-dependency-refresh.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: phase3/security
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Mettre à jour les dépendances vulnérables
+        run: npm install --save --ignore-scripts nodemailer@^9.0.3 node-cron@^4.2.1 uuid@^11.1.0
+
+      - name: Vérifier l’audit
+        run: npm audit --audit-level=high
+
+      - name: Générer Prisma et exécuter les tests
+        run: |
+          npm run prisma:generate
+          npm test -- --runInBand
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://cityflow:cityflow@localhost:5432/cityflow_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret-cityflow-at-least-32-characters
+
+      - name: Publier le lockfile vérifié
+        working-directory: .
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/package.json backend/package-lock.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix(security): mettre à jour les dépendances backend vulnérables'
+          git push origin HEAD:phase3/security
