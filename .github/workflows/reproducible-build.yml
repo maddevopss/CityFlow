@@ -21,6 +21,9 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ matrix.package }}/package-lock.json
       - run: npm ci --ignore-scripts
+      - name: Generate Prisma client
+        if: matrix.package == 'backend'
+        run: npx prisma generate
       - run: npm test -- --runInBand
         if: matrix.package == 'backend'
       - run: npm test -- --run --passWithNoTests
