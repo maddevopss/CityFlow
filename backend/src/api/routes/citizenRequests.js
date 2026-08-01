@@ -5,33 +5,27 @@ const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const { authenticate, authorize } = require('../middleware/auth');
 const { citizenWriteLimiter, citizenReadLimiter } = require('../middleware/rateLimiters');
-const {
-  normalizeCitizenRequest,
-  assertCitizenOwnership,
-  transitionCitizenRequest,
-  citizenTimeline
-} = require('../../services/citizenPortal');
+const { normalizeCitizenRequest, assertCitizenOwnership, transitionCitizenRequest, citizenTimeline } = require('../../services/citizenPortal');
 
 const router = express.Router();
 const municipalRoles = ['ADMIN', 'AGENT', 'MANAGER'];
 const idParamsSchema = Joi.object({ id: Joi.string().uuid().required() });
+const listSchema = Joi.object({
+  status: Joi.string().valid('SUBMITTED', 'ACKNOWLEDGED', 'IN_REVIEW', 'PLANNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'),
+  category: Joi.string().trim().max(80),
+  q: Joi.string().trim().max(140),
+  page: Joi.number().integer().min(1).default(1),
+  pageSize: Joi.number().integer().min(1).max(100).default(20)
+});
 const createSchema = Joi.object({
   title: Joi.string().trim().min(5).max(140).required(),
   description: Joi.string().trim().min(10).max(5000).required(),
   category: Joi.string().trim().max(80).default('OTHER'),
   location: Joi.object().unknown(true).allow(null),
-  attachments: Joi.array().items(Joi.object({
-    fileName: Joi.string().max(255).required(),
-    mimeType: Joi.string().max(120).required(),
-    sizeBytes: Joi.number().integer().min(0).max(26214400).required(),
-    storageKey: Joi.string().max(500).required()
-  })).max(10).default([])
+  attachments: Joi.array().items(Joi.object({ fileName: Joi.string().max(255).required(), mimeType: Joi.string().max(120).required(), sizeBytes: Joi.number().integer().min(0).max(26214400).required(), storageKey: Joi.string().max(500).required() })).max(10).default([])
 });
 const assignSchema = Joi.object({ team: Joi.string().trim().min(2).max(120).required() });
-const statusSchema = Joi.object({
-  status: Joi.string().valid('ACKNOWLEDGED', 'IN_REVIEW', 'PLANNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED').required(),
-  resolution: Joi.string().trim().max(4000).allow('', null)
-});
+const statusSchema = Joi.object({ status: Joi.string().valid('ACKNOWLEDGED', 'IN_REVIEW', 'PLANNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED').required(), resolution: Joi.string().trim().max(4000).allow('', null) });
 
 function validate(schema, source = 'body') {
   return (req, res, next) => {
@@ -44,6 +38,22 @@ function validate(schema, source = 'body') {
 
 router.use(citizenReadLimiter, authenticate);
 
+router.get('/', validate(listSchema, 'query'), async (req, res) => {
+  const { status, category, q, page, pageSize } = req.query;
+  const where = {
+    municipalityId: req.user.municipalityId,
+    ...(req.user.role === 'CITIZEN' ? { citizenId: req.user.sub } : {}),
+    ...(status ? { status } : {}),
+    ...(category ? { category } : {}),
+    ...(q ? { OR: [{ title: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] } : {})
+  };
+  const [items, total] = await Promise.all([
+    prisma.citizenRequest.findMany({ where, orderBy: { updatedAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.citizenRequest.count({ where })
+  ]);
+  res.json({ items, pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) } });
+});
+
 router.post('/', citizenWriteLimiter, validate(createSchema), async (req, res) => {
   const normalized = normalizeCitizenRequest(req.body, { id: req.user.sub, municipalityId: req.user.municipalityId });
   const created = await prisma.$transaction(async tx => {
@@ -54,7 +64,7 @@ router.post('/', citizenWriteLimiter, validate(createSchema), async (req, res) =
   res.status(201).json(created);
 });
 
-router.get('/:id', citizenReadLimiter, validate(idParamsSchema, 'params'), async (req, res) => {
+router.get('/:id', validate(idParamsSchema, 'params'), async (req, res) => {
   const request = await prisma.citizenRequest.findFirst({ where: { id: req.params.id, municipalityId: req.user.municipalityId }, include: { events: true, messages: true } });
   if (req.user.role === 'CITIZEN') assertCitizenOwnership(request, { id: req.user.sub, municipalityId: req.user.municipalityId });
   if (!request) return res.status(404).json({ message: 'Demande introuvable' });
