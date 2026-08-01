@@ -20,9 +20,7 @@ const completeInspectionSchema = Joi.object({
   completedAt: Joi.date().iso().default(() => new Date())
 });
 
-const assignmentSchema = Joi.object({
-  inspectorId: Joi.string().uuid().required()
-});
+const assignmentSchema = Joi.object({ inspectorId: Joi.string().uuid().required() });
 
 function validate(schema) {
   return (req, res, next) => {
@@ -42,11 +40,7 @@ router.use(authenticate, authorize(...allowedRoles));
 
 router.get('/inspectors', async (req, res) => {
   const inspectors = await prisma.user.findMany({
-    where: {
-      municipalityId: req.user.municipalityId,
-      role: 'INSPECTOR',
-      isActive: true
-    },
+    where: { municipalityId: req.user.municipalityId, role: 'INSPECTOR', isActive: true },
     select: { id: true, fullName: true, email: true },
     orderBy: [{ fullName: 'asc' }, { email: 'asc' }]
   });
@@ -66,7 +60,6 @@ router.get('/', async (req, res) => {
       ...(status ? { status } : {}),
       ...(req.user.role === 'INSPECTOR' ? { assignedTo: req.user.sub } : {})
     },
-    include: { inspector: { select: { id: true, fullName: true, email: true } } },
     orderBy: { scheduledAt: 'asc' }
   });
   res.json(inspections);
@@ -97,8 +90,7 @@ router.get('/:id', async (req, res) => {
       id: req.params.id,
       municipalityId: req.user.municipalityId,
       ...(req.user.role === 'INSPECTOR' ? { assignedTo: req.user.sub } : {})
-    },
-    include: { inspector: { select: { id: true, fullName: true, email: true } } }
+    }
   });
 
   if (!inspection) return res.status(404).json({ message: 'Inspection introuvable' });
@@ -133,14 +125,9 @@ router.post('/:id/assign', authorize('ADMIN', 'MUNICIPAL_AGENT'), validate(assig
 
   const updated = await prisma.inspection.update({
     where: { id: inspection.id },
-    data: {
-      assignedTo: inspector.id,
-      assignedAt: new Date(),
-      assignedBy: req.user.sub
-    },
+    data: { assignedTo: inspector.id, assignedAt: new Date(), assignedBy: req.user.sub },
     include: { inspector: { select: { id: true, fullName: true, email: true } } }
   });
-
   res.json(updated);
 });
 
