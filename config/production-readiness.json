@@ -4,7 +4,7 @@
   "gates": [
     {"id":"security","weight":20,"evidence":".github/workflows/security-suite.yml"},
     {"id":"quality","weight":15,"evidence":".github/workflows/quality-compliance.yml"},
-    {"id":"observability","weight":15,"evidence":"docs/industrialization/OBSERVABILITY.md"},
+    {"id":"observability","weight":15,"evidence":".github/workflows/observability-readiness.yml"},
     {"id":"disaster-recovery","weight":15,"evidence":"docs/industrialization/DISASTER-RECOVERY.md"},
     {"id":"data-governance","weight":15,"evidence":"docs/industrialization/DATA-GOVERNANCE.md"},
     {"id":"operations","weight":10,"evidence":"docs/industrialization/OPERATIONS-RUNBOOKS.md"},
