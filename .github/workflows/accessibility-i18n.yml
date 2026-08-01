@@ -1,0 +1,20 @@
+name: Accessibility and i18n
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          test -f docs/industrialization/ACCESSIBILITY-I18N.md
+          grep -q 'WCAG 2.2 AA' docs/industrialization/ACCESSIBILITY-I18N.md
+          grep -q 'navigation complète au clavier' docs/industrialization/ACCESSIBILITY-I18N.md
+          grep -q 'français canadien' docs/industrialization/ACCESSIBILITY-I18N.md
+          grep -q 'GO / NO-GO' docs/industrialization/ACCESSIBILITY-I18N.md
