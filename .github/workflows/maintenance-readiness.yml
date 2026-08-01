@@ -1,0 +1,29 @@
+name: Maintenance readiness
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=JSON.parse(fs.readFileSync('config/maintenance-readiness.json','utf8'));
+          if(c.line!=='1.x'||c.minimumScore<95||!c.humanApprovalRequired||!c.automaticReleaseForbidden) process.exit(1);
+          const strict=process.env.GITHUB_EVENT_NAME!=='pull_request';
+          let present=0;
+          for(const p of c.requiredArtifacts){
+            if(fs.existsSync(p)) present++;
+            else if(strict){console.error(`Missing ${p}`);process.exit(1)}
+            else console.log(`::notice::Pending declared dependency ${p}`);
+          }
+          const score=Math.round((present/c.requiredArtifacts.length)*100);
+          if(strict&&score<c.minimumScore) process.exit(1);
+          console.log(`Maintenance readiness score: ${score}%`);
+          NODE

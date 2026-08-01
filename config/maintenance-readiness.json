@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "line": "1.x",
+  "minimumScore": 95,
+  "requiredArtifacts": [
+    "config/patch-intake.json",
+    "config/patch-triage.json",
+    "config/release-calendar.json",
+    "config/deprecation-policy.json",
+    "config/compatibility-matrix.json"
+  ],
+  "humanApprovalRequired": true,
+  "automaticReleaseForbidden": true
+}
