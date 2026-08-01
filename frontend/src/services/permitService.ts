@@ -9,9 +9,10 @@ export interface PermitDocument { id: string; documentType: string; fileName: st
 export interface PermitDocumentInput { documentType: string; fileName: string; mimeType: string; sizeBytes: number; storageKey: string; sha256: string; description?: string | null }
 export interface PermitDocumentRequirement { id: string; municipalityId: number; permitSubtype: string; requiredDocumentTypes: string[]; updatedBy?: string | null; createdAt: string; updatedAt: string }
 export interface PermitDocumentRequirementInput { permitSubtype: string; requiredDocumentTypes: string[] }
-export interface PermitFee { id: string; municipalityId: number; permitId: string; amountCents: number; currency: string; status: PermitFeeStatus; note?: string | null; assessedBy?: string | null; assessedAt: string; paidBy?: string | null; paidAt?: string | null; paymentReference?: string | null; createdAt: string; updatedAt: string }
+export interface PermitFee { id: string; municipalityId: number; permitId: string; amountCents: number; currency: string; status: PermitFeeStatus; note?: string | null; assessedBy?: string | null; assessedAt: string; paidBy?: string | null; paidAt?: string | null; paymentReference?: string | null; waivedReason?: string | null; waivedBy?: string | null; waivedAt?: string | null; createdAt: string; updatedAt: string }
 export interface PermitFeeAssessmentInput { amountCents: number; currency?: string; note?: string | null }
 export interface PermitPaymentInput { paymentReference: string; paidAt?: string | null }
+export interface PermitFeeWaiverInput { reason: string }
 export interface PermitListItem { id: string; sourceRef: string; status: PermitStatus; subtype: string; startTime: string; endTime?: string | null; impacts: string[]; details: Record<string, unknown>; createdAt: string; updatedAt: string }
 export interface PermitRegisterResponse { items: PermitListItem[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
 export interface PermitAuditEntry { id: string; action: string; previousStatus?: PermitStatus | null; newStatus?: PermitStatus | null; reason?: string | null; occurredAt: string }
@@ -30,3 +31,4 @@ export async function savePermitDocumentRequirement(input: PermitDocumentRequire
 export async function getPermitFee(permitId: string): Promise<PermitFee | null> { const response = await api.get<{ fee: PermitFee | null }>(`/permits/${permitId}/fees`); return response.data.fee; }
 export async function assessPermitFee(permitId: string, input: PermitFeeAssessmentInput): Promise<PermitFee> { const response = await api.put<{ fee: PermitFee }>(`/permits/${permitId}/fees`, input); return response.data.fee; }
 export async function markPermitFeePaid(permitId: string, input: PermitPaymentInput): Promise<PermitFee> { const response = await api.post<{ fee: PermitFee }>(`/permits/${permitId}/fees/mark-paid`, input); return response.data.fee; }
+export async function waivePermitFee(permitId: string, input: PermitFeeWaiverInput): Promise<PermitFee> { const response = await api.post<{ fee: PermitFee }>(`/permits/${permitId}/fees/waive`, input); return response.data.fee; }
