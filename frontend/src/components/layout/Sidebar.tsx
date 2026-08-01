@@ -7,6 +7,7 @@ const navigation = [
   { name: 'Événements', href: '/events', icon: '📋', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'VIEWER'] },
   { name: 'Nouvel événement', href: '/events/new', icon: '➕', roles: ['ADMIN', 'MUNICIPAL_AGENT'] },
   { name: 'Inspections', href: '/inspections', icon: '🔎', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
+  { name: 'Suivi inspections', href: '/inspections/dashboard', icon: '📈', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
   { name: 'Calendrier', href: '/inspections/calendar', icon: '🗓️', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
   { name: 'Exports', href: '/exports', icon: '📤', roles: ['ADMIN', 'MUNICIPAL_AGENT'] },
 ];
