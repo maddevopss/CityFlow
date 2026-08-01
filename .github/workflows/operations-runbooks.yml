@@ -1,0 +1,20 @@
+name: Operations runbooks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          test -f docs/industrialization/OPERATIONS-RUNBOOKS.md
+          grep -q 'indisponibilité API' docs/industrialization/OPERATIONS-RUNBOOKS.md
+          grep -q 'fuite ou soupçon de fuite' docs/industrialization/OPERATIONS-RUNBOOKS.md
+          grep -q 'commandes VPS clairement identifiées' docs/industrialization/OPERATIONS-RUNBOOKS.md
+          grep -q 'exercice trimestriel' docs/industrialization/OPERATIONS-RUNBOOKS.md
