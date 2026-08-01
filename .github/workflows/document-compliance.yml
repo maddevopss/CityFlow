@@ -1,0 +1,11 @@
+name: Document compliance
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check scripts/governance/validate-required-documents.mjs
+      - run: node scripts/governance/validate-required-documents.mjs
