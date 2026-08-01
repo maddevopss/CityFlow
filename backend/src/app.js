@@ -5,12 +5,17 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const errorHandler = require('./api/middleware/errorHandler');
+const {
+  observabilityMiddleware,
+  snapshotMetrics
+} = require('./api/middleware/observability');
 
 const app = express();
 
 app.use(helmet());
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
 app.use(compression());
+app.use(observabilityMiddleware);
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 
@@ -27,7 +32,11 @@ app.use('/api/v1/inspections/:inspectionId/evidence', require('./api/routes/insp
 app.use('/api/v1/inspections', require('./api/routes/inspections'));
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), requestId: req.requestId });
+});
+
+app.get('/metrics/http', (req, res) => {
+  res.json({ generatedAt: new Date().toISOString(), metrics: snapshotMetrics() });
 });
 
 app.use(errorHandler);
