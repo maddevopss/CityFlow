@@ -1,0 +1,13 @@
+name: Incident communications
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check scripts/operations/render-incident-update.mjs
+      - run: node scripts/operations/render-incident-update.mjs P2 Investigation 'Service ralenti token=abc' 'dans 30 minutes' > update.md
+      - run: grep -q '\[MASQUÉ\]' update.md
+      - run: grep -q 'Prochaine mise à jour' update.md
