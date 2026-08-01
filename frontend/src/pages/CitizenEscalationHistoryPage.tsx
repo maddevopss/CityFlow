@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { citizenEscalationRunErrorMessage, getCitizenEscalationHistory, runCitizenEscalations } from '../services/citizenRequestService';
 import { citizenEscalationSourceLabel, citizenEscalationSourceTone } from '../features/citizenEscalations/presentation';
 import { filterEscalationRuns } from '../features/citizenEscalations/filters';
 import { summarizeEscalationRuns } from '../features/citizenEscalations/summary';
+import { hasNewEscalationRun, latestEscalationRunId } from '../features/citizenEscalations/polling';
 
 const formatDate = (value: string) => new Intl.DateTimeFormat('fr-CA', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 
 const CitizenEscalationHistoryPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const activeCycleLatestId = useRef<string | null>(null);
   const [runMessage, setRunMessage] = useState<string | null>(null);
   const [runMessageKind, setRunMessageKind] = useState<'success' | 'warning' | 'error'>('success');
   const [source, setSource] = useState('');
@@ -21,21 +23,36 @@ const CitizenEscalationHistoryPage: React.FC = () => {
   const runMutation = useMutation({
     mutationFn: runCitizenEscalations,
     onSuccess: async (result) => {
+      activeCycleLatestId.current = null;
       setRunMessageKind('success');
       setRunMessage(`${result.scanned} demande(s) analysée(s), ${result.candidates} candidate(s), ${result.created} alerte(s) créée(s).`);
       await queryClient.invalidateQueries({ queryKey: ['citizen-escalation-history'] });
     },
     onError: (error) => {
       const message = citizenEscalationRunErrorMessage(error);
-      setRunMessageKind(message.startsWith('Un cycle') ? 'warning' : 'error');
+      const isActiveCycleConflict = message.startsWith('Un cycle');
+      activeCycleLatestId.current = isActiveCycleConflict
+        ? latestEscalationRunId(data?.items ?? [])
+        : null;
+      setRunMessageKind(isActiveCycleConflict ? 'warning' : 'error');
       setRunMessage(message);
     }
   });
+
+  useEffect(() => {
+    if (runMessageKind !== 'warning') return;
+    if (!hasNewEscalationRun(activeCycleLatestId.current, data?.items ?? [])) return;
+
+    activeCycleLatestId.current = null;
+    setRunMessageKind('success');
+    setRunMessage('Le cycle actif est terminé. L’historique a été actualisé.');
+  }, [data?.items, runMessageKind]);
 
   const items = filterEscalationRuns(data?.items ?? [], { source: source || undefined, status: status || undefined });
   const summary = summarizeEscalationRuns(items);
   const handleManualRun = () => {
     if (!window.confirm('Lancer maintenant un cycle d’escalade pour votre municipalité?')) return;
+    activeCycleLatestId.current = null;
     setRunMessage(null);
     runMutation.mutate();
   };
