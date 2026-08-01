@@ -1,0 +1,12 @@
+name: Load endurance
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: test -f performance/k6/endurance.js
+      - run: grep -q "p(99)<1500" performance/k6/endurance.js
+      - run: grep -q "rate<0.01" performance/k6/endurance.js
