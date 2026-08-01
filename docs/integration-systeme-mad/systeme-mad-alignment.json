@@ -58,7 +58,7 @@
       "id": "SMAD-OPS-001",
       "principle": "Continuité, observation et apprentissage",
       "sourceDocument": "01-FONDATIONS/README.md",
-      "localDocuments": ["docs/registres/t3-registre-incidents.md", "docs/checklists/c17-checklist-continuite.md", "docs/matrices/m19-incident-retour-experience.md"],
+      "localDocuments": ["docs/registres/t3-registre-incidents.md", "docs/checklists/c17-continuite-operationnelle.md", "docs/matrices/m19-incident-retour-experience.md"],
       "adaptation": "Les incidents, rétablissements, apprentissages et actions durables sont reliés et révisés.",
       "evidence": ["T3", "C17", "M19"],
       "status": "active"
@@ -76,7 +76,7 @@
       "id": "SMAD-AI-001",
       "principle": "L’assistance ne devient jamais l’autorité finale",
       "sourceDocument": "00-SYSTEME-MAD/governance/constitution.md",
-      "localDocuments": ["r8-intelligence-assistance/01-referentiel-intelligence-assistance.md", "docs/registres/t14-registre-validations.md"],
+      "localDocuments": ["docs/references/r8-intelligence-assistance/01-referentiel-intelligence-assistance.md", "docs/registres/t14-registre-validations.md"],
       "adaptation": "Toute recommandation automatisée demeure explicable, traçable et soumise à confirmation humaine.",
       "evidence": ["R8", "T14"],
       "status": "active"
