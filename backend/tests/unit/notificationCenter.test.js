@@ -6,6 +6,7 @@ describe('notificationCenter', () => {
     expect(resolveChannels('UNKNOWN', {})).toEqual(['IN_APP']);
     expect(resolveChannels('UNKNOWN', { DEFAULT: ['sms'] })).toEqual(['SMS']);
     expect(resolveChannels('UNKNOWN', { DEFAULT: ['fax'] })).toEqual(['IN_APP']);
+    expect(resolveChannels('UNKNOWN', { DEFAULT: 'email' })).toEqual(['EMAIL']);
   });
 
   test('rend un modèle de notification', () => {
@@ -51,8 +52,8 @@ describe('notificationCenter', () => {
     const defaultAttempt = scheduleRetry({}, new Date('2026-08-01T00:00:00Z'));
     expect(defaultAttempt.attempts).toBe(1);
 
-    const capped = scheduleRetry({ attempts: 4 }, new Date('2026-08-01T00:00:00Z'));
-    expect(capped.nextAttemptAt).toBe('2026-08-01T01:00:00.000Z');
+    const fifthAttempt = scheduleRetry({ attempts: 4 }, new Date('2026-08-01T00:00:00Z'));
+    expect(fifthAttempt.nextAttemptAt).toBe('2026-08-01T00:32:00.000Z');
 
     expect(scheduleRetry({ attempts: 5 })).toMatchObject({ attempts: 6, status: 'FAILED', nextAttemptAt: null });
   });
