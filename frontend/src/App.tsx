@@ -23,6 +23,7 @@ import MunicipalCitizenRequestDetailPage from './pages/MunicipalCitizenRequestDe
 import CitizenServiceLevelsPage from './pages/CitizenServiceLevelsPage';
 import CitizenEscalationHistoryPage from './pages/CitizenEscalationHistoryPage';
 import NotificationsPage from './pages/NotificationsPage';
+import PermitsPage from './pages/PermitsPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 5 * 60 * 1000, retry: 2 } } });
@@ -39,6 +40,7 @@ const App: React.FC = () => (
             <Route path="/events/new" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><CreateEvent /></ProtectedRoute>} />
             <Route path="/events/:id/edit" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><EditEvent /></ProtectedRoute>} />
             <Route path="/exports" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><Exports /></ProtectedRoute>} />
+            <Route path="/permits" element={<ProtectedRoute requiredRole="VIEWER"><PermitsPage /></ProtectedRoute>} />
             <Route path="/inspections" element={<ProtectedRoute requiredRole="INSPECTOR"><InspectionsPage /></ProtectedRoute>} />
             <Route path="/inspections/dashboard" element={<ProtectedRoute requiredRole="INSPECTOR"><InspectionDashboard /></ProtectedRoute>} />
             <Route path="/inspections/trends" element={<ProtectedRoute requiredRole="INSPECTOR"><InspectionTrends /></ProtectedRoute>} />
