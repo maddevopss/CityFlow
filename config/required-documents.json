@@ -2,7 +2,7 @@
   "version": 1,
   "documents": [
     {"path":"README.md","owner":"platform","required":true},
-    {"path":"docs/industrialization/OBSERVABILITY.md","owner":"operations","required":true},
+    {"path":".github/workflows/observability-readiness.yml","owner":"operations","required":true},
     {"path":"docs/industrialization/DISASTER-RECOVERY.md","owner":"operations","required":true},
     {"path":"docs/industrialization/ACCESSIBILITY-I18N.md","owner":"product","required":true},
     {"path":"docs/industrialization/DATA-GOVERNANCE.md","owner":"governance","required":true},
