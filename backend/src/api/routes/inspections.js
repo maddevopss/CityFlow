@@ -20,20 +20,19 @@ const completeInspectionSchema = Joi.object({
   completedAt: Joi.date().iso().default(() => new Date())
 });
 
+const assignmentSchema = Joi.object({
+  inspectorId: Joi.string().uuid().required()
+});
+
 function validate(schema) {
   return (req, res, next) => {
-    const { error, value } = schema.validate(req.body, {
-      abortEarly: false,
-      stripUnknown: true
-    });
-
+    const { error, value } = schema.validate(req.body, { abortEarly: false, stripUnknown: true });
     if (error) {
       return res.status(400).json({
         message: 'Données d’inspection invalides',
         details: error.details.map(detail => detail.message)
       });
     }
-
     req.validatedBody = value;
     next();
   };
@@ -41,10 +40,22 @@ function validate(schema) {
 
 router.use(authenticate, authorize(...allowedRoles));
 
+router.get('/inspectors', async (req, res) => {
+  const inspectors = await prisma.user.findMany({
+    where: {
+      municipalityId: req.user.municipalityId,
+      role: 'INSPECTOR',
+      isActive: true
+    },
+    select: { id: true, fullName: true, email: true },
+    orderBy: [{ fullName: 'asc' }, { email: 'asc' }]
+  });
+  res.json(inspectors);
+});
+
 router.get('/', async (req, res) => {
   const status = req.query.status;
   const allowedStatuses = ['SCHEDULED', 'COMPLETED', 'CANCELLED'];
-
   if (status && !allowedStatuses.includes(status)) {
     return res.status(400).json({ message: 'Statut d’inspection invalide' });
   }
@@ -52,11 +63,12 @@ router.get('/', async (req, res) => {
   const inspections = await prisma.inspection.findMany({
     where: {
       municipalityId: req.user.municipalityId,
-      ...(status ? { status } : {})
+      ...(status ? { status } : {}),
+      ...(req.user.role === 'INSPECTOR' ? { assignedTo: req.user.sub } : {})
     },
+    include: { inspector: { select: { id: true, fullName: true, email: true } } },
     orderBy: { scheduledAt: 'asc' }
   });
-
   res.json(inspections);
 });
 
@@ -73,7 +85,6 @@ router.post('/', validate(createInspectionSchema), async (req, res) => {
       createdBy: req.user.sub
     }
   });
-
   res.status(201).json(inspection);
 });
 
@@ -84,12 +95,53 @@ router.get('/:id', async (req, res) => {
   const inspection = await prisma.inspection.findFirst({
     where: {
       id: req.params.id,
-      municipalityId: req.user.municipalityId
-    }
+      municipalityId: req.user.municipalityId,
+      ...(req.user.role === 'INSPECTOR' ? { assignedTo: req.user.sub } : {})
+    },
+    include: { inspector: { select: { id: true, fullName: true, email: true } } }
   });
 
   if (!inspection) return res.status(404).json({ message: 'Inspection introuvable' });
   res.json(inspection);
+});
+
+router.post('/:id/assign', authorize('ADMIN', 'MUNICIPAL_AGENT'), validate(assignmentSchema), async (req, res) => {
+  const { error } = Joi.string().uuid().validate(req.params.id);
+  if (error) return res.status(400).json({ message: 'Identifiant d’inspection invalide' });
+
+  const [inspection, inspector] = await Promise.all([
+    prisma.inspection.findFirst({
+      where: { id: req.params.id, municipalityId: req.user.municipalityId },
+      select: { id: true, status: true }
+    }),
+    prisma.user.findFirst({
+      where: {
+        id: req.validatedBody.inspectorId,
+        municipalityId: req.user.municipalityId,
+        role: 'INSPECTOR',
+        isActive: true
+      },
+      select: { id: true }
+    })
+  ]);
+
+  if (!inspection) return res.status(404).json({ message: 'Inspection introuvable' });
+  if (!inspector) return res.status(400).json({ message: 'Inspecteur invalide pour cette municipalité' });
+  if (inspection.status !== 'SCHEDULED') {
+    return res.status(409).json({ message: 'Seule une inspection planifiée peut être affectée' });
+  }
+
+  const updated = await prisma.inspection.update({
+    where: { id: inspection.id },
+    data: {
+      assignedTo: inspector.id,
+      assignedAt: new Date(),
+      assignedBy: req.user.sub
+    },
+    include: { inspector: { select: { id: true, fullName: true, email: true } } }
+  });
+
+  res.json(updated);
 });
 
 router.post('/:id/complete', validate(completeInspectionSchema), async (req, res) => {
@@ -99,7 +151,8 @@ router.post('/:id/complete', validate(completeInspectionSchema), async (req, res
   const existing = await prisma.inspection.findFirst({
     where: {
       id: req.params.id,
-      municipalityId: req.user.municipalityId
+      municipalityId: req.user.municipalityId,
+      ...(req.user.role === 'INSPECTOR' ? { assignedTo: req.user.sub } : {})
     },
     select: { id: true, status: true }
   });
@@ -119,7 +172,6 @@ router.post('/:id/complete', validate(completeInspectionSchema), async (req, res
       completedBy: req.user.sub
     }
   });
-
   res.json(inspection);
 });
 
