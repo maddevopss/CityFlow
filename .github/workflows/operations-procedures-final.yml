@@ -1,0 +1,20 @@
+name: Operations procedures final
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=JSON.parse(fs.readFileSync('config/operations-procedures-final.json','utf8'));
+          if(c.productVersion!=='1.0.0'||c.status!=='validated'||!c.humanApprovalRequired||c.requiredDomains.length<5) process.exit(1);
+          for(const p of c.requiredRunbooks){if(!fs.existsSync(p)){console.error(`Missing ${p}`);process.exit(1)}}
+          console.log('Operations procedures contract valid');
+          NODE
