@@ -2,6 +2,7 @@
 
 const express = require('express');
 const Joi = require('joi');
+const rateLimit = require('express-rate-limit');
 const prisma = require('../../db/prisma');
 const { authenticate, authorize } = require('../middleware/auth');
 const {
@@ -41,7 +42,17 @@ function validate(schema, source = 'body') {
   };
 }
 
+const citizenRequestsRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => (req.user && req.user.sub ? req.user.sub : req.ip),
+  message: { message: 'Trop de requêtes, veuillez réessayer plus tard.' }
+});
+
 router.use(authenticate);
+router.use(citizenRequestsRateLimiter);
 
 router.post('/', validate(createSchema), async (req, res) => {
   const normalized = normalizeCitizenRequest(req.body, { id: req.user.sub, municipalityId: req.user.municipalityId });
