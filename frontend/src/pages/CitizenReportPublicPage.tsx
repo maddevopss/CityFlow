@@ -3,7 +3,7 @@ import { createPublicCitizenReport, trackPublicCitizenReport, type CitizenReport
 
 const CitizenReportPublicPage: React.FC = () => {
   const [mode, setMode] = useState<'create' | 'track'>('create');
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<unknown>(null);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ municipalityId: 1, category: 'ROAD' as CitizenReportCategory, title: '', description: '', address: '', reporterName: '', reporterEmail: '', consentToContact: false });
   const [tracking, setTracking] = useState({ publicNumber: '', trackingToken: '' });
@@ -23,7 +23,7 @@ const CitizenReportPublicPage: React.FC = () => {
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.consentToContact} onChange={event => setForm({ ...form, consentToContact: event.target.checked })} />J’accepte d’être contacté au sujet de ce signalement.</label>
       <button className="rounded bg-cityflow-700 px-4 py-2 font-medium text-white">Transmettre</button>
     </form> : <form onSubmit={track} className="grid gap-4 rounded-lg bg-white p-6 shadow"><label className="text-sm font-medium">Numéro de suivi<input required value={tracking.publicNumber} onChange={event => setTracking({ ...tracking, publicNumber: event.target.value })} className="mt-1 w-full rounded border px-3 py-2" /></label><label className="text-sm font-medium">Jeton de suivi<input required value={tracking.trackingToken} onChange={event => setTracking({ ...tracking, trackingToken: event.target.value })} className="mt-1 w-full rounded border px-3 py-2" /></label><button className="rounded bg-cityflow-700 px-4 py-2 font-medium text-white">Consulter</button></form>}
-    {error && <div className="rounded bg-red-50 p-4 text-red-800">{error}</div>}{result && <div className="rounded-lg bg-white p-6 shadow"><h2 className="text-lg font-semibold">Résultat</h2><pre className="mt-3 overflow-auto whitespace-pre-wrap text-sm">{JSON.stringify(result, null, 2)}</pre></div>}
+    {error && <div className="rounded bg-red-50 p-4 text-red-800">{error}</div>}{result !== null && <div className="rounded-lg bg-white p-6 shadow"><h2 className="text-lg font-semibold">Résultat</h2><pre className="mt-3 overflow-auto whitespace-pre-wrap text-sm">{JSON.stringify(result, null, 2)}</pre></div>}
   </div></main>;
 };
 
