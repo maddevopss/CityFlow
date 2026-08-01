@@ -1,0 +1,20 @@
+name: Backup restore tools
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier les scripts
+        run: |
+          bash -n scripts/operations/backup-postgres.sh
+          bash -n scripts/operations/restore-postgres.sh
+          grep -q 'production' scripts/operations/restore-postgres.sh
+          grep -q 'sha256sum --check' scripts/operations/restore-postgres.sh
