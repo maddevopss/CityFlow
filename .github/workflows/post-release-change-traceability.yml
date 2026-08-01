@@ -1,0 +1,19 @@
+name: Post-release change traceability
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node - <<'NODE'
+          const c=require('./config/post-release-change-traceability.json');
+          const required=['changeId','reason','risk','tests','evidence','approval','release'];
+          if(required.some(x=>!c.requiredFields.includes(x))||!c.changeLogRequired||!c.backportReviewRequired||!c.productionChangesRequireApproval||c.emergencyChangesRequireRetrospectiveHours>24) process.exit(1);
+          console.log('Post-release traceability contract valid');
+          NODE
