@@ -1,0 +1,47 @@
+name: E2E citizen v1.1
+
+on:
+  pull_request:
+    paths:
+      - 'e2e/**'
+      - '.github/workflows/e2e-citizen-v11.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run validate
+        working-directory: e2e
+
+  staging:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Refuser une cible de production
+        env:
+          CITYFLOW_API_URL: ${{ secrets.CITYFLOW_API_URL }}
+        run: |
+          test -n "$CITYFLOW_API_URL"
+          if echo "$CITYFLOW_API_URL" | grep -Eiq 'prod(uction)?'; then
+            echo '::error::Production targets are forbidden'
+            exit 1
+          fi
+      - run: npm run test:citizen
+        working-directory: e2e
+        env:
+          CITYFLOW_API_URL: ${{ secrets.CITYFLOW_API_URL }}
+          CITYFLOW_E2E_CITIZEN_TOKEN: ${{ secrets.CITYFLOW_E2E_CITIZEN_TOKEN }}
+          CITYFLOW_E2E_AGENT_TOKEN: ${{ secrets.CITYFLOW_E2E_AGENT_TOKEN }}
