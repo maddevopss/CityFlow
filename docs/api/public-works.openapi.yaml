@@ -1,0 +1,83 @@
+openapi: 3.1.0
+info:
+  title: CityFlow Public Works API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+paths:
+  /work-orders:
+    get:
+      summary: Lister les ordres de travail
+      responses:
+        '200': { description: Liste paginée }
+        '400': { description: Filtres invalides }
+        '401': { description: Non authentifié }
+        '403': { description: Accès refusé }
+    post:
+      summary: Créer un ordre de travail
+      responses:
+        '201': { description: Ordre créé }
+        '400': { description: Données invalides }
+  /work-orders/{id}:
+    get:
+      summary: Consulter un ordre de travail
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Ordre trouvé }
+        '404': { description: Ordre introuvable }
+  /work-orders/{id}/assign:
+    post:
+      summary: Affecter un ordre
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Ordre affecté }
+        '409': { description: Transition interdite }
+  /work-orders/{id}/start:
+    post:
+      summary: Démarrer une intervention
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Intervention démarrée }
+        '409': { description: Ordre non affecté }
+  /work-orders/{id}/logs:
+    post:
+      summary: Ajouter un journal terrain
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201': { description: Journal ajouté }
+        '409': { description: Journal interdit dans cet état }
+  /work-orders/{id}/complete:
+    post:
+      summary: Terminer l’intervention terrain
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Intervention terminée }
+        '409': { description: Clôture interdite }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
