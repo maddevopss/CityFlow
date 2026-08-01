@@ -1,0 +1,18 @@
+name: Official publication procedure
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate publication procedure
+        run: |
+          test -f docs/release/OFFICIAL-PUBLICATION-V1.md
+          grep -q 'v1.0.0' docs/release/OFFICIAL-PUBLICATION-V1.md
+          grep -q 'tag annoté' docs/release/OFFICIAL-PUBLICATION-V1.md
+          grep -q 'approbation humaine' docs/release/OFFICIAL-PUBLICATION-V1.md
+          grep -q 'SHA-256' docs/release/OFFICIAL-PUBLICATION-V1.md
