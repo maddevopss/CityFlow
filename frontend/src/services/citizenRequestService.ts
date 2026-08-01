@@ -19,6 +19,27 @@ export interface CitizenEscalationRetention { retentionDays: number; intervalMs:
 export interface CitizenEscalationHistoryResponse { items: CitizenEscalationRun[]; limit: number; retention: CitizenEscalationRetention; }
 export interface CitizenEscalationRunResponse { generatedAt: string; scanned: number; candidates: number; created: number; }
 
+interface ApiErrorShape {
+  response?: {
+    status?: number;
+    data?: {
+      code?: string;
+    };
+  };
+}
+
+export const citizenEscalationRunErrorMessage = (error: unknown) => {
+  const apiError = error as ApiErrorShape;
+  const alreadyRunning = apiError.response?.status === 409
+    || apiError.response?.data?.code === 'CITIZEN_ESCALATION_ALREADY_RUNNING';
+
+  if (alreadyRunning) {
+    return 'Un cycle d’escalade est déjà en cours pour votre municipalité. Actualisez l’historique dans quelques instants avant de réessayer.';
+  }
+
+  return 'Le cycle manuel a échoué. Consultez les journaux du service avant de réessayer.';
+};
+
 export const citizenRequestDetailPath = (id: string) => `/municipal/citizen-requests/${encodeURIComponent(id)}`;
 export const createCitizenRequest = async (input: CreateCitizenRequestInput) => (await api.post<CitizenRequest>('/citizen/requests', input)).data;
 export const getCitizenRequestTimeline = async (id: string) => (await api.get<CitizenTimelineResponse>(`/citizen/requests/${id}`)).data;

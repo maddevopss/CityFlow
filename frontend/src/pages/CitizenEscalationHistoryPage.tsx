@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getCitizenEscalationHistory, runCitizenEscalations } from '../services/citizenRequestService';
+import {
+  citizenEscalationRunErrorMessage,
+  getCitizenEscalationHistory,
+  runCitizenEscalations
+} from '../services/citizenRequestService';
 
 const formatDate = (value: string) => new Intl.DateTimeFormat('fr-CA', {
   dateStyle: 'medium',
@@ -16,6 +20,7 @@ const formatInterval = (intervalMs: number) => {
 const CitizenEscalationHistoryPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [runMessage, setRunMessage] = useState<string | null>(null);
+  const [runMessageKind, setRunMessageKind] = useState<'success' | 'warning' | 'error'>('success');
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['citizen-escalation-history', 50],
     queryFn: () => getCitizenEscalationHistory(50)
@@ -23,10 +28,15 @@ const CitizenEscalationHistoryPage: React.FC = () => {
   const runMutation = useMutation({
     mutationFn: runCitizenEscalations,
     onSuccess: async (result) => {
+      setRunMessageKind('success');
       setRunMessage(`${result.scanned} demande(s) analysée(s), ${result.candidates} candidate(s), ${result.created} alerte(s) créée(s).`);
       await queryClient.invalidateQueries({ queryKey: ['citizen-escalation-history'] });
     },
-    onError: () => setRunMessage('Le cycle manuel a échoué. Consultez les journaux du service avant de réessayer.')
+    onError: (error) => {
+      const message = citizenEscalationRunErrorMessage(error);
+      setRunMessageKind(message.startsWith('Un cycle') ? 'warning' : 'error');
+      setRunMessage(message);
+    }
   });
 
   const handleManualRun = () => {
@@ -35,6 +45,12 @@ const CitizenEscalationHistoryPage: React.FC = () => {
     setRunMessage(null);
     runMutation.mutate();
   };
+
+  const messageClassName = runMessageKind === 'success'
+    ? 'border-green-200 bg-green-50 text-green-800'
+    : runMessageKind === 'warning'
+      ? 'border-amber-200 bg-amber-50 text-amber-900'
+      : 'border-red-200 bg-red-50 text-red-800';
 
   return (
     <section className="p-6 space-y-6">
@@ -54,7 +70,7 @@ const CitizenEscalationHistoryPage: React.FC = () => {
       </header>
 
       {runMessage ? (
-        <div role="status" aria-live="polite" className={`rounded-lg border p-4 text-sm ${runMutation.isError ? 'border-red-200 bg-red-50 text-red-800' : 'border-green-200 bg-green-50 text-green-800'}`}>
+        <div role={runMessageKind === 'error' ? 'alert' : 'status'} aria-live="polite" className={`rounded-lg border p-4 text-sm ${messageClassName}`}>
           {runMessage}
         </div>
       ) : null}
