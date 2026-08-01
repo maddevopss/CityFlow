@@ -1,0 +1,54 @@
+name: Operations readiness
+
+on:
+  pull_request:
+    paths:
+      - 'docs/industrialization/OPERATIONS-READINESS.md'
+      - 'scripts/operations/**'
+      - '.github/workflows/operations-readiness.yml'
+  workflow_dispatch:
+    inputs:
+      exercise:
+        description: 'Type of operational exercise'
+        required: true
+        default: 'documentation-check'
+        type: choice
+        options:
+          - documentation-check
+          - backup-restore-preflight
+
+permissions:
+  contents: read
+
+jobs:
+  documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify operational sections
+        shell: bash
+        run: |
+          file=docs/industrialization/OPERATIONS-READINESS.md
+          test -f "$file"
+          grep -q '## Sauvegarde et restauration' "$file"
+          grep -q '## Supervision' "$file"
+          grep -q '## Journaux' "$file"
+          grep -q '## Incidents et astreinte' "$file"
+          grep -q '## Reprise après sinistre' "$file"
+
+  backup-restore-preflight:
+    if: github.event_name == 'workflow_dispatch' && inputs.exercise == 'backup-restore-preflight'
+    runs-on: ubuntu-latest
+    env:
+      OPERATIONS_TEST_DATABASE_URL: ${{ secrets.OPERATIONS_TEST_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require isolated test database
+        shell: bash
+        run: |
+          test -n "$OPERATIONS_TEST_DATABASE_URL"
+          case "$OPERATIONS_TEST_DATABASE_URL" in
+            *prod*|*production*) echo 'Production database is forbidden for restore exercises'; exit 1 ;;
+          esac
+      - name: Verify PostgreSQL connectivity
+        run: psql "$OPERATIONS_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'select current_database(), version();'
