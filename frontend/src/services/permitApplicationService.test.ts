@@ -7,7 +7,9 @@ const get = vi.mocked(api.get);
 const post = vi.mocked(api.post);
 
 describe('permitApplicationService', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('transmet les filtres paginés', async () => {
     get.mockResolvedValue({ data: { items: [], pagination: { page: 1, pageSize: 25, total: 0, totalPages: 0 } } });
