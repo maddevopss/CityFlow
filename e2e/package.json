@@ -1,0 +1,9 @@
+{
+  "name": "cityflow-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:citizen": "node tests/citizen-lifecycle.mjs",
+    "validate": "node --check tests/citizen-lifecycle.mjs"
+  }
+}
