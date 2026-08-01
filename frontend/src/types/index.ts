@@ -1,8 +1,10 @@
+export type UserRole = 'ADMIN' | 'MANAGER' | 'MUNICIPAL_AGENT' | 'INSPECTOR' | 'CONTRACTOR' | 'VIEWER';
+
 export interface User {
   id: string;
   email: string;
   fullName?: string;
-  role: 'ADMIN' | 'MUNICIPAL_AGENT' | 'INSPECTOR' | 'CONTRACTOR' | 'VIEWER';
+  role: UserRole;
   municipalityId?: number;
 }
 
