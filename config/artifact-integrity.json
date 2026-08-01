@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "algorithm": "sha256",
+  "provenanceRequired": true,
+  "immutableArtifactsRequired": true,
+  "requiredMetadata": ["version", "commitSha", "builtAt", "builder"],
+  "retentionDays": 90
+}
