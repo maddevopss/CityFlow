@@ -19,6 +19,10 @@ model Municipality {
   events             RoadEvent[]
   inspections        Inspection[]
   inspectionEvidence InspectionEvidence[]
+  citizenRequests    CitizenRequest[]
+  citizenEvents      CitizenRequestEvent[]
+  citizenMessages    CitizenMessage[]
+  notifications      Notification[]
 }
 
 model User {
@@ -35,6 +39,11 @@ model User {
 
   municipality        Municipality? @relation(fields: [municipalityId], references: [id])
   assignedInspections Inspection[]  @relation("AssignedInspector")
+  citizenRequests     CitizenRequest[] @relation("CitizenRequests")
+  assignedRequests    CitizenRequest[] @relation("AssignedCitizenRequests")
+  citizenEvents       CitizenRequestEvent[]
+  citizenMessages     CitizenMessage[]
+  notifications       Notification[]
 }
 
 model RoadEvent {
@@ -146,4 +155,98 @@ model InspectionReminder {
   @@unique([inspectionId, recipientId, reminderType, scheduledFor])
   @@index([municipalityId, recipientId, status])
   @@index([scheduledFor, status])
+}
+
+model CitizenRequest {
+  id             String   @id @default(uuid()) @db.Uuid
+  municipalityId Int
+  citizenId      String   @db.Uuid
+  assignedTo     String?  @db.Uuid
+  assignedTeam   String?
+  title          String
+  description    String
+  category       String   @default("OTHER")
+  status         String   @default("SUBMITTED")
+  location       Json?    @db.JsonB
+  attachments    Json     @default("[]") @db.JsonB
+  resolution     String?
+  assignedAt     DateTime?
+  resolvedAt     DateTime?
+  closedAt       DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  municipality   Municipality @relation(fields: [municipalityId], references: [id])
+  citizen        User         @relation("CitizenRequests", fields: [citizenId], references: [id])
+  assignee       User?        @relation("AssignedCitizenRequests", fields: [assignedTo], references: [id])
+  events         CitizenRequestEvent[]
+  messages       CitizenMessage[]
+  notifications  Notification[]
+
+  @@index([municipalityId, status, updatedAt])
+  @@index([municipalityId, citizenId, updatedAt])
+  @@index([municipalityId, assignedTo, status])
+  @@index([category, status])
+}
+
+model CitizenRequestEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  municipalityId Int
+  requestId      String   @db.Uuid
+  actorId        String?  @db.Uuid
+  eventType      String
+  fromStatus     String?
+  toStatus       String?
+  metadata       Json     @default("{}") @db.JsonB
+  createdAt      DateTime @default(now())
+
+  municipality   Municipality   @relation(fields: [municipalityId], references: [id])
+  request        CitizenRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actor          User?          @relation(fields: [actorId], references: [id])
+
+  @@index([municipalityId, requestId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model CitizenMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  municipalityId Int
+  requestId      String   @db.Uuid
+  authorId       String   @db.Uuid
+  body           String
+  visibility     String   @default("CITIZEN")
+  createdAt      DateTime @default(now())
+
+  municipality   Municipality   @relation(fields: [municipalityId], references: [id])
+  request        CitizenRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author         User           @relation(fields: [authorId], references: [id])
+
+  @@index([municipalityId, requestId, createdAt])
+  @@index([authorId, createdAt])
+}
+
+model Notification {
+  id             String   @id @default(uuid()) @db.Uuid
+  municipalityId Int
+  recipientId    String   @db.Uuid
+  requestId      String?  @db.Uuid
+  eventType      String
+  channel        String   @default("IN_APP")
+  subject        String?
+  body           String
+  status         String   @default("PENDING")
+  attempts       Int      @default(0)
+  nextAttemptAt  DateTime?
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  municipality   Municipality    @relation(fields: [municipalityId], references: [id])
+  recipient      User            @relation(fields: [recipientId], references: [id])
+  request        CitizenRequest? @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([municipalityId, recipientId, status, createdAt])
+  @@index([municipalityId, eventType, createdAt])
+  @@index([nextAttemptAt, status])
 }
