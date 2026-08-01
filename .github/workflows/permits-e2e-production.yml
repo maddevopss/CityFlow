@@ -13,7 +13,26 @@ permissions:
   contents: read
 
 jobs:
+  validate-contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: e2e/package.json
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate Playwright discovery
+        run: npx playwright test tests/permits-production.spec.ts --list
+
   permits-e2e:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
@@ -24,11 +43,8 @@ jobs:
       CITYFLOW_E2E_AGENT_TOKEN: ${{ secrets.CITYFLOW_E2E_AGENT_TOKEN }}
       CITYFLOW_E2E_PERMIT_REVIEWER_TOKEN: ${{ secrets.CITYFLOW_E2E_PERMIT_REVIEWER_TOKEN }}
       CITYFLOW_E2E_OTHER_MUNICIPALITY_TOKEN: ${{ secrets.CITYFLOW_E2E_OTHER_MUNICIPALITY_TOKEN }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Verify staging secrets
         shell: bash
         run: |
@@ -40,23 +56,17 @@ jobs:
             fi
           done
           exit "$missing"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: e2e/package.json
-
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-
       - name: Run permits production journey
         run: npm run test:permits
-
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
