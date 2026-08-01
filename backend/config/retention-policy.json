@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "defaultMode": "dry-run",
+  "categories": [
+    { "name": "audit_logs", "retentionDays": 730, "owner": "security", "legalHold": true },
+    { "name": "notifications", "retentionDays": 365, "owner": "operations", "legalHold": false },
+    { "name": "temporary_exports", "retentionDays": 30, "owner": "platform", "legalHold": false },
+    { "name": "session_tokens", "retentionDays": 90, "owner": "security", "legalHold": false }
+  ]
+}
