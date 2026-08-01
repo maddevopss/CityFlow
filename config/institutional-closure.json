@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "productVersion": "1.0.0",
+  "developmentPhase": "closed",
+  "maintenanceCycle": "open",
+  "requiredArtifacts": [
+    "config/release-manifest.json",
+    "config/v1-closure.json",
+    "config/operations-handoff.json",
+    "config/post-release-monitoring.json",
+    "docs/release/OFFICIAL-PUBLICATION-V1.md"
+  ],
+  "humanApprovalRequired": true,
+  "automaticPublicationForbidden": true
+}

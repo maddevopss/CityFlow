@@ -1,0 +1,48 @@
+name: Institutional closure
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate closure contract
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const c = JSON.parse(fs.readFileSync('config/institutional-closure.json', 'utf8'));
+
+          if (
+            c.productVersion !== '1.0.0' ||
+            c.developmentPhase !== 'closed' ||
+            c.maintenanceCycle !== 'open' ||
+            !c.humanApprovalRequired ||
+            !c.automaticPublicationForbidden
+          ) process.exit(1);
+
+          const predecessorArtifacts = new Set([
+            'docs/release/OFFICIAL-PUBLICATION-V1.md'
+          ]);
+          const missing = c.requiredArtifacts.filter((p) => !fs.existsSync(p));
+          const unexpected = missing.filter((p) =>
+            process.env.EVENT_NAME !== 'pull_request' || !predecessorArtifacts.has(p)
+          );
+
+          if (unexpected.length) {
+            for (const p of unexpected) console.error(`Missing ${p}`);
+            process.exit(1);
+          }
+
+          for (const p of missing) {
+            console.log(`::notice title=Predecessor artifact pending::${p} is delivered by PR #490 and remains mandatory on main`);
+          }
+
+          console.log('Institutional closure contract valid');
+          NODE
