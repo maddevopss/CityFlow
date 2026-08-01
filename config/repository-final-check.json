@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "requiredDefaultBranch": "main",
+  "forbidDraftPullRequestsAtRelease": true,
+  "forbidUnmergedReleasePullRequests": true,
+  "requiredWorkflows": [
+    ".github/workflows/security-suite.yml",
+    ".github/workflows/v1-release-gate.yml",
+    ".github/workflows/production-readiness.yml",
+    ".github/workflows/document-compliance.yml"
+  ],
+  "humanApprovalRequired": true
+}
