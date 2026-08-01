@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "RSK-CF-GOV-001",
+      "title": "Perte de traçabilité entre gouvernance et livraison",
+      "likelihood": "medium",
+      "impact": "high",
+      "owner": "Mainteneurs CityFlow",
+      "status": "treated",
+      "treatment": "Valider automatiquement les identifiants, relations, fichiers locaux et couvertures obligatoires."
+    }
+  ]
+}
