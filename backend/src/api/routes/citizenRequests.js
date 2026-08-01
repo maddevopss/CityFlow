@@ -42,7 +42,7 @@ function validate(schema, source = 'body') {
   };
 }
 
-router.use(authenticate);
+router.use(citizenReadLimiter, authenticate);
 
 router.post('/', citizenWriteLimiter, validate(createSchema), async (req, res) => {
   const normalized = normalizeCitizenRequest(req.body, { id: req.user.sub, municipalityId: req.user.municipalityId });
