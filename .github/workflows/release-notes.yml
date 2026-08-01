@@ -1,0 +1,16 @@
+name: Release notes
+on: [pull_request]
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check scripts/release/generate-release-notes.mjs
+      - run: node scripts/release/generate-release-notes.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: artifacts/RELEASE-NOTES.md
+          retention-days: 30
