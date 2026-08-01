@@ -1,0 +1,21 @@
+name: Maintenance 1.x
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate maintenance policy
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=JSON.parse(fs.readFileSync('config/maintenance-1x.json','utf8'));
+          if(c.stableLine!=='1.x'||c.nextPatch!=='1.0.1'||!c.forbidBreakingChanges||!c.backportReviewRequired||!c.releaseGateRequired||c.supportWindowDays<180) process.exit(1);
+          const allowed=['security','bugfix','documentation','dependency'];
+          if(c.allowedChangeTypes.some(x=>!allowed.includes(x))) process.exit(1);
+          console.log('Maintenance 1.x policy valid');
+          NODE
