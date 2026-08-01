@@ -15,6 +15,7 @@ import Exports from './pages/Exports';
 import InspectionsPage from './pages/InspectionsPage';
 import InspectionDetail from './pages/InspectionDetail';
 import InspectionCalendar from './pages/InspectionCalendar';
+import InspectionDashboard from './pages/InspectionDashboard';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 const queryClient = new QueryClient({
@@ -40,6 +41,7 @@ const App: React.FC = () => {
               <Route path="/events/:id/edit" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><EditEvent /></ProtectedRoute>} />
               <Route path="/exports" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><Exports /></ProtectedRoute>} />
               <Route path="/inspections" element={<ProtectedRoute requiredRole="INSPECTOR"><InspectionsPage /></ProtectedRoute>} />
+              <Route path="/inspections/dashboard" element={<ProtectedRoute requiredRole="INSPECTOR"><InspectionDashboard /></ProtectedRoute>} />
               <Route path="/inspections/calendar" element={<ProtectedRoute requiredRole="INSPECTOR"><InspectionCalendar /></ProtectedRoute>} />
               <Route path="/inspections/:id" element={<ProtectedRoute requiredRole="INSPECTOR"><InspectionDetail /></ProtectedRoute>} />
             </Route>
