@@ -1,0 +1,14 @@
+name: Release tag contract
+on:
+  pull_request:
+    paths:
+      - config/release-tag.json
+      - .github/workflows/release-tag-contract.yml
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: node -e "const c=require('./config/release-tag.json'); if(c.tag!=='v'+c.version||c.target!=='main'||!c.annotated||!c.releaseRequired) process.exit(1)"
