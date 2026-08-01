@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "recoveryOrder": ["postgres","backend","workers","frontend"],
+  "objectives": {"rtoMinutes":120,"rpoMinutes":30},
+  "checks": ["backup-integrity","restore-isolated","health-endpoints","smoke-tests"],
+  "exerciseFrequencyDays": 90
+}
