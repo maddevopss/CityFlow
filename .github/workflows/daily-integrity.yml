@@ -1,0 +1,20 @@
+name: Daily integrity
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 10 * * *'
+permissions:
+  contents: read
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check scripts/platform/build-integrity-report.mjs
+      - run: node scripts/platform/build-integrity-report.mjs > integrity-report.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: integrity-report-${{ github.run_id }}
+          path: integrity-report.md
+          retention-days: 30
