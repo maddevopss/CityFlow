@@ -1,0 +1,20 @@
+name: Artifact integrity
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate artifact policy
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=JSON.parse(fs.readFileSync('config/artifact-integrity.json','utf8'));
+          if(c.algorithm!=='sha256'||!c.provenanceRequired||!c.immutableArtifactsRequired||c.retentionDays<30) process.exit(1);
+          for(const key of ['version','commitSha','builtAt','builder']) if(!c.requiredMetadata.includes(key)) process.exit(1);
+          console.log('Artifact integrity contract valid');
+          NODE
