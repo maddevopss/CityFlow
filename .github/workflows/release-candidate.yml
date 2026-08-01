@@ -1,0 +1,23 @@
+name: Release candidate
+on:
+  pull_request:
+    paths:
+      - config/release-candidate.json
+      - .github/workflows/release-candidate.yml
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate candidate
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=JSON.parse(fs.readFileSync('config/release-candidate.json','utf8'));
+          if(!/^\d+\.\d+\.\d+$/.test(c.version)) throw new Error('Version invalide');
+          if(c.channel!=='stable'||c.status!=='candidate') throw new Error('Canal ou statut invalide');
+          if(c.minimumScore<85||c.requiredGates.length<4) throw new Error('Barrières insuffisantes');
+          console.log(c);
+          NODE
