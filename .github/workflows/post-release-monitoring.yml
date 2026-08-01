@@ -1,0 +1,14 @@
+name: Post-release monitoring
+on:
+  pull_request:
+    paths:
+      - config/post-release-monitoring.json
+      - .github/workflows/post-release-monitoring.yml
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: node -e "const c=require('./config/post-release-monitoring.json'); const t=c.thresholds; if(c.windowHours<24||c.checkEveryMinutes>15||t.errorRatePercent>1||t.p95Ms>750||t.availabilityPercent<99.5||!c.rollbackOnCritical) process.exit(1)"
