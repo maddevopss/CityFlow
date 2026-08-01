@@ -1,0 +1,17 @@
+const express = require('express');
+const Joi = require('joi');
+const prisma = require('../../db/prisma');
+const { authenticate, authorize } = require('../middleware/auth');
+const { permitReadLimiter, permitWriteLimiter } = require('../middleware/rateLimiters');
+const { addEvidence, addMaterial, getExecutionSummary } = require('../../services/workOrderFieldExecution');
+
+const router = express.Router();
+const uuid = Joi.string().guid({ version: ['uuidv4'] });
+const evidenceSchema = Joi.object({ evidenceType: Joi.string().max(80).required(), fileName: Joi.string().max(255).required(), mimeType: Joi.string().max(120).required(), sizeBytes: Joi.number().integer().min(1).max(50_000_000).required(), storageKey: Joi.string().max(500).required(), sha256: Joi.string().hex().length(64).required(), description: Joi.string().max(2000).allow('', null), capturedAt: Joi.date().iso().required() });
+const materialSchema = Joi.object({ itemCode: Joi.string().max(80).required(), description: Joi.string().max(255).required(), quantity: Joi.number().positive().precision(3).required(), unit: Joi.string().max(40).required(), unitCost: Joi.number().min(0).precision(2).allow(null) });
+
+router.get('/:workOrderId/execution', permitReadLimiter, authenticate, authorize('ADMIN','MANAGER','MUNICIPAL_AGENT','INSPECTOR','VIEWER'), async (req,res,next)=>{ try { const id=uuid.required().validate(req.params.workOrderId); if(id.error) return res.status(400).json({message:'Identifiant invalide'}); if(!req.user.municipalityId) return res.status(403).json({message:'Municipalité requise'}); return res.json(await getExecutionSummary(prisma,{municipalityId:req.user.municipalityId,workOrderId:id.value})); } catch(error){ if(error.statusCode) return res.status(error.statusCode).json({message:error.message}); return next(error);} });
+router.post('/:workOrderId/evidence', permitWriteLimiter, authenticate, authorize('ADMIN','MANAGER','MUNICIPAL_AGENT','INSPECTOR'), async (req,res,next)=>{ try { const id=uuid.required().validate(req.params.workOrderId); const body=evidenceSchema.validate(req.body,{abortEarly:false,stripUnknown:true}); if(id.error||body.error) return res.status(400).json({message:'Données invalides'}); if(!req.user.municipalityId) return res.status(403).json({message:'Municipalité requise'}); const item=await addEvidence(prisma,{...body.value,municipalityId:req.user.municipalityId,workOrderId:id.value,actorId:req.user.sub}); return res.status(201).json({item}); } catch(error){ if(error.statusCode) return res.status(error.statusCode).json({message:error.message}); return next(error);} });
+router.post('/:workOrderId/materials', permitWriteLimiter, authenticate, authorize('ADMIN','MANAGER','MUNICIPAL_AGENT','INSPECTOR'), async (req,res,next)=>{ try { const id=uuid.required().validate(req.params.workOrderId); const body=materialSchema.validate(req.body,{abortEarly:false,stripUnknown:true}); if(id.error||body.error) return res.status(400).json({message:'Données invalides'}); if(!req.user.municipalityId) return res.status(403).json({message:'Municipalité requise'}); const item=await addMaterial(prisma,{...body.value,municipalityId:req.user.municipalityId,workOrderId:id.value,actorId:req.user.sub}); return res.status(201).json({item}); } catch(error){ if(error.statusCode) return res.status(error.statusCode).json({message:error.message}); return next(error);} });
+
+module.exports = router;
