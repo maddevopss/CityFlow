@@ -1,12 +1,16 @@
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
-jest.mock('../../src/db/prisma', () => ({
-  $queryRawUnsafe: jest.fn(),
-  citizenRequest: { findMany: jest.fn() },
-  user: { findMany: jest.fn() },
-  notification: { findMany: jest.fn(), createMany: jest.fn() }
-}));
+jest.mock('../../src/db/prisma', () => {
+  const prisma = {
+    $queryRawUnsafe: jest.fn(),
+    citizenRequest: { findMany: jest.fn() },
+    user: { findMany: jest.fn() },
+    notification: { findMany: jest.fn(), createMany: jest.fn() }
+  };
+  prisma.$transaction = jest.fn((task) => task(prisma));
+  return prisma;
+});
 
 const prisma = require('../../src/db/prisma');
 const app = require('../../src/app');
@@ -25,6 +29,8 @@ const agentToken = jwt.sign({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  prisma.$transaction.mockImplementation((task) => task(prisma));
+  prisma.$queryRawUnsafe.mockResolvedValue([{ acquired: true }]);
 });
 
 test('refuse l’exécution à un agent non gestionnaire', async () => {
@@ -44,9 +50,28 @@ test('exécute les escalades dans la municipalité du gestionnaire', async () =>
 
   expect(response.status).toBe(202);
   expect(response.body).toMatchObject({ scanned: 0, candidates: 0, created: 0 });
+  expect(prisma.$queryRawUnsafe).toHaveBeenCalledWith(
+    expect.stringContaining('pg_try_advisory_xact_lock'),
+    expect.any(Number),
+    7
+  );
   expect(prisma.citizenRequest.findMany).toHaveBeenCalledWith(expect.objectContaining({
     where: expect.objectContaining({ municipalityId: 7 })
   }));
+});
+
+test('refuse un second cycle déjà en cours dans la municipalité', async () => {
+  prisma.$queryRawUnsafe.mockResolvedValue([{ acquired: false }]);
+
+  const response = await request(app)
+    .post('/api/v1/municipal/citizen-requests/escalations/run')
+    .set('Authorization', `Bearer ${managerToken}`);
+
+  expect(response.status).toBe(409);
+  expect(response.body).toEqual(expect.objectContaining({
+    code: 'CITIZEN_ESCALATION_ALREADY_RUNNING'
+  }));
+  expect(prisma.citizenRequest.findMany).not.toHaveBeenCalled();
 });
 
 test('retourne uniquement l’historique de la municipalité authentifiée', async () => {
