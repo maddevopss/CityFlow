@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: CityFlow Executive Dashboard API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /executive-dashboard:
+    get:
+      summary: Obtenir les KPI transversaux
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: KPI des cinq modules avec période et fraîcheur
+        '400': { description: Période invalide }
+        '401': { description: Non authentifié }
+        '403': { description: Accès exécutif refusé }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
