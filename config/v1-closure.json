@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "status": "ready-for-release",
+  "requiredArtifacts": [
+    "config/release-manifest.json",
+    "config/release-tag.json",
+    "config/release-evidence.json",
+    "config/post-release-monitoring.json",
+    "config/operations-handoff.json"
+  ],
+  "humanApprovalRequired": true,
+  "tagCreationAutomatic": false
+}
