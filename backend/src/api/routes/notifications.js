@@ -14,6 +14,7 @@ const querySchema = Joi.object({
   pageSize: Joi.number().integer().min(1).max(100).default(25)
 });
 
+router.use(citizenReadLimiter);
 router.use(authenticate);
 
 router.get('/', citizenReadLimiter, async (req, res) => {
