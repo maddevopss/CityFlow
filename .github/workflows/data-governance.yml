@@ -1,0 +1,20 @@
+name: Data governance
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          test -f docs/industrialization/DATA-GOVERNANCE.md
+          grep -q 'classification publique' docs/industrialization/DATA-GOVERNANCE.md
+          grep -q 'gel légal' docs/industrialization/DATA-GOVERNANCE.md
+          grep -q 'mode simulation' docs/industrialization/DATA-GOVERNANCE.md
+          grep -q 'GO / NO-GO' docs/industrialization/DATA-GOVERNANCE.md
