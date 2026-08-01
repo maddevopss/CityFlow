@@ -23,6 +23,7 @@ app.use('/api/v1/inspection-reminders', require('./api/routes/inspectionReminder
 app.use('/api/v1/inspection-calendar', require('./api/routes/inspectionCalendar'));
 app.use('/api/v1/inspection-dashboard', require('./api/routes/inspectionDashboard'));
 app.use('/api/v1/inspection-trends', require('./api/routes/inspectionTrends'));
+app.use('/api/v1/inspection-sync', require('./api/routes/inspectionSync'));
 app.use('/api/v1/inspections/:inspectionId/evidence', require('./api/routes/inspectionEvidence'));
 app.use('/api/v1/inspections', require('./api/routes/inspections'));
 
