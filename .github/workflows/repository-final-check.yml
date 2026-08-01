@@ -1,0 +1,23 @@
+name: Repository final check
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate repository release contract
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=JSON.parse(fs.readFileSync('config/repository-final-check.json','utf8'));
+          if(c.requiredDefaultBranch!=='main'||!c.humanApprovalRequired) process.exit(1);
+          for(const p of c.requiredWorkflows){if(!fs.existsSync(p)){console.error(`Missing ${p}`);process.exit(1)}}
+          console.log('Repository release contract valid');
+          NODE
