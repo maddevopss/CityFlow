@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "minimumNoticeDays": 90,
+  "minimumSupportedMinorVersions": 2,
+  "migrationGuideRequired": true,
+  "replacementRequired": true,
+  "telemetryReviewRequired": true,
+  "breakingRemovalRequiresMajorVersion": true
+}
