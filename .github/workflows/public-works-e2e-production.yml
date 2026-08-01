@@ -1,0 +1,55 @@
+name: Public works production E2E
+
+on:
+  pull_request:
+    paths:
+      - 'e2e/**'
+      - 'docs/api/public-works.openapi.yaml'
+      - 'docs/modules/public-works/**'
+      - '.github/workflows/public-works-e2e-production.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e2e
+    env:
+      CITYFLOW_STAGING_API_URL: ${{ secrets.CITYFLOW_STAGING_API_URL }}
+      CITYFLOW_E2E_PUBLIC_WORKS_MANAGER_TOKEN: ${{ secrets.CITYFLOW_E2E_PUBLIC_WORKS_MANAGER_TOKEN }}
+      CITYFLOW_E2E_FIELD_WORKER_TOKEN: ${{ secrets.CITYFLOW_E2E_FIELD_WORKER_TOKEN }}
+      CITYFLOW_E2E_OTHER_MUNICIPALITY_TOKEN: ${{ secrets.CITYFLOW_E2E_OTHER_MUNICIPALITY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: Vérifier les secrets requis
+        shell: bash
+        run: |
+          test -n "$CITYFLOW_STAGING_API_URL"
+          test -n "$CITYFLOW_E2E_PUBLIC_WORKS_MANAGER_TOKEN"
+          test -n "$CITYFLOW_E2E_FIELD_WORKER_TOKEN"
+          test -n "$CITYFLOW_E2E_OTHER_MUNICIPALITY_TOKEN"
+      - name: Installer les dépendances
+        run: npm install
+      - name: Installer Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Exécuter le cycle Travaux publics
+        run: npm run test:public-works
+      - name: Téléverser les preuves Playwright
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-works-playwright-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 14
+          if-no-files-found: ignore
