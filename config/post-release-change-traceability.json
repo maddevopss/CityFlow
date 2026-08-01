@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "requiredFields": ["changeId", "reason", "risk", "tests", "evidence", "approval", "release"],
+  "changeLogRequired": true,
+  "backportReviewRequired": true,
+  "productionChangesRequireApproval": true,
+  "emergencyChangesRequireRetrospectiveHours": 24
+}
