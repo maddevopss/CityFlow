@@ -26,7 +26,7 @@ function normalizeCitizenRequest(input, actor) {
     description,
     category: String(input.category || 'OTHER').toUpperCase(),
     location: input.location || null,
-    attachments: attachments.map((item) => ({
+    attachments: attachments.map(item => ({
       fileName: String(item.fileName || '').slice(0, 255),
       mimeType: String(item.mimeType || 'application/octet-stream'),
       sizeBytes: Number(item.sizeBytes || 0),
@@ -53,30 +53,33 @@ function transitionCitizenRequest(request, nextStatus, actor) {
     error.status = 409;
     throw error;
   }
-  return {
-    ...request,
-    status: normalized,
-    statusChangedAt: new Date().toISOString(),
-    statusChangedBy: actor?.id || null
-  };
+  return { ...request, status: normalized, statusChangedAt: new Date().toISOString(), statusChangedBy: actor?.id || null };
 }
 
-function citizenTimeline(request, messages = []) {
-  return {
-    id: request.id,
-    title: request.title,
-    status: request.status,
-    updatedAt: request.updatedAt,
-    events: [...(request.events || []), ...messages]
-      .filter((entry) => entry && entry.createdAt)
-      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-  };
+function citizenTimeline(request, messagesOverride) {
+  const events = (request.events || [])
+    .filter(Boolean)
+    .map(event => ({
+      id: event.id,
+      type: event.eventType,
+      status: event.toStatus || event.fromStatus || null,
+      createdAt: event.createdAt,
+      metadata: event.metadata || null
+    }))
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const sourceMessages = Array.isArray(messagesOverride) ? messagesOverride : (request.messages || []);
+  const messages = sourceMessages
+    .filter(Boolean)
+    .map(message => ({
+      id: message.id,
+      body: message.body,
+      senderId: message.authorId,
+      visibility: message.visibility,
+      createdAt: message.createdAt
+    }))
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const { events: ignoredEvents, messages: ignoredMessages, ...safeRequest } = request;
+  return { request: safeRequest, events, messages };
 }
 
-module.exports = {
-  VISIBLE_STATUSES,
-  normalizeCitizenRequest,
-  assertCitizenOwnership,
-  transitionCitizenRequest,
-  citizenTimeline
-};
+module.exports = { VISIBLE_STATUSES, normalizeCitizenRequest, assertCitizenOwnership, transitionCitizenRequest, citizenTimeline };
