@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import api from './api';
-import { getCitizenEscalationHistory, runCitizenEscalations } from './citizenRequestService';
+import {
+  citizenEscalationRunErrorMessage,
+  getCitizenEscalationHistory,
+  runCitizenEscalations
+} from './citizenRequestService';
 
 vi.mock('./api', () => ({
   default: {
@@ -54,5 +58,23 @@ describe('citizen escalation service', () => {
 
     await expect(runCitizenEscalations()).resolves.toEqual(payload);
     expect(mockedPost).toHaveBeenCalledWith('/municipal/citizen-requests/escalations/run');
+  });
+
+  it('explique clairement qu’un cycle est déjà actif', () => {
+    const message = citizenEscalationRunErrorMessage({
+      response: {
+        status: 409,
+        data: { code: 'CITIZEN_ESCALATION_ALREADY_RUNNING' }
+      }
+    });
+
+    expect(message).toContain('déjà en cours');
+    expect(message).toContain('Actualisez l’historique');
+  });
+
+  it('conserve un message générique pour les autres erreurs', () => {
+    expect(citizenEscalationRunErrorMessage(new Error('network'))).toBe(
+      'Le cycle manuel a échoué. Consultez les journaux du service avant de réessayer.'
+    );
   });
 });
