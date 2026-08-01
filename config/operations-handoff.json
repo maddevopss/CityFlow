@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "owners": {
+    "platform": "platform",
+    "security": "security",
+    "operations": "operations",
+    "product": "product"
+  },
+  "requiredRunbooks": [
+    "docs/industrialization/OPERATIONS-RUNBOOKS.md",
+    "docs/industrialization/DISASTER-RECOVERY.md",
+    "docs/industrialization/DATA-GOVERNANCE.md"
+  ],
+  "supportWindowDays": 30
+}
