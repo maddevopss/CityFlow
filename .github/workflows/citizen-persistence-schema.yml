@@ -1,0 +1,38 @@
+name: Citizen persistence schema
+
+on:
+  pull_request:
+    paths:
+      - 'backend/prisma/schema.prisma'
+      - 'backend/prisma/migrations/**'
+      - '.github/workflows/citizen-persistence-schema.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npx prisma validate
+        env:
+          DATABASE_URL: postgresql://cityflow:cityflow@localhost:5432/cityflow_schema
+      - run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://cityflow:cityflow@localhost:5432/cityflow_schema
+      - name: Vérifier les modèles critiques
+        run: |
+          grep -q 'model CitizenRequest {' prisma/schema.prisma
+          grep -q 'model CitizenRequestEvent {' prisma/schema.prisma
+          grep -q 'model CitizenMessage {' prisma/schema.prisma
+          grep -q 'model Notification {' prisma/schema.prisma
