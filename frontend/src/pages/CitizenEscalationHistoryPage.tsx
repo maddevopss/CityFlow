@@ -4,13 +4,19 @@ import { citizenEscalationRunErrorMessage, getCitizenEscalationHistory, runCitiz
 import { citizenEscalationSourceLabel, citizenEscalationSourceTone } from '../features/citizenEscalations/presentation';
 import { filterEscalationRuns } from '../features/citizenEscalations/filters';
 import { summarizeEscalationRuns } from '../features/citizenEscalations/summary';
-import { hasNewEscalationRun, latestEscalationRunId } from '../features/citizenEscalations/polling';
+import {
+  hasEscalationPollingExpired,
+  hasNewEscalationRun,
+  latestEscalationRunId
+} from '../features/citizenEscalations/polling';
 
 const formatDate = (value: string) => new Intl.DateTimeFormat('fr-CA', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 
 const CitizenEscalationHistoryPage: React.FC = () => {
   const queryClient = useQueryClient();
   const activeCycleLatestId = useRef<string | null>(null);
+  const activeCycleStartedAt = useRef<number | null>(null);
+  const [isPollingActive, setIsPollingActive] = useState(false);
   const [runMessage, setRunMessage] = useState<string | null>(null);
   const [runMessageKind, setRunMessageKind] = useState<'success' | 'warning' | 'error'>('success');
   const [source, setSource] = useState('');
@@ -18,12 +24,14 @@ const CitizenEscalationHistoryPage: React.FC = () => {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['citizen-escalation-history', 50],
     queryFn: () => getCitizenEscalationHistory(50),
-    refetchInterval: runMessageKind === 'warning' ? 3000 : false
+    refetchInterval: isPollingActive ? 3000 : false
   });
   const runMutation = useMutation({
     mutationFn: runCitizenEscalations,
     onSuccess: async (result) => {
       activeCycleLatestId.current = null;
+      activeCycleStartedAt.current = null;
+      setIsPollingActive(false);
       setRunMessageKind('success');
       setRunMessage(`${result.scanned} demande(s) analysée(s), ${result.candidates} candidate(s), ${result.created} alerte(s) créée(s).`);
       await queryClient.invalidateQueries({ queryKey: ['citizen-escalation-history'] });
@@ -34,25 +42,41 @@ const CitizenEscalationHistoryPage: React.FC = () => {
       activeCycleLatestId.current = isActiveCycleConflict
         ? latestEscalationRunId(data?.items ?? [])
         : null;
+      activeCycleStartedAt.current = isActiveCycleConflict ? Date.now() : null;
+      setIsPollingActive(isActiveCycleConflict);
       setRunMessageKind(isActiveCycleConflict ? 'warning' : 'error');
       setRunMessage(message);
     }
   });
 
   useEffect(() => {
-    if (runMessageKind !== 'warning') return;
-    if (!hasNewEscalationRun(activeCycleLatestId.current, data?.items ?? [])) return;
+    if (!isPollingActive) return;
+
+    if (hasNewEscalationRun(activeCycleLatestId.current, data?.items ?? [])) {
+      activeCycleLatestId.current = null;
+      activeCycleStartedAt.current = null;
+      setIsPollingActive(false);
+      setRunMessageKind('success');
+      setRunMessage('Le cycle actif est terminé. L’historique a été actualisé.');
+      return;
+    }
+
+    if (!hasEscalationPollingExpired(activeCycleStartedAt.current, Date.now())) return;
 
     activeCycleLatestId.current = null;
-    setRunMessageKind('success');
-    setRunMessage('Le cycle actif est terminé. L’historique a été actualisé.');
-  }, [data?.items, runMessageKind]);
+    activeCycleStartedAt.current = null;
+    setIsPollingActive(false);
+    setRunMessageKind('warning');
+    setRunMessage('Le suivi automatique a été arrêté après deux minutes. Actualisez l’historique avant de réessayer.');
+  }, [data?.items, isPollingActive]);
 
   const items = filterEscalationRuns(data?.items ?? [], { source: source || undefined, status: status || undefined });
   const summary = summarizeEscalationRuns(items);
   const handleManualRun = () => {
     if (!window.confirm('Lancer maintenant un cycle d’escalade pour votre municipalité?')) return;
     activeCycleLatestId.current = null;
+    activeCycleStartedAt.current = null;
+    setIsPollingActive(false);
     setRunMessage(null);
     runMutation.mutate();
   };
@@ -68,7 +92,7 @@ const CitizenEscalationHistoryPage: React.FC = () => {
         </div>
       </header>
 
-      {runMessage ? <div role={runMessageKind === 'error' ? 'alert' : 'status'} aria-live="polite" className={`rounded-lg border p-4 text-sm ${messageClassName}`}>{runMessage}{runMessageKind === 'warning' ? ' La page se rafraîchit automatiquement.' : ''}</div> : null}
+      {runMessage ? <div role={runMessageKind === 'error' ? 'alert' : 'status'} aria-live="polite" className={`rounded-lg border p-4 text-sm ${messageClassName}`}>{runMessage}{isPollingActive ? ' La page se rafraîchit automatiquement.' : ''}</div> : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {Object.entries({ Cycles: summary.total, Réussis: summary.successful, Échecs: summary.failed, Alertes: summary.notificationsCreated, 'Durée moy.': `${summary.averageDurationMs} ms` }).map(([label, value]) => <div key={label} className="rounded-lg border bg-white p-4"><div className="text-xs uppercase text-gray-500">{label}</div><div className="mt-1 text-xl font-semibold">{value}</div></div>)}
