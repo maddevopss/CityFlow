@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "nodeVersion": "22",
+  "packageManagers": ["npm"],
+  "commands": [
+    "npm ci --ignore-scripts",
+    "npm test -- --runInBand",
+    "npm run build --if-present"
+  ],
+  "cleanCloneRequired": true,
+  "lockfilesRequired": true
+}
