@@ -8,6 +8,10 @@ const { authenticate, authorize } = require('../middleware/auth');
 const { ingestPermit } = require('../../services/permitIngestion');
 const { transitionPermit } = require('../../services/permitDecision');
 const { listPermitDocuments, addPermitDocument, reviewPermitDocument } = require('../../services/permitDocuments');
+const {
+  listPermitDocumentRequirements,
+  upsertPermitDocumentRequirement
+} = require('../../services/permitDocumentRequirementCatalog');
 const { ALLOWED_STATUSES, listMunicipalPermits, getMunicipalPermitDetail } = require('../../services/permitRegister');
 
 const router = express.Router();
@@ -17,6 +21,7 @@ const documentIdSchema = Joi.string().guid({ version: ['uuidv4'] }).required();
 const reasonSchema = Joi.object({ reason: Joi.string().trim().min(3).max(1000).required() });
 const documentSchema = Joi.object({ documentType: Joi.string().trim().min(2).max(100).required(), fileName: Joi.string().trim().min(1).max(255).required(), mimeType: Joi.string().trim().max(150).required(), sizeBytes: Joi.number().integer().min(1).max(25 * 1024 * 1024).required(), storageKey: Joi.string().trim().min(3).max(500).required(), sha256: Joi.string().hex().length(64).required(), description: Joi.string().trim().max(1000).allow('', null) });
 const documentReviewSchema = Joi.object({ status: Joi.string().valid('ACCEPTED', 'REJECTED').required(), reason: Joi.string().trim().max(1000).allow('', null) });
+const requirementSchema = Joi.object({ permitSubtype: Joi.string().trim().min(2).max(100).required(), requiredDocumentTypes: Joi.array().items(Joi.string().trim().min(2).max(100)).max(50).required() });
 const permitSchema = Joi.object({ permit_id: Joi.string().trim().max(100).required(), contractor: Joi.string().trim().max(200).allow('', null), start_date: Joi.date().iso().required(), end_date: Joi.date().iso().min(Joi.ref('start_date')).allow(null), municipalityId: Joi.number().integer().positive().required(), geometry: Joi.object({ type: Joi.string().valid('Point', 'LineString', 'Polygon').required(), coordinates: Joi.array().required() }).required(), impacts: Joi.array().items(Joi.string().trim().max(100)).default([]) });
 
 function safeEqual(expected, received) { const a = Buffer.from(expected, 'utf8'); const b = Buffer.from(received || '', 'utf8'); return a.length === b.length && crypto.timingSafeEqual(a, b); }
@@ -35,6 +40,19 @@ async function handleTransition(req, res, next, action, withReason = false) { tr
 
 const municipalPermitAccess = [authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'VIEWER')];
 router.get('/', permitReadLimiter, ...municipalPermitAccess, async (req, res) => { const { error, value } = registerQuerySchema.validate(req.query, { abortEarly: false, stripUnknown: true }); if (error) return res.status(400).json({ message: 'Filtres de permis invalides', details: error.details.map((detail) => detail.message) }); if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' }); return res.json(await listMunicipalPermits(prisma, { municipalityId: req.user.municipalityId, ...value })); });
+
+router.get('/document-requirements', permitReadLimiter, ...municipalPermitAccess, async (req, res) => {
+  if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
+  return res.json(await listPermitDocumentRequirements(prisma, req.user.municipalityId));
+});
+router.put('/document-requirements', permitWriteLimiter, authenticate, authorize('ADMIN', 'MANAGER'), async (req, res) => {
+  if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
+  const { error, value } = requirementSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+  if (error) return res.status(400).json({ message: 'Exigences documentaires invalides', details: error.details.map((detail) => detail.message) });
+  const requirement = await upsertPermitDocumentRequirement(prisma, { municipalityId: req.user.municipalityId, actorId: req.user.sub, ...value });
+  return res.json({ requirement });
+});
+
 router.post('/:permitId/submit', permitWriteLimiter, authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'), (req, res, next) => handleTransition(req, res, next, 'submit'));
 router.post('/:permitId/approve', permitWriteLimiter, authenticate, authorize('ADMIN', 'MANAGER'), (req, res, next) => handleTransition(req, res, next, 'approve'));
 router.post('/:permitId/reject', permitWriteLimiter, authenticate, authorize('ADMIN', 'MANAGER'), (req, res, next) => handleTransition(req, res, next, 'reject', true));
