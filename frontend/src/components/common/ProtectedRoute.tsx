@@ -3,15 +3,16 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 interface ProtectedRouteProps {
-  requiredRole?: 'ADMIN' | 'MUNICIPAL_AGENT' | 'CONTRACTOR' | 'VIEWER';
+  requiredRole?: 'ADMIN' | 'MUNICIPAL_AGENT' | 'INSPECTOR' | 'CONTRACTOR' | 'VIEWER';
   children: React.ReactNode;
 }
 
 const roleHierarchy: Record<string, number> = {
   VIEWER: 0,
   CONTRACTOR: 1,
-  MUNICIPAL_AGENT: 2,
-  ADMIN: 3
+  INSPECTOR: 2,
+  MUNICIPAL_AGENT: 3,
+  ADMIN: 4
 };
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRole = 'VIEWER', children }) => {
