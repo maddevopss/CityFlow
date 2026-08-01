@@ -5,10 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const errorHandler = require('./api/middleware/errorHandler');
-const {
-  observabilityMiddleware,
-  snapshotMetrics
-} = require('./api/middleware/observability');
+const { observabilityMiddleware, snapshotMetrics } = require('./api/middleware/observability');
 
 const app = express();
 
@@ -24,6 +21,7 @@ app.use('/api/v1/events', require('./api/routes/events'));
 app.use('/api/v1/exports', require('./api/routes/exports'));
 app.use('/api/v1/permits', require('./api/routes/permits'));
 app.use('/api/v1/operations', require('./api/routes/operations'));
+app.use('/api/v1/citizen/requests/:requestId/messages', require('./api/routes/citizenMessages'));
 app.use('/api/v1/citizen/requests', require('./api/routes/citizenRequests'));
 app.use('/api/v1/notifications', require('./api/routes/notifications'));
 app.use('/api/v1/inspection-reminders', require('./api/routes/inspectionReminders'));
