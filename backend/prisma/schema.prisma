@@ -18,6 +18,7 @@ model Municipality {
   users       User[]
   events      RoadEvent[]
   inspections Inspection[]
+  inspectionEvidence InspectionEvidence[]
 }
 
 model User {
@@ -95,9 +96,34 @@ model Inspection {
 
   municipality      Municipality @relation(fields: [municipalityId], references: [id])
   inspector         User?        @relation("AssignedInspector", fields: [assignedTo], references: [id])
+  evidence          InspectionEvidence[]
 
   @@index([municipalityId, status])
   @@index([municipalityId, scheduledAt])
   @@index([municipalityId, assignedTo])
   @@index([permitId])
+}
+
+model InspectionEvidence {
+  id             String       @id @default(uuid()) @db.Uuid
+  municipalityId Int
+  inspectionId   String       @db.Uuid
+  evidenceType   String
+  fileName       String
+  mimeType       String
+  sizeBytes      Int
+  storageKey     String
+  sha256         String
+  description    String?
+  capturedAt     DateTime
+  uploadedBy     String       @db.Uuid
+  createdAt      DateTime     @default(now())
+
+  municipality   Municipality @relation(fields: [municipalityId], references: [id])
+  inspection     Inspection   @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  @@unique([municipalityId, storageKey])
+  @@index([municipalityId, inspectionId])
+  @@index([inspectionId, capturedAt])
+  @@index([sha256])
 }
