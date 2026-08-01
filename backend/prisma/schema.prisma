@@ -8,15 +8,16 @@ datasource db {
 }
 
 model Municipality {
-  id         Int      @id @default(autoincrement())
-  name       String   @unique
-  code       String?  @unique
-  population Int?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  code        String?      @unique
+  population  Int?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
-  users      User[]
-  events     RoadEvent[]
+  users       User[]
+  events      RoadEvent[]
+  inspections Inspection[]
 }
 
 model User {
@@ -69,4 +70,28 @@ model RoadEvent {
 
   @@index([municipalityId, status])
   @@index([startTime, endTime])
+}
+
+model Inspection {
+  id               String       @id @default(uuid()) @db.Uuid
+  municipalityId   Int
+  permitId          String?      @db.Uuid
+  scheduledAt       DateTime
+  completedAt       DateTime?
+  address           String
+  inspectionType    String
+  status            String       @default("SCHEDULED")
+  outcome           String?
+  notes             String?
+  findings          String?
+  createdBy         String       @db.Uuid
+  completedBy       String?      @db.Uuid
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  municipality     Municipality @relation(fields: [municipalityId], references: [id])
+
+  @@index([municipalityId, status])
+  @@index([municipalityId, scheduledAt])
+  @@index([permitId])
 }
