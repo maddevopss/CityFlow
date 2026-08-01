@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "modules": [
+    {"name":"auth","priority":1,"rtoMinutes":30,"rpoMinutes":15,"dependencies":["postgres"]},
+    {"name":"inspections","priority":1,"rtoMinutes":60,"rpoMinutes":30,"dependencies":["auth","postgres"]},
+    {"name":"citizen-reports","priority":2,"rtoMinutes":120,"rpoMinutes":60,"dependencies":["auth","postgres"]},
+    {"name":"executive-dashboard","priority":3,"rtoMinutes":240,"rpoMinutes":120,"dependencies":["postgres"]}
+  ]
+}
