@@ -14,7 +14,8 @@ vi.mock('./api', () => ({
   }
 }));
 
-const mockedApi = vi.mocked(api);
+const mockedGet = vi.mocked(api.get);
+const mockedPost = vi.mocked(api.post);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -22,21 +23,21 @@ beforeEach(() => {
 
 describe('inspectionService', () => {
   it('liste les inspections avec un filtre de statut', async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: [] });
+    mockedGet.mockResolvedValueOnce({ data: [] });
 
     await getInspections('SCHEDULED');
 
-    expect(mockedApi.get).toHaveBeenCalledWith('/inspections', {
+    expect(mockedGet).toHaveBeenCalledWith('/inspections', {
       params: { status: 'SCHEDULED' }
     });
   });
 
   it('charge une inspection par identifiant', async () => {
-    mockedApi.get.mockResolvedValueOnce({ data: { id: 'inspection-1' } });
+    mockedGet.mockResolvedValueOnce({ data: { id: 'inspection-1' } });
 
     await getInspectionById('inspection-1');
 
-    expect(mockedApi.get).toHaveBeenCalledWith('/inspections/inspection-1');
+    expect(mockedGet).toHaveBeenCalledWith('/inspections/inspection-1');
   });
 
   it('planifie une inspection', async () => {
@@ -45,11 +46,11 @@ describe('inspectionService', () => {
       address: '100 rue Principale',
       inspectionType: 'FINAL' as const
     };
-    mockedApi.post.mockResolvedValueOnce({ data: input });
+    mockedPost.mockResolvedValueOnce({ data: input });
 
     await createInspection(input);
 
-    expect(mockedApi.post).toHaveBeenCalledWith('/inspections', input);
+    expect(mockedPost).toHaveBeenCalledWith('/inspections', input);
   });
 
   it('termine une inspection', async () => {
@@ -57,10 +58,10 @@ describe('inspectionService', () => {
       outcome: 'COMPLIANT' as const,
       findings: 'Travaux conformes.'
     };
-    mockedApi.post.mockResolvedValueOnce({ data: input });
+    mockedPost.mockResolvedValueOnce({ data: input });
 
     await completeInspection('inspection-1', input);
 
-    expect(mockedApi.post).toHaveBeenCalledWith('/inspections/inspection-1/complete', input);
+    expect(mockedPost).toHaveBeenCalledWith('/inspections/inspection-1/complete', input);
   });
 });
