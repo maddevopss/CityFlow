@@ -3,18 +3,22 @@
 const prisma = require('../db/prisma');
 const logger = require('../logger');
 const { purgeCitizenEscalationRuns } = require('../services/citizenEscalationRunHistory');
+const {
+  DEFAULT_RETENTION_DAYS,
+  DEFAULT_RETENTION_INTERVAL_MS,
+  getCitizenEscalationRetentionConfig
+} = require('../services/citizenEscalationConfig');
 
-const DEFAULT_RETENTION_DAYS = 90;
-const DEFAULT_INTERVAL_MS = 24 * 60 * 60 * 1000;
-
-function createCitizenEscalationRunRetention({
-  db = prisma,
-  retentionDays = Number(process.env.CITIZEN_ESCALATION_RETENTION_DAYS) || DEFAULT_RETENTION_DAYS,
-  intervalMs = Number(process.env.CITIZEN_ESCALATION_RETENTION_INTERVAL_MS) || DEFAULT_INTERVAL_MS,
-  runImmediately = true,
-  purge = purgeCitizenEscalationRuns,
-  log = logger
-} = {}) {
+function createCitizenEscalationRunRetention(options = {}) {
+  const effectiveConfig = getCitizenEscalationRetentionConfig(options.env);
+  const {
+    db = prisma,
+    retentionDays = effectiveConfig.retentionDays,
+    intervalMs = effectiveConfig.intervalMs,
+    runImmediately = true,
+    purge = purgeCitizenEscalationRuns,
+    log = logger
+  } = options;
   let timer = null;
   let running = false;
   let stopped = false;
@@ -70,7 +74,7 @@ function startCitizenEscalationRunRetention(options) {
 
 module.exports = {
   DEFAULT_RETENTION_DAYS,
-  DEFAULT_INTERVAL_MS,
+  DEFAULT_INTERVAL_MS: DEFAULT_RETENTION_INTERVAL_MS,
   createCitizenEscalationRunRetention,
   startCitizenEscalationRunRetention
 };

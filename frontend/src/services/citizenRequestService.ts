@@ -15,7 +15,8 @@ export interface BulkAssignmentResponse { updated: number; team: string; request
 export interface CitizenServiceLevelItem extends CitizenRequest { serviceLevel: { level: CitizenServiceLevel; targetHours: number; dueAt: string; elapsedHours: number; hoursRemaining: number } }
 export interface CitizenServiceLevelResponse { generatedAt: string; summary: Record<CitizenServiceLevel, number>; items: CitizenServiceLevelItem[]; }
 export interface CitizenEscalationRun { id: string; source: string; status: 'SUCCESS' | 'FAILED'; scanned: number; candidates: number; notificationsCreated: number; durationMs: number; errorMessage?: string | null; startedAt: string; completedAt: string; }
-export interface CitizenEscalationHistoryResponse { items: CitizenEscalationRun[]; limit: number; }
+export interface CitizenEscalationRetention { retentionDays: number; intervalMs: number; }
+export interface CitizenEscalationHistoryResponse { items: CitizenEscalationRun[]; limit: number; retention: CitizenEscalationRetention; }
 
 export const citizenRequestDetailPath = (id: string) => `/municipal/citizen-requests/${encodeURIComponent(id)}`;
 export const createCitizenRequest = async (input: CreateCitizenRequestInput) => (await api.post<CitizenRequest>('/citizen/requests', input)).data;
