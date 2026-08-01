@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "node": ["22"],
+  "postgresql": ["16", "17"],
+  "browsers": {"chrome": 2, "edge": 2, "firefox": 2, "safari": 2},
+  "apiBackwardCompatibility": true,
+  "databaseForwardOnlyMigrations": true,
+  "reviewEveryDays": 90
+}
