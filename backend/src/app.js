@@ -19,6 +19,7 @@ app.use('/api/v1/events', require('./api/routes/events'));
 app.use('/api/v1/exports', require('./api/routes/exports'));
 app.use('/api/v1/permits', require('./api/routes/permits'));
 app.use('/api/v1/operations', require('./api/routes/operations'));
+app.use('/api/v1/inspection-reminders', require('./api/routes/inspectionReminders'));
 app.use('/api/v1/inspections/:inspectionId/evidence', require('./api/routes/inspectionEvidence'));
 app.use('/api/v1/inspections', require('./api/routes/inspections'));
 
