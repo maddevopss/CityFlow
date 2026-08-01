@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "line": "1.x",
+  "regularCadenceDays": 30,
+  "securityReleaseAllowedAnytime": true,
+  "freezeHoursBeforeRelease": 24,
+  "requiredGates": ["security", "tests", "documentation", "rollback", "approval"],
+  "automaticPublicationForbidden": true
+}
