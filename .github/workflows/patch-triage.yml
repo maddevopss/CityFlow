@@ -1,0 +1,21 @@
+name: Patch triage
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=JSON.parse(fs.readFileSync('config/patch-triage.json','utf8'));
+          if(!c.duplicateDetectionRequired||!c.ownerRequired||c.severities.length!==4) process.exit(1);
+          const levels=c.severities.map(x=>x.level).join(',');
+          if(levels!=='P1,P2,P3,P4') process.exit(1);
+          for(let i=1;i<c.severities.length;i++) if(c.severities[i].responseMinutes<=c.severities[i-1].responseMinutes) process.exit(1);
+          console.log('Patch triage contract valid');
+          NODE

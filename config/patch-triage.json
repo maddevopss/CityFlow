@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "severities": [
+    {"level":"P1","responseMinutes":30,"targetDays":1,"securityReview":true},
+    {"level":"P2","responseMinutes":120,"targetDays":3,"securityReview":false},
+    {"level":"P3","responseMinutes":480,"targetDays":14,"securityReview":false},
+    {"level":"P4","responseMinutes":1440,"targetDays":30,"securityReview":false}
+  ],
+  "duplicateDetectionRequired": true,
+  "ownerRequired": true
+}
