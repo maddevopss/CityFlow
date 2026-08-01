@@ -1,0 +1,13 @@
+{
+  "name": "cityflow-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:citizen-reports": "playwright test tests/citizen-reports-production.spec.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.1",
+    "typescript": "^5.8.3"
+  }
+}
