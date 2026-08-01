@@ -1,0 +1,16 @@
+name: V1 release gate
+on: [pull_request]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check scripts/release/v1-gate.mjs
+      - run: node scripts/release/v1-gate.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v1-release-gate
+          path: artifacts/V1-RELEASE-GATE.json
+          retention-days: 30
