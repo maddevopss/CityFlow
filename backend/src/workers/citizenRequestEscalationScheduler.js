@@ -4,6 +4,10 @@ const prisma = require('../db/prisma');
 const logger = require('../logger');
 const { escalateCitizenRequestServiceLevels } = require('../services/citizenRequestEscalations');
 const { recordCitizenEscalationRun } = require('../services/citizenEscalationRunHistory');
+const {
+  CitizenEscalationAlreadyRunningError,
+  executeCitizenEscalationWithLock
+} = require('../services/citizenEscalationExecutionLock');
 
 const DEFAULT_INTERVAL_MS = 15 * 60 * 1000;
 
@@ -13,7 +17,8 @@ function createCitizenRequestEscalationScheduler({
   runImmediately = true,
   log = logger,
   escalate = escalateCitizenRequestServiceLevels,
-  recordRun = recordCitizenEscalationRun
+  recordRun = recordCitizenEscalationRun,
+  executeWithLock = executeCitizenEscalationWithLock
 } = {}) {
   let timer = null;
   let running = false;
@@ -29,7 +34,7 @@ function createCitizenRequestEscalationScheduler({
       for (const municipality of municipalities) {
         const startedAt = new Date();
         try {
-          const result = await escalate(db, municipality.id);
+          const result = await executeWithLock(db, municipality.id, (lockedDb) => escalate(lockedDb, municipality.id));
           const completedAt = new Date();
           await recordRun(db, {
             municipalityId: municipality.id,
@@ -42,6 +47,12 @@ function createCitizenRequestEscalationScheduler({
           });
           results.push({ municipalityId: municipality.id, ...result, status: 'SUCCESS' });
         } catch (error) {
+          if (error instanceof CitizenEscalationAlreadyRunningError) {
+            results.push({ municipalityId: municipality.id, scanned: 0, candidates: 0, created: 0, status: 'SKIPPED' });
+            log.info('Cycle d’escalade citoyenne déjà en cours', { municipalityId: municipality.id });
+            continue;
+          }
+
           const completedAt = new Date();
           await recordRun(db, {
             municipalityId: municipality.id,
@@ -63,8 +74,9 @@ function createCitizenRequestEscalationScheduler({
         scanned: total.scanned + item.scanned,
         candidates: total.candidates + item.candidates,
         created: total.created + item.created,
-        failed: total.failed + (item.status === 'FAILED' ? 1 : 0)
-      }), { scanned: 0, candidates: 0, created: 0, failed: 0 });
+        failed: total.failed + (item.status === 'FAILED' ? 1 : 0),
+        busy: total.busy + (item.status === 'SKIPPED' ? 1 : 0)
+      }), { scanned: 0, candidates: 0, created: 0, failed: 0, busy: 0 });
       log.info('Escalades citoyennes périodiques exécutées', {
         municipalities: municipalities.length,
         ...summary
