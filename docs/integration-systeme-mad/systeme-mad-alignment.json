@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "bleeband/SYSTEME_MAD",
+    "branch": "main",
+    "commit": "3a03d95fa435e911149c05081e1c0a2d3e20bcb9",
+    "reviewedAt": "2026-07-31",
+    "documents": [
+      "00-SYSTEME-MAD/governance/constitution.md",
+      "01-FONDATIONS/README.md",
+      "00-SYSTEME-MAD/decisions.md"
+    ]
+  },
+  "policy": {
+    "automaticInheritance": false,
+    "humanApprovalRequired": true,
+    "conflictsRequireDerogation": true,
+    "remoteContentVerifiedByCi": false
+  },
+  "mappings": [
+    {
+      "id": "SMAD-GOV-001",
+      "principle": "Décision explicite et autorité attribuée",
+      "sourceDocument": "00-SYSTEME-MAD/governance/constitution.md",
+      "localDocuments": ["docs/registres/t1-registre-decisions.md", "docs/registres/t16-registre-parties-prenantes.md", "docs/matrices/m16-partie-prenante-responsabilite.md"],
+      "adaptation": "Chaque décision CityFlow possède une autorité, une portée, des réserves et une preuve de clôture.",
+      "evidence": ["T1", "T16", "M16"],
+      "status": "active"
+    },
+    {
+      "id": "SMAD-PRV-001",
+      "principle": "Aucune conclusion sans preuve proportionnée",
+      "sourceDocument": "00-SYSTEME-MAD/governance/constitution.md",
+      "localDocuments": ["docs/matrices/m1-exigence-preuve.md", "docs/matrices/m2-exigence-test.md", "docs/registres/t14-registre-validations.md"],
+      "adaptation": "Les preuves restent datées, attribuées et limitées à une version, un environnement et une portée.",
+      "evidence": ["M1", "M2", "T14"],
+      "status": "active"
+    },
+    {
+      "id": "SMAD-RSK-001",
+      "principle": "Prudence, réserves et risques visibles",
+      "sourceDocument": "01-FONDATIONS/README.md",
+      "localDocuments": ["docs/registres/t2-registre-risques.md", "docs/checklists/c6-analyse-risque.md", "docs/matrices/m3-risque-controle.md"],
+      "adaptation": "Les risques résiduels, dérogations et résultats inconclusifs ne sont jamais masqués.",
+      "evidence": ["T2", "C6", "M3"],
+      "status": "active"
+    },
+    {
+      "id": "SMAD-CHG-001",
+      "principle": "Changement décidé, validé et réversible",
+      "sourceDocument": "00-SYSTEME-MAD/decisions.md",
+      "localDocuments": ["docs/registres/t4-registre-changements.md", "docs/checklists/c11-checklist-changement.md", "docs/matrices/m11-changement-validation.md"],
+      "adaptation": "Chaque changement relie décision, validation, version, environnement et retour arrière.",
+      "evidence": ["T4", "C11", "M11"],
+      "status": "active"
+    },
+    {
+      "id": "SMAD-OPS-001",
+      "principle": "Continuité, observation et apprentissage",
+      "sourceDocument": "01-FONDATIONS/README.md",
+      "localDocuments": ["docs/registres/t3-registre-incidents.md", "docs/checklists/c17-continuite-operationnelle.md", "docs/matrices/m19-incident-retour-experience.md"],
+      "adaptation": "Les incidents, rétablissements, apprentissages et actions durables sont reliés et révisés.",
+      "evidence": ["T3", "C17", "M19"],
+      "status": "active"
+    },
+    {
+      "id": "SMAD-DOC-001",
+      "principle": "Mémoire institutionnelle contrôlée",
+      "sourceDocument": "00-SYSTEME-MAD/governance/constitution.md",
+      "localDocuments": ["docs/registres/t20-index-registres.md", "docs/checklists/c20-index-checklists.md", "docs/matrices/m20-index-matrices.md"],
+      "adaptation": "Les familles documentaires possèdent un index, une gouvernance et une validation automatique.",
+      "evidence": ["T20", "C20", "M20"],
+      "status": "active"
+    },
+    {
+      "id": "SMAD-AI-001",
+      "principle": "L’assistance ne devient jamais l’autorité finale",
+      "sourceDocument": "00-SYSTEME-MAD/governance/constitution.md",
+      "localDocuments": ["docs/references/r8-intelligence-assistance/01-referentiel-intelligence-assistance.md", "docs/registres/t14-registre-validations.md"],
+      "adaptation": "Toute recommandation automatisée demeure explicable, traçable et soumise à confirmation humaine.",
+      "evidence": ["R8", "T14"],
+      "status": "active"
+    },
+    {
+      "id": "SMAD-EXT-001",
+      "principle": "Une dépendance externe reste explicitement gouvernée",
+      "sourceDocument": "01-FONDATIONS/README.md",
+      "localDocuments": ["docs/registres/t8-registre-dependances.md", "docs/registres/t15-registre-fournisseurs.md", "docs/matrices/m18-actif-dependance.md"],
+      "adaptation": "Les dépendances, fournisseurs, mesures de repli et conditions de sortie restent visibles.",
+      "evidence": ["T8", "T15", "M18"],
+      "status": "active"
+    }
+  ]
+}

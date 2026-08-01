@@ -10,7 +10,8 @@ const validators = [
   'validate-live-registers.mjs',
   'validate-checklist-library.mjs',
   'validate-matrix-library.mjs',
-  'validate-document-templates.mjs'
+  'validate-document-templates.mjs',
+  'validate-systeme-mad-alignment.mjs'
 ];
 
 async function exists(path) {
