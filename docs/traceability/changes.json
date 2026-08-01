@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "CHG-CF-GOV-001",
+      "title": "Implanter le bloc E de traçabilité",
+      "owner": "Mainteneurs CityFlow",
+      "status": "implemented",
+      "scope": "Catalogues, graphe, validateur, rapport et workflow CI.",
+      "implementation": "docs/traceability/README.md"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "REQ-CF-GOV-001",
+      "title": "Maintenir une chaîne de traçabilité institutionnelle",
+      "origin": "SYSTEME_MAD et gouvernance CityFlow",
+      "rationale": "Toute exigence active doit pouvoir être suivie jusqu’à sa décision, ses risques, son changement, ses tests, ses preuves et sa validation.",
+      "criticality": "high",
+      "owner": "Mainteneurs CityFlow",
+      "status": "active",
+      "acceptanceCriteria": [
+        "Les catalogues utilisent des identifiants uniques.",
+        "Aucune relation obligatoire n’est orpheline.",
+        "La couverture est calculée automatiquement.",
+        "La CI échoue lorsqu’un maillon obligatoire disparaît."
+      ]
+    }
+  ]
+}

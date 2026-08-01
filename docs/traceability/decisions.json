@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "DEC-CF-GOV-001",
+      "title": "Adopter des catalogues JSON et une barrière CI",
+      "authority": "Mainteneurs CityFlow",
+      "date": "2026-07-31",
+      "status": "accepted",
+      "rationale": "Un format structuré et validable permet de détecter automatiquement les références cassées et les éléments orphelins.",
+      "record": "docs/traceability/README.md"
+    }
+  ]
+}

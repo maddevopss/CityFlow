@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "VAL-CF-GOV-001",
+      "title": "Validation institutionnelle du bloc E",
+      "authority": "Mainteneurs CityFlow",
+      "status": "approved",
+      "date": "2026-07-31",
+      "scope": "Chaîne de traçabilité initiale et barrière CI.",
+      "evidence": ["PRV-CF-GOV-001"],
+      "limitations": "La validation couvre le mécanisme initial et non toutes les futures exigences métier."
+    }
+  ]
+}

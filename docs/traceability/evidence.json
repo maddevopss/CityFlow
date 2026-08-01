@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "PRV-CF-GOV-001",
+      "title": "Validateur de traçabilité versionné",
+      "type": "source-code",
+      "status": "available",
+      "path": "scripts/validate-traceability.mjs",
+      "scope": "Structure, unicité, intégrité référentielle, fichiers locaux et couverture obligatoire.",
+      "limitations": "Ne démontre pas l’exactitude métier des affirmations ni l’efficacité réelle des contrôles."
+    }
+  ]
+}

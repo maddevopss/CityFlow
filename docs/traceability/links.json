@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "links": [
+    {"from":"REQ-CF-GOV-001","to":"DEC-CF-GOV-001","type":"authorized-by"},
+    {"from":"REQ-CF-GOV-001","to":"RSK-CF-GOV-001","type":"exposed-to"},
+    {"from":"REQ-CF-GOV-001","to":"CHG-CF-GOV-001","type":"implemented-by"},
+    {"from":"REQ-CF-GOV-001","to":"TST-CF-GOV-001","type":"verified-by"},
+    {"from":"REQ-CF-GOV-001","to":"PRV-CF-GOV-001","type":"evidenced-by"},
+    {"from":"REQ-CF-GOV-001","to":"VAL-CF-GOV-001","type":"validated-by"},
+    {"from":"VAL-CF-GOV-001","to":"PRV-CF-GOV-001","type":"supported-by"}
+  ]
+}
