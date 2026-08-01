@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "levels": [
+    {"level": 1, "name": "on-call", "maxMinutes": 15},
+    {"level": 2, "name": "service-owner", "maxMinutes": 30},
+    {"level": 3, "name": "incident-commander", "maxMinutes": 45},
+    {"level": 4, "name": "executive", "maxMinutes": 60}
+  ],
+  "criticalIncidentsRequireCommander": true,
+  "communicationsRequired": true,
+  "humanAcknowledgementRequired": true
+}

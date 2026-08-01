@@ -1,0 +1,20 @@
+name: Escalation chain
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=JSON.parse(fs.readFileSync('config/escalation-chain.json','utf8'));
+          if(c.levels.length<4||!c.criticalIncidentsRequireCommander||!c.communicationsRequired||!c.humanAcknowledgementRequired) process.exit(1);
+          let last=0; for(const l of c.levels){if(l.maxMinutes<=last||!l.name) process.exit(1); last=l.maxMinutes;}
+          console.log('Escalation chain valid');
+          NODE
