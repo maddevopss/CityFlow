@@ -1,0 +1,17 @@
+name: Deployment smoke
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check scripts/release/deployment-smoke.mjs
+      - if: github.event_name == 'workflow_dispatch'
+        env:
+          CITYFLOW_API_URL: ${{ secrets.CITYFLOW_STAGING_API_URL }}
+          CITYFLOW_E2E_EXECUTIVE_TOKEN: ${{ secrets.CITYFLOW_E2E_EXECUTIVE_TOKEN }}
+        run: node scripts/release/deployment-smoke.mjs
