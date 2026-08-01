@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import api from './api';
-import { getCitizenEscalationHistory } from './citizenRequestService';
+import { getCitizenEscalationHistory, runCitizenEscalations } from './citizenRequestService';
 
 vi.mock('./api', () => ({
   default: {
@@ -10,8 +10,9 @@ vi.mock('./api', () => ({
 }));
 
 const mockedGet = vi.mocked(api.get);
+const mockedPost = vi.mocked(api.post);
 
-describe('getCitizenEscalationHistory', () => {
+describe('citizen escalation service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -19,6 +20,7 @@ describe('getCitizenEscalationHistory', () => {
   it('transmet la limite au point d’accès municipal', async () => {
     const payload = {
       limit: 10,
+      retention: { retentionDays: 90, intervalMs: 86400000 },
       items: [{
         id: '1',
         source: 'SCHEDULED',
@@ -39,5 +41,18 @@ describe('getCitizenEscalationHistory', () => {
       '/municipal/citizen-requests/escalations/history',
       { params: { limit: 10 } }
     );
+  });
+
+  it('lance un cycle manuel sans corps artificiel', async () => {
+    const payload = {
+      generatedAt: '2026-08-01T19:50:00.000Z',
+      scanned: 14,
+      candidates: 3,
+      created: 6
+    };
+    mockedPost.mockResolvedValue({ data: payload } as never);
+
+    await expect(runCitizenEscalations()).resolves.toEqual(payload);
+    expect(mockedPost).toHaveBeenCalledWith('/municipal/citizen-requests/escalations/run');
   });
 });
