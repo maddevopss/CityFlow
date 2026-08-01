@@ -45,7 +45,23 @@ async function listCitizenEscalationRuns(db, municipalityId, limit = 25) {
   );
 }
 
+async function purgeCitizenEscalationRuns(db, retentionDays = 90, now = new Date()) {
+  const days = Math.max(1, Math.min(3650, Number(retentionDays) || 90));
+  const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  const rows = await db.$queryRawUnsafe(
+    `WITH deleted AS (
+       DELETE FROM "citizen_escalation_runs"
+       WHERE "completed_at" < $1
+       RETURNING 1
+     )
+     SELECT COUNT(*)::int AS "deleted" FROM deleted`,
+    cutoff
+  );
+  return { deleted: rows[0]?.deleted || 0, cutoff, retentionDays: days };
+}
+
 module.exports = {
   recordCitizenEscalationRun,
-  listCitizenEscalationRuns
+  listCitizenEscalationRuns,
+  purgeCitizenEscalationRuns
 };
