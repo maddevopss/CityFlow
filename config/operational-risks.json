@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "risks": [
+    {"id":"RISK-DB-001","title":"Indisponibilité PostgreSQL","probability":3,"impact":5,"owner":"platform","mitigation":"sauvegardes et restauration testée","status":"OPEN"},
+    {"id":"RISK-SEC-001","title":"Secret compromis","probability":2,"impact":5,"owner":"security","mitigation":"rotation et moindre privilège","status":"OPEN"},
+    {"id":"RISK-OPS-001","title":"Échec de livraison","probability":3,"impact":4,"owner":"operations","mitigation":"canary et rollback","status":"OPEN"}
+  ]
+}
