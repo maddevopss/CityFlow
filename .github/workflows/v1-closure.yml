@@ -1,0 +1,20 @@
+name: V1 closure
+on:
+  pull_request:
+    paths:
+      - config/v1-closure.json
+      - .github/workflows/v1-closure.yml
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node - <<'NODE'
+          const c=require('./config/v1-closure.json');
+          if(c.version!=='1.0.0'||c.status!=='ready-for-release') process.exit(1);
+          if(c.requiredArtifacts.length<5||!c.humanApprovalRequired||c.tagCreationAutomatic) process.exit(1);
+          console.log(c);
+          NODE
