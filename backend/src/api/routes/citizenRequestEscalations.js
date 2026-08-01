@@ -6,7 +6,7 @@ const prisma = require('../../db/prisma');
 const { authenticate, authorize } = require('../middleware/auth');
 const { citizenWriteLimiter, citizenReadLimiter } = require('../middleware/rateLimiters');
 const { escalateCitizenRequestServiceLevels } = require('../../services/citizenRequestEscalations');
-const { listCitizenEscalationRuns } = require('../../services/citizenEscalationRunHistory');
+const { listCitizenEscalationRuns, recordCitizenEscalationRun } = require('../../services/citizenEscalationRunHistory');
 const { getCitizenEscalationRetentionConfig } = require('../../services/citizenEscalationConfig');
 const {
   CitizenEscalationAlreadyRunningError,
@@ -30,24 +30,39 @@ router.get('/history', citizenReadLimiter, async (req, res) => {
 });
 
 router.post('/run', citizenWriteLimiter, async (req, res) => {
+  const startedAt = new Date();
   try {
     const result = await executeCitizenEscalationWithLock(
       prisma,
       req.user.municipalityId,
-      (db) => escalateCitizenRequestServiceLevels(db, req.user.municipalityId, new Date())
+      (db) => escalateCitizenRequestServiceLevels(db, req.user.municipalityId, startedAt)
     );
-
-    res.status(202).json({
-      generatedAt: new Date().toISOString(),
-      ...result
+    const completedAt = new Date();
+    await recordCitizenEscalationRun(prisma, {
+      municipalityId: req.user.municipalityId,
+      source: 'MANUAL',
+      status: 'SUCCESS',
+      ...result,
+      startedAt,
+      completedAt,
+      durationMs: completedAt - startedAt
     });
+
+    res.status(202).json({ generatedAt: completedAt.toISOString(), ...result });
   } catch (error) {
     if (error instanceof CitizenEscalationAlreadyRunningError) {
-      return res.status(409).json({
-        message: error.message,
-        code: error.code
-      });
+      return res.status(409).json({ message: error.message, code: error.code });
     }
+    const completedAt = new Date();
+    await recordCitizenEscalationRun(prisma, {
+      municipalityId: req.user.municipalityId,
+      source: 'MANUAL',
+      status: 'FAILED',
+      startedAt,
+      completedAt,
+      durationMs: completedAt - startedAt,
+      errorMessage: error.message
+    });
     throw error;
   }
 });
