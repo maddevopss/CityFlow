@@ -1,0 +1,12 @@
+name: Platform health
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check scripts/platform/compute-health.mjs
+      - run: node scripts/platform/compute-health.mjs '{"services":{"api":{"status":"healthy"},"database":{"status":"degraded"}}}' > health.json
+      - run: grep -q '"status": "healthy"\|"status": "degraded"' health.json
