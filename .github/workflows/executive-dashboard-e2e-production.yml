@@ -1,0 +1,62 @@
+name: Executive dashboard production E2E
+
+on:
+  pull_request:
+    paths:
+      - 'e2e/**'
+      - 'docs/api/executive-dashboard.openapi.yaml'
+      - 'docs/modules/executive-dashboard/**'
+      - '.github/workflows/executive-dashboard-e2e-production.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright test --list tests/executive-dashboard-production.spec.ts
+
+  e2e-staging:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e2e
+    env:
+      CITYFLOW_API_URL: ${{ secrets.CITYFLOW_STAGING_API_URL }}
+      CITYFLOW_E2E_EXECUTIVE_TOKEN: ${{ secrets.CITYFLOW_E2E_EXECUTIVE_TOKEN }}
+      CITYFLOW_E2E_OTHER_MUNICIPALITY_TOKEN: ${{ secrets.CITYFLOW_E2E_OTHER_MUNICIPALITY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier les secrets
+        shell: bash
+        run: |
+          test -n "$CITYFLOW_API_URL"
+          test -n "$CITYFLOW_E2E_EXECUTIVE_TOKEN"
+          test -n "$CITYFLOW_E2E_OTHER_MUNICIPALITY_TOKEN"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:executive
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: executive-dashboard-playwright-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 14
+          if-no-files-found: ignore
