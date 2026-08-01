@@ -1,0 +1,20 @@
+name: Release evidence
+on:
+  pull_request:
+    paths:
+      - config/release-evidence.json
+      - .github/workflows/release-evidence.yml
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node - <<'NODE'
+          const fs=require('fs'); const c=require('./config/release-evidence.json');
+          const missing=c.evidence.filter(p=>!fs.existsSync(p));
+          console.log({checked:c.evidence.length,missing});
+          if(c.evidence.length<c.minimumEvidence||missing.length) process.exit(1);
+          NODE
