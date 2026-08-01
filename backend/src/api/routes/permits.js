@@ -4,6 +4,7 @@ const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const config = require('../../config');
 const { permitWebhookLimiter } = require('../middleware/rateLimiters');
+const { ingestPermit } = require('../../services/permitIngestion');
 
 const router = express.Router();
 
@@ -55,45 +56,48 @@ function verifyPermitWebhook(req, res, next) {
   next();
 }
 
-router.post('/hook', permitWebhookLimiter, verifyPermitWebhook, async (req, res) => {
-  const { error, value } = permitSchema.validate(req.body, {
-    abortEarly: false,
-    stripUnknown: true
-  });
-
-  if (error) {
-    return res.status(400).json({
-      message: 'Données de permis invalides',
-      details: error.details.map(detail => detail.message)
+router.post('/hook', permitWebhookLimiter, verifyPermitWebhook, async (req, res, next) => {
+  try {
+    const { error, value } = permitSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true
     });
-  }
 
-  const municipality = await prisma.municipality.findUnique({
-    where: { id: value.municipalityId },
-    select: { id: true }
-  });
-
-  if (!municipality) {
-    return res.status(404).json({ message: 'Municipalité inconnue' });
-  }
-
-  const event = await prisma.roadEvent.create({
-    data: {
-      municipalityId: value.municipalityId,
-      eventType: 'CONSTRUCTION',
-      subtype: 'travaux',
-      geometry: value.geometry,
-      startTime: new Date(value.start_date),
-      endTime: value.end_date ? new Date(value.end_date) : null,
-      impacts: value.impacts,
-      details: { contractor: value.contractor, permit_id: value.permit_id },
-      sourceType: 'PERMIT',
-      sourceRef: value.permit_id,
-      status: 'DRAFT'
+    if (error) {
+      return res.status(400).json({
+        message: 'Données de permis invalides',
+        details: error.details.map(detail => detail.message)
+      });
     }
-  });
 
-  res.status(201).json({ eventId: event.id, status: 'draft' });
+    const municipality = await prisma.municipality.findUnique({
+      where: { id: value.municipalityId },
+      select: { id: true }
+    });
+
+    if (!municipality) {
+      return res.status(404).json({ message: 'Municipalité inconnue' });
+    }
+
+    const result = await ingestPermit(prisma, value);
+    const statusCode = result.operation === 'created' ? 201 : 200;
+
+    return res.status(statusCode).json({
+      eventId: result.event.id,
+      status: 'draft',
+      operation: result.operation
+    });
+  } catch (error) {
+    if (error.code === 'PERMIT_ALREADY_PROCESSED') {
+      return res.status(409).json({
+        message: 'Ce permis a déjà quitté l’état brouillon',
+        code: error.code,
+        eventId: error.eventId
+      });
+    }
+
+    return next(error);
+  }
 });
 
 module.exports = router;

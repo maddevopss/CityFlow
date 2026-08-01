@@ -6,7 +6,9 @@ jest.mock('../../src/db/prisma', () => ({
     findUnique: jest.fn()
   },
   roadEvent: {
-    create: jest.fn()
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn()
   }
 }));
 
@@ -37,6 +39,7 @@ describe('Permit webhook security', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.roadEvent.findFirst.mockResolvedValue(null);
   });
 
   it('refuse un webhook sans signature', async () => {
@@ -61,7 +64,7 @@ describe('Permit webhook security', () => {
     expect(prisma.roadEvent.create).not.toHaveBeenCalled();
   });
 
-  it('accepte une requête signée et une municipalité connue', async () => {
+  it('crée un brouillon pour un nouveau permis signé', async () => {
     const timestamp = Math.floor(Date.now() / 1000);
     prisma.municipality.findUnique.mockResolvedValue({ id: 1 });
     prisma.roadEvent.create.mockResolvedValue({ id: 'event-1' });
@@ -73,6 +76,42 @@ describe('Permit webhook security', () => {
       .send(validBody);
 
     expect(response.status).toBe(201);
-    expect(response.body).toEqual({ eventId: 'event-1', status: 'draft' });
+    expect(response.body).toEqual({ eventId: 'event-1', status: 'draft', operation: 'created' });
+  });
+
+  it('met à jour le brouillon existant pour le même permis', async () => {
+    const timestamp = Math.floor(Date.now() / 1000);
+    prisma.municipality.findUnique.mockResolvedValue({ id: 1 });
+    prisma.roadEvent.findFirst.mockResolvedValue({ id: 'event-1', status: 'DRAFT' });
+    prisma.roadEvent.update.mockResolvedValue({ id: 'event-1' });
+
+    const response = await request(app)
+      .post('/api/v1/permits/hook')
+      .set('x-cityflow-timestamp', String(timestamp))
+      .set('x-cityflow-signature', sign(validBody, timestamp))
+      .send(validBody);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ eventId: 'event-1', status: 'draft', operation: 'updated' });
+    expect(prisma.roadEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse de réécrire un permis déjà soumis ou publié', async () => {
+    const timestamp = Math.floor(Date.now() / 1000);
+    prisma.municipality.findUnique.mockResolvedValue({ id: 1 });
+    prisma.roadEvent.findFirst.mockResolvedValue({ id: 'event-1', status: 'ACTIVE' });
+
+    const response = await request(app)
+      .post('/api/v1/permits/hook')
+      .set('x-cityflow-timestamp', String(timestamp))
+      .set('x-cityflow-signature', sign(validBody, timestamp))
+      .send(validBody);
+
+    expect(response.status).toBe(409);
+    expect(response.body).toEqual({
+      message: 'Ce permis a déjà quitté l’état brouillon',
+      code: 'PERMIT_ALREADY_PROCESSED',
+      eventId: 'event-1'
+    });
   });
 });
