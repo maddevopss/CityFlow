@@ -8,16 +8,16 @@ datasource db {
 }
 
 model Municipality {
-  id          Int          @id @default(autoincrement())
-  name        String       @unique
-  code        String?      @unique
-  population  Int?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id                 Int                  @id @default(autoincrement())
+  name               String               @unique
+  code               String?              @unique
+  population         Int?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
-  users       User[]
-  events      RoadEvent[]
-  inspections Inspection[]
+  users              User[]
+  events             RoadEvent[]
+  inspections        Inspection[]
   inspectionEvidence InspectionEvidence[]
 }
 
@@ -97,6 +97,7 @@ model Inspection {
   municipality      Municipality @relation(fields: [municipalityId], references: [id])
   inspector         User?        @relation("AssignedInspector", fields: [assignedTo], references: [id])
   evidence          InspectionEvidence[]
+  reminders         InspectionReminder[]
 
   @@index([municipalityId, status])
   @@index([municipalityId, scheduledAt])
@@ -126,4 +127,23 @@ model InspectionEvidence {
   @@index([municipalityId, inspectionId])
   @@index([inspectionId, capturedAt])
   @@index([sha256])
+}
+
+model InspectionReminder {
+  id             String     @id @default(uuid()) @db.Uuid
+  municipalityId Int
+  inspectionId   String     @db.Uuid
+  recipientId    String     @db.Uuid
+  reminderType   String
+  scheduledFor   DateTime
+  status         String     @default("PENDING")
+  acknowledgedAt DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  inspection     Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  @@unique([inspectionId, recipientId, reminderType, scheduledFor])
+  @@index([municipalityId, recipientId, status])
+  @@index([scheduledFor, status])
 }
