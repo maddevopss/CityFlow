@@ -21,18 +21,19 @@ model Municipality {
 }
 
 model User {
-  id             String    @id @default(uuid()) @db.Uuid
-  email          String    @unique
-  password       String
-  fullName       String?
-  role           String    @default("VIEWER")
-  municipalityId Int?
-  isActive       Boolean   @default(true)
-  lastLogin      DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                  String       @id @default(uuid()) @db.Uuid
+  email               String       @unique
+  password            String
+  fullName            String?
+  role                String       @default("VIEWER")
+  municipalityId      Int?
+  isActive             Boolean      @default(true)
+  lastLogin            DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
-  municipality   Municipality? @relation(fields: [municipalityId], references: [id])
+  municipality        Municipality? @relation(fields: [municipalityId], references: [id])
+  assignedInspections Inspection[]  @relation("AssignedInspector")
 }
 
 model RoadEvent {
@@ -76,6 +77,9 @@ model Inspection {
   id               String       @id @default(uuid()) @db.Uuid
   municipalityId   Int
   permitId          String?      @db.Uuid
+  assignedTo        String?      @db.Uuid
+  assignedAt        DateTime?
+  assignedBy        String?      @db.Uuid
   scheduledAt       DateTime
   completedAt       DateTime?
   address           String
@@ -89,9 +93,11 @@ model Inspection {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
-  municipality     Municipality @relation(fields: [municipalityId], references: [id])
+  municipality      Municipality @relation(fields: [municipalityId], references: [id])
+  inspector         User?        @relation("AssignedInspector", fields: [assignedTo], references: [id])
 
   @@index([municipalityId, status])
   @@index([municipalityId, scheduledAt])
+  @@index([municipalityId, assignedTo])
   @@index([permitId])
 }
