@@ -12,6 +12,8 @@ import EventsPage from './pages/EventsPage';
 import CreateEvent from './pages/CreateEvent';
 import EditEvent from './pages/EditEvent';
 import Exports from './pages/Exports';
+import InspectionsPage from './pages/InspectionsPage';
+import InspectionDetail from './pages/InspectionDetail';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 const queryClient = new QueryClient({
@@ -50,6 +52,16 @@ const App: React.FC = () => {
               <Route path="/exports" element={
                 <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
                   <Exports />
+                </ProtectedRoute>
+              } />
+              <Route path="/inspections" element={
+                <ProtectedRoute requiredRole="INSPECTOR">
+                  <InspectionsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/inspections/:id" element={
+                <ProtectedRoute requiredRole="INSPECTOR">
+                  <InspectionDetail />
                 </ProtectedRoute>
               } />
             </Route>
