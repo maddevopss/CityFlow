@@ -8,6 +8,10 @@ const { citizenWriteLimiter, citizenReadLimiter } = require('../middleware/rateL
 const { escalateCitizenRequestServiceLevels } = require('../../services/citizenRequestEscalations');
 const { listCitizenEscalationRuns } = require('../../services/citizenEscalationRunHistory');
 const { getCitizenEscalationRetentionConfig } = require('../../services/citizenEscalationConfig');
+const {
+  CitizenEscalationAlreadyRunningError,
+  executeCitizenEscalationWithLock
+} = require('../../services/citizenEscalationExecutionLock');
 
 const router = express.Router();
 const historySchema = Joi.object({
@@ -26,16 +30,26 @@ router.get('/history', citizenReadLimiter, async (req, res) => {
 });
 
 router.post('/run', citizenWriteLimiter, async (req, res) => {
-  const result = await escalateCitizenRequestServiceLevels(
-    prisma,
-    req.user.municipalityId,
-    new Date()
-  );
+  try {
+    const result = await executeCitizenEscalationWithLock(
+      prisma,
+      req.user.municipalityId,
+      (db) => escalateCitizenRequestServiceLevels(db, req.user.municipalityId, new Date())
+    );
 
-  res.status(202).json({
-    generatedAt: new Date().toISOString(),
-    ...result
-  });
+    res.status(202).json({
+      generatedAt: new Date().toISOString(),
+      ...result
+    });
+  } catch (error) {
+    if (error instanceof CitizenEscalationAlreadyRunningError) {
+      return res.status(409).json({
+        message: error.message,
+        code: error.code
+      });
+    }
+    throw error;
+  }
 });
 
 module.exports = router;
