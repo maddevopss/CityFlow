@@ -1,0 +1,12 @@
+name: Chaos safety
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check scripts/chaos/validate-target.mjs
+      - run: CHAOS_TARGET=staging CHAOS_SCENARIO=latency CHAOS_CONFIRM=CITYFLOW_CHAOS_AUTHORIZED node scripts/chaos/validate-target.mjs
+      - run: '! CHAOS_TARGET=production CHAOS_SCENARIO=latency CHAOS_CONFIRM=CITYFLOW_CHAOS_AUTHORIZED node scripts/chaos/validate-target.mjs'
