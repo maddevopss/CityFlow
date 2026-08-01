@@ -5,6 +5,7 @@ const diffuseEvent = require('./jobs/diffuseEvent');
 const { startOutboxDispatcher } = require('./outboxDispatcher');
 const { startDeliverySlaMonitor } = require('./deliverySlaMonitor');
 const { startCitizenRequestEscalationScheduler } = require('./citizenRequestEscalationScheduler');
+const { startCitizenEscalationRunRetention } = require('./citizenEscalationRunRetention');
 
 const worker = new Worker('diffusion', diffuseEvent, {
   connection: { url: config.redisUrl }
@@ -21,11 +22,13 @@ worker.on('failed', (job, err) => {
 startOutboxDispatcher();
 const deliverySlaMonitor = startDeliverySlaMonitor();
 const citizenEscalationScheduler = startCitizenRequestEscalationScheduler();
+const citizenEscalationRetention = startCitizenEscalationRunRetention();
 
 async function shutdown(signal) {
   logger.info(`Arrêt du worker reçu (${signal})`);
   deliverySlaMonitor.stop();
   citizenEscalationScheduler.stop();
+  citizenEscalationRetention.stop();
   await worker.close();
   process.exit(0);
 }
