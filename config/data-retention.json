@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "name": "audit_logs",
+      "table": "audit_logs",
+      "dateColumn": "createdAt",
+      "retentionDays": 2555,
+      "legalHold": false
+    },
+    {
+      "name": "notifications",
+      "table": "notifications",
+      "dateColumn": "createdAt",
+      "retentionDays": 730,
+      "legalHold": false
+    },
+    {
+      "name": "legal_hold_records",
+      "table": "legal_hold_records",
+      "dateColumn": "createdAt",
+      "retentionDays": 3650,
+      "legalHold": true
+    }
+  ]
+}
