@@ -2,7 +2,6 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
-  $queryRaw: jest.fn(),
   roadEvent: {
     findFirst: jest.fn()
   },
@@ -11,7 +10,12 @@ jest.mock('../../src/db/prisma', () => ({
   }
 }));
 
+jest.mock('../../src/services/eventAudit', () => ({
+  listEventAudit: jest.fn()
+}));
+
 const prisma = require('../../src/db/prisma');
+const { listEventAudit } = require('../../src/services/eventAudit');
 const app = require('../../src/app');
 const config = require('../../src/config');
 
@@ -40,7 +44,7 @@ test('retourne le permis, son historique et ses inspections', async () => {
     status: 'APPROVED',
     details: { contractor: 'Entrepreneur exemple' }
   });
-  prisma.$queryRaw.mockResolvedValue([
+  listEventAudit.mockResolvedValue([
     { id: 'audit-1', action: 'CREATED', newStatus: 'DRAFT' },
     { id: 'audit-2', action: 'APPROVED', previousStatus: 'SUBMITTED', newStatus: 'APPROVED' }
   ]);
@@ -59,6 +63,7 @@ test('retourne le permis, son historique et ses inspections', async () => {
   expect(prisma.roadEvent.findFirst).toHaveBeenCalledWith(expect.objectContaining({
     where: { id: permitId, municipalityId: 7, sourceType: 'PERMIT' }
   }));
+  expect(listEventAudit).toHaveBeenCalledWith({ eventId: permitId, municipalityId: 7, db: prisma });
   expect(prisma.inspection.findMany).toHaveBeenCalledWith(expect.objectContaining({
     where: { municipalityId: 7, permitId }
   }));
@@ -72,7 +77,7 @@ test('masque un permis absent ou appartenant à une autre municipalité', async 
     .set('Authorization', `Bearer ${token}`);
 
   expect(response.status).toBe(404);
-  expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  expect(listEventAudit).not.toHaveBeenCalled();
   expect(prisma.inspection.findMany).not.toHaveBeenCalled();
 });
 
