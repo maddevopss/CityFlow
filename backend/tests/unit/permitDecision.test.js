@@ -6,8 +6,18 @@ const { transitionPermit, buildTransitionData } = require('../../src/services/pe
 function createDb(status = 'DRAFT') {
   const tx = {
     roadEvent: {
-      findFirst: jest.fn().mockResolvedValue({ id: 'permit-1', municipalityId: 7, sourceType: 'PERMIT', status }),
+      findFirst: jest.fn().mockResolvedValue({
+        id: 'permit-1',
+        municipalityId: 7,
+        sourceType: 'PERMIT',
+        subtype: 'CONSTRUCTION',
+        status,
+        details: {}
+      }),
       update: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'permit-1', municipalityId: 7, ...data }))
+    },
+    permitDocumentRequirement: {
+      findUnique: jest.fn().mockResolvedValue(null)
     }
   };
   return { db: { $transaction: jest.fn((callback) => callback(tx)) }, tx };
