@@ -1,0 +1,13 @@
+name: Retention execution
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check scripts/data/build-retention-sql.mjs
+      - run: node scripts/data/build-retention-sql.mjs config/data-retention.json > retention.sql
+      - run: grep -q 'DRY-RUN' retention.sql
+      - run: '! grep -q "legal_hold" retention.sql'
