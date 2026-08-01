@@ -18,6 +18,8 @@ import InspectionCalendar from './pages/InspectionCalendar';
 import InspectionDashboard from './pages/InspectionDashboard';
 import InspectionTrends from './pages/InspectionTrends';
 import CitizenPortalPage from './pages/CitizenPortalPage';
+import MunicipalCitizenRequestsPage from './pages/MunicipalCitizenRequestsPage';
+import MunicipalCitizenRequestDetailPage from './pages/MunicipalCitizenRequestDetailPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
@@ -41,6 +43,8 @@ const App: React.FC = () => (
             <Route path="/inspections/calendar" element={<ProtectedRoute requiredRole="INSPECTOR"><InspectionCalendar /></ProtectedRoute>} />
             <Route path="/inspections/:id" element={<ProtectedRoute requiredRole="INSPECTOR"><InspectionDetail /></ProtectedRoute>} />
             <Route path="/citizen" element={<ProtectedRoute requiredRole="VIEWER"><CitizenPortalPage /></ProtectedRoute>} />
+            <Route path="/municipal/citizen-requests" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><MunicipalCitizenRequestsPage /></ProtectedRoute>} />
+            <Route path="/municipal/citizen-requests/:id" element={<ProtectedRoute requiredRole="MUNICIPAL_AGENT"><MunicipalCitizenRequestDetailPage /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute requiredRole="VIEWER"><NotificationsPage /></ProtectedRoute>} />
           </Route>
           <Route path="*" element={<Navigate to="/" />} />

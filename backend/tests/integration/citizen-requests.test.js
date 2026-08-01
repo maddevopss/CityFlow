@@ -61,5 +61,12 @@ test('crée une notification lors de la résolution', async () => {
   prisma.notification.create.mockResolvedValue({});
   const res = await request(app).post(`/api/v1/citizen/requests/${requestId}/status`).set('Authorization', `Bearer ${agentToken}`).send({ status: 'RESOLVED', resolution: 'Ampoule remplacée.' });
   expect(res.status).toBe(200);
-  expect(prisma.notification.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ eventType: 'REQUEST_UPDATED', resourceId: requestId }) }));
+  expect(prisma.notification.create).toHaveBeenCalledWith(expect.objectContaining({
+    data: expect.objectContaining({
+      eventType: 'REQUEST_UPDATED',
+      requestId,
+      channel: 'IN_APP',
+      status: 'PENDING'
+    })
+  }));
 });
