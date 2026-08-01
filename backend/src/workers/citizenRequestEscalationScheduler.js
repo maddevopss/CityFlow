@@ -3,6 +3,7 @@
 const prisma = require('../db/prisma');
 const logger = require('../logger');
 const { escalateCitizenRequestServiceLevels } = require('../services/citizenRequestEscalations');
+const { recordCitizenEscalationRun } = require('../services/citizenEscalationRunHistory');
 
 const DEFAULT_INTERVAL_MS = 15 * 60 * 1000;
 
@@ -11,7 +12,8 @@ function createCitizenRequestEscalationScheduler({
   intervalMs = Number(process.env.CITIZEN_ESCALATION_INTERVAL_MS) || DEFAULT_INTERVAL_MS,
   runImmediately = true,
   log = logger,
-  escalate = escalateCitizenRequestServiceLevels
+  escalate = escalateCitizenRequestServiceLevels,
+  recordRun = recordCitizenEscalationRun
 } = {}) {
   let timer = null;
   let running = false;
@@ -25,16 +27,44 @@ function createCitizenRequestEscalationScheduler({
       const municipalities = await db.municipality.findMany({ select: { id: true } });
       const results = [];
       for (const municipality of municipalities) {
-        results.push({
-          municipalityId: municipality.id,
-          ...(await escalate(db, municipality.id))
-        });
+        const startedAt = new Date();
+        try {
+          const result = await escalate(db, municipality.id);
+          const completedAt = new Date();
+          await recordRun(db, {
+            municipalityId: municipality.id,
+            source: 'SCHEDULED',
+            status: 'SUCCESS',
+            ...result,
+            startedAt,
+            completedAt,
+            durationMs: completedAt - startedAt
+          });
+          results.push({ municipalityId: municipality.id, ...result, status: 'SUCCESS' });
+        } catch (error) {
+          const completedAt = new Date();
+          await recordRun(db, {
+            municipalityId: municipality.id,
+            source: 'SCHEDULED',
+            status: 'FAILED',
+            startedAt,
+            completedAt,
+            durationMs: completedAt - startedAt,
+            errorMessage: error.message
+          });
+          results.push({ municipalityId: municipality.id, scanned: 0, candidates: 0, created: 0, status: 'FAILED', error: error.message });
+          log.error('Échec des escalades citoyennes pour une municipalité', {
+            municipalityId: municipality.id,
+            error: error.message
+          });
+        }
       }
       const summary = results.reduce((total, item) => ({
         scanned: total.scanned + item.scanned,
         candidates: total.candidates + item.candidates,
-        created: total.created + item.created
-      }), { scanned: 0, candidates: 0, created: 0 });
+        created: total.created + item.created,
+        failed: total.failed + (item.status === 'FAILED' ? 1 : 0)
+      }), { scanned: 0, candidates: 0, created: 0, failed: 0 });
       log.info('Escalades citoyennes périodiques exécutées', {
         municipalities: municipalities.length,
         ...summary
