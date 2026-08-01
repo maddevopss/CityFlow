@@ -16,6 +16,22 @@ const permitWebhookLimiter = rateLimit({
   message: { message: 'Trop de requêtes webhook, réessayez plus tard' }
 });
 
+const permitWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de modifications de permis, réessayez plus tard' }
+});
+
+const permitReadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de consultations de permis, réessayez plus tard' }
+});
+
 const citizenWriteLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 30,
@@ -35,6 +51,8 @@ const citizenReadLimiter = rateLimit({
 module.exports = {
   loginLimiter,
   permitWebhookLimiter,
+  permitWriteLimiter,
+  permitReadLimiter,
   citizenWriteLimiter,
   citizenReadLimiter
 };
