@@ -92,13 +92,12 @@ describe('Executive dashboard API', () => {
     expect(new Date(response.body.period.to).getTime()).toBeGreaterThan(new Date(response.body.period.from).getTime());
   });
 
-  it('accepte une période ne contenant que la date de fin', async () => {
-    mockRows();
+  it('refuse une date de fin sans date de début', async () => {
     const response = await request(app)
       .get('/api/v1/executive-dashboard?to=2026-08-01T00:00:00.000Z')
       .set('Authorization', `Bearer ${token}`);
-    expect(response.status).toBe(200);
-    expect(response.body.period.to).toBe('2026-08-01T00:00:00.000Z');
+    expect(response.status).toBe(400);
+    expect(prisma.$queryRawUnsafe).not.toHaveBeenCalled();
   });
 
   it('refuse une période inversée', async () => {
