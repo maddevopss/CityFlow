@@ -4,18 +4,19 @@ import { useAuth } from '../../hooks/useAuth';
 import { useUnreadNotifications } from '../../hooks/useUnreadNotifications';
 
 const navigation = [
-  { name: 'Tableau de bord', href: '/', icon: '📊', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR', 'VIEWER', 'CITIZEN'] },
-  { name: 'Mes demandes', href: '/citizen', icon: '🏙️', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'VIEWER', 'CITIZEN'] },
-  { name: 'Demandes citoyennes', href: '/municipal/citizen-requests', icon: '🗂️', roles: ['ADMIN', 'MUNICIPAL_AGENT'] },
-  { name: 'Délais citoyens', href: '/municipal/citizen-requests/service-levels', icon: '⏱️', roles: ['ADMIN', 'MUNICIPAL_AGENT'] },
-  { name: 'Notifications', href: '/notifications', icon: '🔔', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR', 'VIEWER', 'CITIZEN'], badge: true },
-  { name: 'Événements', href: '/events', icon: '📋', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'VIEWER'] },
-  { name: 'Nouvel événement', href: '/events/new', icon: '➕', roles: ['ADMIN', 'MUNICIPAL_AGENT'] },
-  { name: 'Inspections', href: '/inspections', icon: '🔎', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
-  { name: 'Suivi inspections', href: '/inspections/dashboard', icon: '📈', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
-  { name: 'Tendances', href: '/inspections/trends', icon: '📉', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
-  { name: 'Calendrier', href: '/inspections/calendar', icon: '🗓️', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
-  { name: 'Exports', href: '/exports', icon: '📤', roles: ['ADMIN', 'MUNICIPAL_AGENT'] },
+  { name: 'Tableau de bord', href: '/', icon: '📊', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'INSPECTOR', 'VIEWER', 'CITIZEN'] },
+  { name: 'Mes demandes', href: '/citizen', icon: '🏙️', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'VIEWER', 'CITIZEN'] },
+  { name: 'Demandes citoyennes', href: '/municipal/citizen-requests', icon: '🗂️', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'] },
+  { name: 'Délais citoyens', href: '/municipal/citizen-requests/service-levels', icon: '⏱️', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'] },
+  { name: 'Cycles d’escalade', href: '/municipal/citizen-requests/escalations/history', icon: '🧾', roles: ['ADMIN', 'MANAGER'] },
+  { name: 'Notifications', href: '/notifications', icon: '🔔', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'INSPECTOR', 'VIEWER', 'CITIZEN'], badge: true },
+  { name: 'Événements', href: '/events', icon: '📋', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'VIEWER'] },
+  { name: 'Nouvel événement', href: '/events/new', icon: '➕', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'] },
+  { name: 'Inspections', href: '/inspections', icon: '🔎', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
+  { name: 'Suivi inspections', href: '/inspections/dashboard', icon: '📈', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
+  { name: 'Tendances', href: '/inspections/trends', icon: '📉', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
+  { name: 'Calendrier', href: '/inspections/calendar', icon: '🗓️', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
+  { name: 'Exports', href: '/exports', icon: '📤', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'] },
 ];
 
 const Sidebar: React.FC = () => {
