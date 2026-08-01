@@ -30,7 +30,7 @@ describe('citizenRequestServiceLevels', () => {
 
   test('distingue les demandes à risque et terminées', () => {
     const result = summarizeCitizenRequestServiceLevels([
-      { id: 'risk', category: 'LIGHTING', status: 'IN_REVIEW', createdAt: '2026-07-30T18:00:00.000Z' },
+      { id: 'risk', category: 'LIGHTING', status: 'IN_REVIEW', createdAt: '2026-07-30T12:00:00.000Z' },
       { id: 'done', category: 'ROAD', status: 'RESOLVED', createdAt: '2026-07-20T00:00:00.000Z' }
     ], now);
 
