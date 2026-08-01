@@ -7,6 +7,7 @@ const navigation = [
   { name: 'Tableau de bord', href: '/', icon: '📊', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR', 'VIEWER', 'CITIZEN'] },
   { name: 'Mes demandes', href: '/citizen', icon: '🏙️', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'VIEWER', 'CITIZEN'] },
   { name: 'Demandes citoyennes', href: '/municipal/citizen-requests', icon: '🗂️', roles: ['ADMIN', 'MUNICIPAL_AGENT'] },
+  { name: 'Délais citoyens', href: '/municipal/citizen-requests/service-levels', icon: '⏱️', roles: ['ADMIN', 'MUNICIPAL_AGENT'] },
   { name: 'Notifications', href: '/notifications', icon: '🔔', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR', 'VIEWER', 'CITIZEN'], badge: true },
   { name: 'Événements', href: '/events', icon: '📋', roles: ['ADMIN', 'MUNICIPAL_AGENT', 'VIEWER'] },
   { name: 'Nouvel événement', href: '/events/new', icon: '➕', roles: ['ADMIN', 'MUNICIPAL_AGENT'] },

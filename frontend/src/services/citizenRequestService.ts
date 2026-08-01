@@ -1,6 +1,7 @@
 import api from './api';
 
 export type CitizenRequestStatus = 'SUBMITTED' | 'ACKNOWLEDGED' | 'IN_REVIEW' | 'PLANNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+export type CitizenServiceLevel = 'ON_TRACK' | 'AT_RISK' | 'BREACHED' | 'COMPLETED';
 export interface CreateCitizenRequestInput { title: string; description: string; category?: string; location?: Record<string, unknown> | null; attachments?: Array<{ fileName: string; mimeType: string; sizeBytes: number; storageKey: string }>; }
 export interface CitizenRequest { id: string; municipalityId: number; citizenId: string; title: string; description: string; category: string; status: CitizenRequestStatus; assignedTeam?: string | null; assignedTo?: string | null; resolution?: string | null; createdAt: string; updatedAt: string; }
 export interface CitizenTimelineResponse { request: CitizenRequest; events: Array<{ id: string; type: string; status?: CitizenRequestStatus | null; createdAt: string; metadata?: Record<string, unknown> | null }>; messages: Array<{ id: string; body: string; senderId: string; visibility?: string; createdAt: string }>; }
@@ -11,6 +12,8 @@ export interface MunicipalCitizenRequestFilters { status?: CitizenRequestStatus;
 export interface MunicipalCitizenRequestSummary { generatedAt: string; total: number; byStatus: Partial<Record<CitizenRequestStatus, number>>; unassigned: number; overdue: number; }
 export interface MunicipalCitizenRequestListResponse { items: CitizenRequest[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
 export interface BulkAssignmentResponse { updated: number; team: string; requestIds: string[]; }
+export interface CitizenServiceLevelItem extends CitizenRequest { serviceLevel: { level: CitizenServiceLevel; targetHours: number; dueAt: string; elapsedHours: number; hoursRemaining: number } }
+export interface CitizenServiceLevelResponse { generatedAt: string; summary: Record<CitizenServiceLevel, number>; items: CitizenServiceLevelItem[]; }
 
 export const citizenRequestDetailPath = (id: string) => `/municipal/citizen-requests/${encodeURIComponent(id)}`;
 export const createCitizenRequest = async (input: CreateCitizenRequestInput) => (await api.post<CitizenRequest>('/citizen/requests', input)).data;
@@ -21,3 +24,4 @@ export const getNotifications = async (filters: NotificationFilters = {}) => (aw
 export const getMunicipalCitizenRequestSummary = async () => (await api.get<MunicipalCitizenRequestSummary>('/municipal/citizen-requests/summary')).data;
 export const getMunicipalCitizenRequests = async (filters: MunicipalCitizenRequestFilters = {}) => (await api.get<MunicipalCitizenRequestListResponse>('/municipal/citizen-requests', { params: filters })).data;
 export const bulkAssignCitizenRequests = async (requestIds: string[], team: string) => (await api.post<BulkAssignmentResponse>('/municipal/citizen-requests/bulk-assign', { requestIds, team: team.trim() })).data;
+export const getCitizenRequestServiceLevels = async (level?: CitizenServiceLevel, limit = 100) => (await api.get<CitizenServiceLevelResponse>('/municipal/citizen-requests/service-levels', { params: { level, limit } })).data;
