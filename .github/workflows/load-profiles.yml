@@ -1,0 +1,20 @@
+name: Load profiles
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier les seuils k6
+        run: |
+          test -f performance/k6/nominal.js
+          test -f performance/k6/peak.js
+          grep -q "p(95)<500" performance/k6/nominal.js
+          grep -q "rate<0.02" performance/k6/peak.js
