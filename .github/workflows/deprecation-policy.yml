@@ -1,0 +1,18 @@
+name: Deprecation policy
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=JSON.parse(fs.readFileSync('config/deprecation-policy.json','utf8'));
+          if(c.minimumNoticeDays<90||c.minimumSupportedMinorVersions<2||!c.migrationGuideRequired||!c.replacementRequired||!c.telemetryReviewRequired||!c.breakingRemovalRequiresMajorVersion) process.exit(1);
+          console.log('Deprecation policy valid');
+          NODE
