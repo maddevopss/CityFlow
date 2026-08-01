@@ -1,0 +1,12 @@
+name: Dependency health
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check scripts/platform/check-dependencies.mjs
+      - run: node scripts/platform/check-dependencies.mjs '[]' > dependencies.json
+      - run: grep -q '"ok": true' dependencies.json
