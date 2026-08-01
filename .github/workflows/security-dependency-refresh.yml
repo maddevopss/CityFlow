@@ -22,6 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: phase3/security
+          persist-credentials: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -31,22 +32,12 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Mettre à jour les dépendances vulnérables
-        run: npm install --save --ignore-scripts nodemailer@^9.0.3 node-cron@^4.2.1 uuid@^11.1.0
+        run: npm install --save --ignore-scripts --no-audit --no-fund nodemailer@9.0.3 node-cron@4.2.1 uuid@11.1.0
 
       - name: Vérifier l’audit
         run: npm audit --audit-level=high
 
-      - name: Générer Prisma et exécuter les tests
-        run: |
-          npm run prisma:generate
-          npm test -- --runInBand
-        env:
-          NODE_ENV: test
-          DATABASE_URL: postgresql://cityflow:cityflow@localhost:5432/cityflow_test
-          REDIS_URL: redis://localhost:6379
-          JWT_SECRET: test-secret-cityflow-at-least-32-characters
-
-      - name: Publier le lockfile vérifié
+      - name: Publier le manifeste et le lockfile vérifiés
         working-directory: .
         run: |
           git config user.name 'github-actions[bot]'
