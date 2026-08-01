@@ -1,0 +1,10 @@
+name: Municipal KPI catalog
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node -e "const p=require('./config/municipal-kpis.json'); const ids=new Set(); for(const k of p.kpis||[]){ if(ids.has(k.id)||!k.formula||!k.frequency||!k.source||!k.owner) process.exit(1); ids.add(k.id) }"
