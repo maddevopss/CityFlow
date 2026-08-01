@@ -1,0 +1,21 @@
+name: Runbook automation
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tester le générateur
+        run: |
+          bash -n scripts/operations/new-incident.sh
+          output="$(bash scripts/operations/new-incident.sh P3 'Test automatisé')"
+          test -f "$output"
+          grep -q 'Statut : OUVERT' "$output"
+          grep -q 'post-mortem requis' "$output"
