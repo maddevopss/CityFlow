@@ -26,5 +26,10 @@ test('accepte toutes les pièces obligatoires approuvées', () => {
 });
 
 test('lève un conflit détaillé lorsque la conformité manque', () => {
-  expect(() => assertPermitDocumentCompliance({ requiredDocumentTypes: ['PLAN'] })).toThrow(expect.objectContaining({ code: 'PERMIT_DOCUMENTS_INCOMPLETE' }));
+  try {
+    assertPermitDocumentCompliance({ requiredDocumentTypes: ['PLAN'] });
+    throw new Error('Le conflit attendu n’a pas été levé');
+  } catch (error) {
+    expect(error).toMatchObject({ code: 'PERMIT_DOCUMENTS_INCOMPLETE', compliance: { compliant: false, missingTypes: ['PLAN'] } });
+  }
 });
