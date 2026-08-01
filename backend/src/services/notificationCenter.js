@@ -3,8 +3,10 @@
 const CHANNELS = new Set(['IN_APP', 'EMAIL', 'SMS']);
 
 function resolveChannels(eventType, preferences = {}) {
-  const configured = preferences[eventType] || preferences.DEFAULT || ['IN_APP'];
-  const channels = [...new Set(configured.map((channel) => String(channel).toUpperCase()))]
+  const safePreferences = preferences || {};
+  const configured = safePreferences[eventType] || safePreferences.DEFAULT || ['IN_APP'];
+  const configuredChannels = Array.isArray(configured) ? configured : [configured];
+  const channels = [...new Set(configuredChannels.map((channel) => String(channel).toUpperCase()))]
     .filter((channel) => CHANNELS.has(channel));
   return channels.length ? channels : ['IN_APP'];
 }
