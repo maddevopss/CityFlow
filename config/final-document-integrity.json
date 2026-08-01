@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "requiredDocuments": [
+    "docs/release/OFFICIAL-PUBLICATION-V1.md",
+    "docs/industrialization/OPERATIONS-RUNBOOKS.md"
+  ],
+  "requiredConfigs": [
+    "config/release-manifest.json",
+    "config/v1-closure.json",
+    "config/institutional-closure.json",
+    "config/maintenance-1x.json"
+  ],
+  "emptyFilesForbidden": true,
+  "duplicatePathsForbidden": true
+}
