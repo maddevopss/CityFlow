@@ -1,6 +1,7 @@
 import api from './api';
 
 export type PermitStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'ACTIVE' | 'REJECTED' | 'CLOSED';
+export type PermitTransitionAction = 'submit' | 'approve' | 'reject' | 'close';
 
 export interface PermitListItem {
   id: string;
@@ -70,4 +71,14 @@ export async function listPermits(filters: PermitFilters = {}): Promise<PermitRe
 export async function getPermitDetail(permitId: string): Promise<PermitDetailResponse> {
   const response = await api.get<PermitDetailResponse>(`/permits/${permitId}`);
   return response.data;
+}
+
+export async function transitionPermit(
+  permitId: string,
+  action: PermitTransitionAction,
+  reason?: string
+): Promise<PermitListItem> {
+  const payload = action === 'reject' || action === 'close' ? { reason } : undefined;
+  const response = await api.post<{ permit: PermitListItem }>(`/permits/${permitId}/${action}`, payload);
+  return response.data.permit;
 }

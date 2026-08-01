@@ -1,15 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import api from './api';
-import { getPermitDetail, listPermits } from './permitService';
+import { getPermitDetail, listPermits, transitionPermit } from './permitService';
 
 vi.mock('./api', () => ({
-  default: { get: vi.fn() }
+  default: { get: vi.fn(), post: vi.fn() }
 }));
 
 const mockedGet = vi.mocked(api.get);
+const mockedPost = vi.mocked(api.post);
 
 beforeEach(() => {
   mockedGet.mockReset();
+  mockedPost.mockReset();
 });
 
 describe('permitService', () => {
@@ -29,5 +31,22 @@ describe('permitService', () => {
 
     expect(mockedGet).toHaveBeenCalledWith('/permits/permit-1');
     expect(result.permit.id).toBe('permit-1');
+  });
+
+  it('soumet un permis sans charge utile inutile', async () => {
+    mockedPost.mockResolvedValue({ data: { permit: { id: 'permit-1', status: 'SUBMITTED' } } });
+
+    const result = await transitionPermit('permit-1', 'submit');
+
+    expect(mockedPost).toHaveBeenCalledWith('/permits/permit-1/submit', undefined);
+    expect(result.status).toBe('SUBMITTED');
+  });
+
+  it('transmet le motif lors d’un refus', async () => {
+    mockedPost.mockResolvedValue({ data: { permit: { id: 'permit-1', status: 'REJECTED' } } });
+
+    await transitionPermit('permit-1', 'reject', 'Documents incomplets');
+
+    expect(mockedPost).toHaveBeenCalledWith('/permits/permit-1/reject', { reason: 'Documents incomplets' });
   });
 });

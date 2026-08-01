@@ -6,6 +6,7 @@ const config = require('../../config');
 const { permitWebhookLimiter } = require('../middleware/rateLimiters');
 const { authenticate, authorize } = require('../middleware/auth');
 const { ingestPermit } = require('../../services/permitIngestion');
+const { transitionPermit } = require('../../services/permitDecision');
 const {
   ALLOWED_STATUSES,
   listMunicipalPermits,
@@ -22,6 +23,7 @@ const registerQuerySchema = Joi.object({
 });
 
 const permitIdSchema = Joi.string().guid({ version: ['uuidv4'] }).required();
+const reasonSchema = Joi.object({ reason: Joi.string().trim().min(3).max(1000).required() });
 
 const permitSchema = Joi.object({
   permit_id: Joi.string().trim().max(100).required(),
@@ -55,6 +57,45 @@ function verifyPermitWebhook(req, res, next) {
   next();
 }
 
+function validatePermitId(req, res) {
+  const { error, value } = permitIdSchema.validate(req.params.permitId);
+  if (error) {
+    res.status(400).json({ message: 'Identifiant de permis invalide' });
+    return null;
+  }
+  return value;
+}
+
+async function handleTransition(req, res, next, action, withReason = false) {
+  try {
+    const permitId = validatePermitId(req, res);
+    if (!permitId) return;
+    if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
+
+    let reason = null;
+    if (withReason) {
+      const { error, value } = reasonSchema.validate(req.body);
+      if (error) return res.status(400).json({ message: error.details[0].message });
+      reason = value.reason;
+    }
+
+    const permit = await transitionPermit(prisma, {
+      permitId,
+      municipalityId: req.user.municipalityId,
+      action,
+      actorId: req.user.sub,
+      actorRole: req.user.role,
+      reason
+    });
+    return res.json({ permit });
+  } catch (error) {
+    if (error.code === 'PERMIT_NOT_FOUND') return res.status(404).json({ message: error.message, code: error.code });
+    if (error.code === 'PERMIT_TRANSITION_CONFLICT') return res.status(409).json({ message: error.message, code: error.code, currentStatus: error.currentStatus, allowedFrom: error.allowedFrom });
+    if (error.code === 'PERMIT_REASON_REQUIRED') return res.status(400).json({ message: error.message, code: error.code });
+    return next(error);
+  }
+}
+
 const municipalPermitAccess = [authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'VIEWER')];
 
 router.get('/', ...municipalPermitAccess, async (req, res) => {
@@ -65,9 +106,14 @@ router.get('/', ...municipalPermitAccess, async (req, res) => {
   return res.json(result);
 });
 
+router.post('/:permitId/submit', authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'), (req, res, next) => handleTransition(req, res, next, 'submit'));
+router.post('/:permitId/approve', authenticate, authorize('ADMIN', 'MANAGER'), (req, res, next) => handleTransition(req, res, next, 'approve'));
+router.post('/:permitId/reject', authenticate, authorize('ADMIN', 'MANAGER'), (req, res, next) => handleTransition(req, res, next, 'reject', true));
+router.post('/:permitId/close', authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'), (req, res, next) => handleTransition(req, res, next, 'close', true));
+
 router.get('/:permitId', ...municipalPermitAccess, async (req, res) => {
-  const { error, value: permitId } = permitIdSchema.validate(req.params.permitId);
-  if (error) return res.status(400).json({ message: 'Identifiant de permis invalide' });
+  const permitId = validatePermitId(req, res);
+  if (!permitId) return;
   if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
 
   const detail = await getMunicipalPermitDetail(prisma, {
