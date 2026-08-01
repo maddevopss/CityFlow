@@ -1,0 +1,11 @@
+name: Migration readiness
+on: [pull_request]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check scripts/release/check-migrations.mjs
+      - run: node scripts/release/check-migrations.mjs
