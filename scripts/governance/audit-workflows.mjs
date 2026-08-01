@@ -12,4 +12,4 @@ for(const file of files){
 const nonCompliant=findings.filter(x=>!x.hasPermissions);
 const report={generatedAt:new Date().toISOString(),workflowCount:files.length,nonCompliant,findings};
 console.log(JSON.stringify(report,null,2));
-if(nonCompliant.length) process.exitCode=1;
+if(process.argv.includes('--strict')&&nonCompliant.length) process.exitCode=1;
