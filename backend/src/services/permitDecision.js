@@ -1,5 +1,6 @@
 const { appendEventAudit } = require('./eventAudit');
 const { assertPermitDocumentCompliance } = require('./permitDocumentCompliance');
+const { resolveRequiredDocumentTypes } = require('./permitDocumentRequirementCatalog');
 
 const TRANSITIONS = {
   submit: { from: ['DRAFT', 'REJECTED'], to: 'SUBMITTED', action: 'SUBMITTED' },
@@ -45,7 +46,17 @@ async function transitionPermit(db, { permitId, municipalityId, action, actorId,
       error.allowedFrom = rule.from;
       throw error;
     }
-    if (action === 'approve') assertPermitDocumentCompliance(permit.details);
+    if (action === 'approve') {
+      const requiredDocumentTypes = await resolveRequiredDocumentTypes(tx, {
+        municipalityId,
+        permitSubtype: permit.subtype,
+        fallback: permit.details && permit.details.requiredDocumentTypes
+      });
+      assertPermitDocumentCompliance({
+        ...(permit.details || {}),
+        requiredDocumentTypes
+      });
+    }
 
     const updated = await tx.roadEvent.update({
       where: { id: permit.id },
