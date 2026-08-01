@@ -3,7 +3,11 @@ const crypto = require('crypto');
 const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const config = require('../../config');
-const { permitWebhookLimiter } = require('../middleware/rateLimiters');
+const {
+  permitWebhookLimiter,
+  permitWriteLimiter,
+  permitReadLimiter
+} = require('../middleware/rateLimiters');
 const { authenticate, authorize } = require('../middleware/auth');
 const { ingestPermit } = require('../../services/permitIngestion');
 const { transitionPermit } = require('../../services/permitDecision');
@@ -57,23 +61,23 @@ async function handleTransition(req, res, next, action, withReason = false) {
 }
 
 const municipalPermitAccess = [authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'VIEWER')];
-router.get('/', ...municipalPermitAccess, async (req, res) => {
+router.get('/', permitReadLimiter, ...municipalPermitAccess, async (req, res) => {
   const { error, value } = registerQuerySchema.validate(req.query, { abortEarly: false, stripUnknown: true });
   if (error) return res.status(400).json({ message: 'Filtres de permis invalides', details: error.details.map((detail) => detail.message) });
   if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
   return res.json(await listMunicipalPermits(prisma, { municipalityId: req.user.municipalityId, ...value }));
 });
 
-router.post('/:permitId/submit', authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'), (req, res, next) => handleTransition(req, res, next, 'submit'));
-router.post('/:permitId/approve', authenticate, authorize('ADMIN', 'MANAGER'), (req, res, next) => handleTransition(req, res, next, 'approve'));
-router.post('/:permitId/reject', authenticate, authorize('ADMIN', 'MANAGER'), (req, res, next) => handleTransition(req, res, next, 'reject', true));
-router.post('/:permitId/close', authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'), (req, res, next) => handleTransition(req, res, next, 'close', true));
+router.post('/:permitId/submit', permitWriteLimiter, authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'), (req, res, next) => handleTransition(req, res, next, 'submit'));
+router.post('/:permitId/approve', permitWriteLimiter, authenticate, authorize('ADMIN', 'MANAGER'), (req, res, next) => handleTransition(req, res, next, 'approve'));
+router.post('/:permitId/reject', permitWriteLimiter, authenticate, authorize('ADMIN', 'MANAGER'), (req, res, next) => handleTransition(req, res, next, 'reject', true));
+router.post('/:permitId/close', permitWriteLimiter, authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'), (req, res, next) => handleTransition(req, res, next, 'close', true));
 
-router.get('/:permitId/documents', ...municipalPermitAccess, async (req, res, next) => {
+router.get('/:permitId/documents', permitReadLimiter, ...municipalPermitAccess, async (req, res, next) => {
   try { const permitId = validatePermitId(req, res); if (!permitId) return; return res.json(await listPermitDocuments(prisma, { permitId, municipalityId: req.user.municipalityId })); }
   catch (error) { return mapPermitError(error, res, next); }
 });
-router.post('/:permitId/documents', authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'), async (req, res, next) => {
+router.post('/:permitId/documents', permitWriteLimiter, authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'), async (req, res, next) => {
   try {
     const permitId = validatePermitId(req, res); if (!permitId) return;
     const { error, value } = documentSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
@@ -82,7 +86,7 @@ router.post('/:permitId/documents', authenticate, authorize('ADMIN', 'MANAGER', 
     return res.status(201).json({ document });
   } catch (error) { return mapPermitError(error, res, next); }
 });
-router.post('/:permitId/documents/:documentId/review', authenticate, authorize('ADMIN', 'MANAGER'), async (req, res, next) => {
+router.post('/:permitId/documents/:documentId/review', permitWriteLimiter, authenticate, authorize('ADMIN', 'MANAGER'), async (req, res, next) => {
   try {
     const permitId = validatePermitId(req, res); if (!permitId) return;
     const { error: idError, value: documentId } = documentIdSchema.validate(req.params.documentId); if (idError) return res.status(400).json({ message: 'Identifiant de pièce invalide' });
@@ -92,7 +96,7 @@ router.post('/:permitId/documents/:documentId/review', authenticate, authorize('
   } catch (error) { return mapPermitError(error, res, next); }
 });
 
-router.get('/:permitId', ...municipalPermitAccess, async (req, res) => {
+router.get('/:permitId', permitReadLimiter, ...municipalPermitAccess, async (req, res) => {
   const permitId = validatePermitId(req, res); if (!permitId) return;
   if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
   const detail = await getMunicipalPermitDetail(prisma, { municipalityId: req.user.municipalityId, permitId });
