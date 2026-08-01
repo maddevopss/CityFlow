@@ -11,6 +11,7 @@ const navigation = [
   { name: 'Cycles d’escalade', href: '/municipal/citizen-requests/escalations/history', icon: '🧾', roles: ['ADMIN', 'MANAGER'] },
   { name: 'Notifications', href: '/notifications', icon: '🔔', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'INSPECTOR', 'VIEWER', 'CITIZEN'], badge: true },
   { name: 'Événements', href: '/events', icon: '📋', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'VIEWER'] },
+  { name: 'Permis', href: '/permits', icon: '🏗️', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'VIEWER'] },
   { name: 'Nouvel événement', href: '/events/new', icon: '➕', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT'] },
   { name: 'Inspections', href: '/inspections', icon: '🔎', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
   { name: 'Suivi inspections', href: '/inspections/dashboard', icon: '📈', roles: ['ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'INSPECTOR'] },
