@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   fullName?: string;
-  role: 'ADMIN' | 'MUNICIPAL_AGENT' | 'CONTRACTOR' | 'VIEWER';
+  role: 'ADMIN' | 'MUNICIPAL_AGENT' | 'INSPECTOR' | 'CONTRACTOR' | 'VIEWER';
   municipalityId?: number;
 }
 
@@ -23,6 +23,42 @@ export interface RoadEvent {
   confidence?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export type InspectionType = 'PRE_WORK' | 'IN_PROGRESS' | 'FINAL' | 'COMPLAINT';
+export type InspectionStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+export type InspectionOutcome = 'COMPLIANT' | 'NON_COMPLIANT' | 'FOLLOW_UP_REQUIRED';
+
+export interface Inspection {
+  id: string;
+  municipalityId: number;
+  permitId?: string | null;
+  scheduledAt: string;
+  address: string;
+  inspectionType: InspectionType;
+  notes?: string | null;
+  status: InspectionStatus;
+  outcome?: InspectionOutcome | null;
+  findings?: string | null;
+  completedAt?: string | null;
+  createdBy: string;
+  completedBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateInspectionInput {
+  permitId?: string | null;
+  scheduledAt: string;
+  address: string;
+  inspectionType: InspectionType;
+  notes?: string | null;
+}
+
+export interface CompleteInspectionInput {
+  outcome: InspectionOutcome;
+  findings: string;
+  completedAt?: string;
 }
 
 export interface Municipality {
