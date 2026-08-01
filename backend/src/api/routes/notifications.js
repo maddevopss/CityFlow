@@ -2,6 +2,7 @@
 
 const express = require('express');
 const Joi = require('joi');
+const rateLimit = require('express-rate-limit');
 const prisma = require('../../db/prisma');
 const { authenticate } = require('../middleware/auth');
 
@@ -13,7 +14,17 @@ const querySchema = Joi.object({
   pageSize: Joi.number().integer().min(1).max(100).default(25)
 });
 
+const notificationsRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => (req.user && req.user.sub ? `notifications:${req.user.sub}` : req.ip),
+  message: { message: 'Trop de requêtes, veuillez réessayer plus tard.' }
+});
+
 router.use(authenticate);
+router.use(notificationsRateLimiter);
 
 router.get('/', async (req, res) => {
   const { error, value } = querySchema.validate(req.query, { convert: true, stripUnknown: true });
