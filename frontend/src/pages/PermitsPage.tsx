@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import PermitDocumentsPanel from '../components/permits/PermitDocumentsPanel';
+import PermitDocumentRequirementsPanel from '../components/permits/PermitDocumentRequirementsPanel';
 import { getPermitDetail, listPermits, PermitStatus, PermitTransitionAction, transitionPermit } from '../services/permitService';
 
 const statuses: Array<{ value: '' | PermitStatus; label: string }> = [
@@ -42,6 +43,7 @@ const PermitsPage: React.FC = () => {
 
   return <main className="space-y-6 p-4 md:p-6">
     <header><h1 className="text-2xl font-bold text-gray-900">Permis municipaux</h1><p className="mt-1 text-sm text-gray-600">Consultez les permis, leurs décisions, leurs pièces justificatives et leurs inspections.</p></header>
+    <PermitDocumentRequirementsPanel role={user?.role} />
     <section className="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 md:grid-cols-[1fr_220px_auto]" aria-label="Filtres des permis">
       <label className="text-sm font-medium text-gray-700">Recherche<input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Numéro ou type de permis" className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" /></label>
       <label className="text-sm font-medium text-gray-700">État<select value={status} onChange={(event) => { setStatus(event.target.value as '' | PermitStatus); setPage(1); }} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2">{statuses.map((item) => <option key={item.value || 'all'} value={item.value}>{item.label}</option>)}</select></label>
