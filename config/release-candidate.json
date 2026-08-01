@@ -1,0 +1,7 @@
+{
+  "version": "1.0.0",
+  "channel": "stable",
+  "status": "candidate",
+  "requiredGates": ["security", "production-readiness", "migration-readiness", "v1-release-gate"],
+  "minimumScore": 85
+}
