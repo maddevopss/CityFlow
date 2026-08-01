@@ -4,9 +4,18 @@ const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const config = require('../../config');
 const { permitWebhookLimiter } = require('../middleware/rateLimiters');
+const { authenticate, authorize } = require('../middleware/auth');
 const { ingestPermit } = require('../../services/permitIngestion');
+const { ALLOWED_STATUSES, listMunicipalPermits } = require('../../services/permitRegister');
 
 const router = express.Router();
+
+const registerQuerySchema = Joi.object({
+  status: Joi.string().valid(...ALLOWED_STATUSES),
+  q: Joi.string().trim().max(100).allow(''),
+  page: Joi.number().integer().min(1).default(1),
+  pageSize: Joi.number().integer().min(1).max(100).default(25)
+});
 
 const permitSchema = Joi.object({
   permit_id: Joi.string().trim().max(100).required(),
@@ -24,78 +33,41 @@ const permitSchema = Joi.object({
 function safeEqual(expected, received) {
   const expectedBuffer = Buffer.from(expected, 'utf8');
   const receivedBuffer = Buffer.from(received || '', 'utf8');
-
-  return expectedBuffer.length === receivedBuffer.length
-    && crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+  return expectedBuffer.length === receivedBuffer.length && crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
 }
 
 function verifyPermitWebhook(req, res, next) {
   const timestamp = req.get('x-cityflow-timestamp');
   const signature = req.get('x-cityflow-signature');
   const timestampSeconds = Number(timestamp);
-
-  if (!timestamp || !signature || !Number.isFinite(timestampSeconds)) {
-    return res.status(401).json({ message: 'Signature du webhook manquante' });
-  }
-
+  if (!timestamp || !signature || !Number.isFinite(timestampSeconds)) return res.status(401).json({ message: 'Signature du webhook manquante' });
   const age = Math.abs(Math.floor(Date.now() / 1000) - timestampSeconds);
-  if (age > config.permitWebhookToleranceSeconds) {
-    return res.status(401).json({ message: 'Signature du webhook expirée' });
-  }
-
+  if (age > config.permitWebhookToleranceSeconds) return res.status(401).json({ message: 'Signature du webhook expirée' });
   const payload = `${timestamp}.${JSON.stringify(req.body)}`;
-  const expected = crypto
-    .createHmac('sha256', config.permitWebhookSecret)
-    .update(payload)
-    .digest('hex');
-
-  if (!safeEqual(expected, signature)) {
-    return res.status(401).json({ message: 'Signature du webhook invalide' });
-  }
-
+  const expected = crypto.createHmac('sha256', config.permitWebhookSecret).update(payload).digest('hex');
+  if (!safeEqual(expected, signature)) return res.status(401).json({ message: 'Signature du webhook invalide' });
   next();
 }
 
+router.get('/', authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'VIEWER'), async (req, res) => {
+  const { error, value } = registerQuerySchema.validate(req.query, { abortEarly: false, stripUnknown: true });
+  if (error) return res.status(400).json({ message: 'Filtres de permis invalides', details: error.details.map(detail => detail.message) });
+  if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
+  const result = await listMunicipalPermits(prisma, { municipalityId: req.user.municipalityId, ...value });
+  return res.json(result);
+});
+
 router.post('/hook', permitWebhookLimiter, verifyPermitWebhook, async (req, res, next) => {
   try {
-    const { error, value } = permitSchema.validate(req.body, {
-      abortEarly: false,
-      stripUnknown: true
-    });
-
-    if (error) {
-      return res.status(400).json({
-        message: 'Données de permis invalides',
-        details: error.details.map(detail => detail.message)
-      });
-    }
-
-    const municipality = await prisma.municipality.findUnique({
-      where: { id: value.municipalityId },
-      select: { id: true }
-    });
-
-    if (!municipality) {
-      return res.status(404).json({ message: 'Municipalité inconnue' });
-    }
-
+    const { error, value } = permitSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
+    if (error) return res.status(400).json({ message: 'Données de permis invalides', details: error.details.map(detail => detail.message) });
+    const municipality = await prisma.municipality.findUnique({ where: { id: value.municipalityId }, select: { id: true } });
+    if (!municipality) return res.status(404).json({ message: 'Municipalité inconnue' });
     const result = await ingestPermit(prisma, value);
     const statusCode = result.operation === 'created' ? 201 : 200;
-
-    return res.status(statusCode).json({
-      eventId: result.event.id,
-      status: 'draft',
-      operation: result.operation
-    });
+    return res.status(statusCode).json({ eventId: result.event.id, status: 'draft', operation: result.operation });
   } catch (error) {
-    if (error.code === 'PERMIT_ALREADY_PROCESSED') {
-      return res.status(409).json({
-        message: 'Ce permis a déjà quitté l’état brouillon',
-        code: error.code,
-        eventId: error.eventId
-      });
-    }
-
+    if (error.code === 'PERMIT_ALREADY_PROCESSED') return res.status(409).json({ message: 'Ce permis a déjà quitté l’état brouillon', code: error.code, eventId: error.eventId });
     return next(error);
   }
 });
