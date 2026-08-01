@@ -1,0 +1,40 @@
+name: PR governance
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-governance:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate repository traceability
+        run: node scripts/validate-traceability.mjs
+
+      - name: Test PR governance safeguards
+        run: node scripts/test-pr-governance.mjs
+
+      - name: Validate PR governance declaration
+        env:
+          PR_GOVERNANCE_REPORT: .tmp/pr-governance-report.md
+        run: node scripts/validate-pr-governance.mjs
+
+      - name: Upload governance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-governance-report
+          path: .tmp/pr-governance-report.md
+          if-no-files-found: error
+          retention-days: 30
