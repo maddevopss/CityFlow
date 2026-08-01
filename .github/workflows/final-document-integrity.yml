@@ -1,0 +1,22 @@
+name: Final document integrity
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=require('./config/final-document-integrity.json');
+          const all=[...c.requiredDocuments,...c.requiredConfigs];
+          if(new Set(all).size!==all.length) process.exit(1);
+          for(const p of all){if(!fs.existsSync(p)||fs.statSync(p).size===0){console.error(`Invalid ${p}`);process.exit(1)}}
+          if(!c.emptyFilesForbidden||!c.duplicatePathsForbidden) process.exit(1);
+          console.log('Final document integrity valid');
+          NODE
