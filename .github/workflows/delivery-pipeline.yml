@@ -1,0 +1,88 @@
+name: Delivery pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Deployment target'
+        required: true
+        type: choice
+        options: [staging, production, rollback]
+      image_ref:
+        description: 'Immutable image or artifact reference'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cityflow-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ steps.ref.outputs.artifact }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: ref
+        shell: bash
+        run: |
+          test -n '${{ inputs.image_ref }}'
+          echo 'artifact=${{ inputs.image_ref }}' >> "$GITHUB_OUTPUT"
+      - name: Verify delivery documentation
+        run: test -f docs/industrialization/DELIVERY-PIPELINE.md
+
+  staging:
+    if: inputs.target == 'staging'
+    needs: preflight
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Require staging hook
+        env:
+          DEPLOY_HOOK: ${{ secrets.CITYFLOW_STAGING_DEPLOY_HOOK }}
+        run: test -n "$DEPLOY_HOOK"
+      - name: Deploy immutable artifact
+        env:
+          DEPLOY_HOOK: ${{ secrets.CITYFLOW_STAGING_DEPLOY_HOOK }}
+        run: curl --fail --silent --show-error -X POST -H 'content-type: application/json' --data '{"artifact":"${{ needs.preflight.outputs.artifact }}"}' "$DEPLOY_HOOK"
+      - name: Post-deployment health check
+        env:
+          HEALTH_URL: ${{ secrets.CITYFLOW_STAGING_HEALTH_URL }}
+        run: curl --fail --retry 8 --retry-delay 5 "$HEALTH_URL"
+
+  production:
+    if: inputs.target == 'production'
+    needs: preflight
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Require production hook
+        env:
+          DEPLOY_HOOK: ${{ secrets.CITYFLOW_PRODUCTION_DEPLOY_HOOK }}
+        run: test -n "$DEPLOY_HOOK"
+      - name: Deploy canary
+        env:
+          DEPLOY_HOOK: ${{ secrets.CITYFLOW_PRODUCTION_DEPLOY_HOOK }}
+        run: curl --fail --silent --show-error -X POST -H 'content-type: application/json' --data '{"artifact":"${{ needs.preflight.outputs.artifact }}","strategy":"canary","percentage":10}' "$DEPLOY_HOOK"
+      - name: Verify canary health
+        env:
+          HEALTH_URL: ${{ secrets.CITYFLOW_PRODUCTION_HEALTH_URL }}
+        run: curl --fail --retry 8 --retry-delay 5 "$HEALTH_URL"
+
+  rollback:
+    if: inputs.target == 'rollback'
+    needs: preflight
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Require rollback hook
+        env:
+          ROLLBACK_HOOK: ${{ secrets.CITYFLOW_PRODUCTION_ROLLBACK_HOOK }}
+        run: test -n "$ROLLBACK_HOOK"
+      - name: Roll back to selected artifact
+        env:
+          ROLLBACK_HOOK: ${{ secrets.CITYFLOW_PRODUCTION_ROLLBACK_HOOK }}
+        run: curl --fail --silent --show-error -X POST -H 'content-type: application/json' --data '{"artifact":"${{ needs.preflight.outputs.artifact }}"}' "$ROLLBACK_HOOK"
