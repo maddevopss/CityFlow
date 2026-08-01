@@ -1,0 +1,37 @@
+name: Disaster recovery readiness
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      database_url:
+        description: URL de la base isolée de restauration
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          test -f docs/industrialization/DISASTER-RECOVERY.md
+          grep -q 'RPO cible' docs/industrialization/DISASTER-RECOVERY.md
+          grep -q 'RTO cible' docs/industrialization/DISASTER-RECOVERY.md
+          grep -q 'Preuves exigées' docs/industrialization/DISASTER-RECOVERY.md
+
+  protected-preflight:
+    if: github.event_name == 'workflow_dispatch' && inputs.database_url != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuser toute cible de production
+        env:
+          DATABASE_URL: ${{ inputs.database_url }}
+        run: |
+          normalized=$(printf '%s' "$DATABASE_URL" | tr '[:upper:]' '[:lower:]')
+          if [[ "$normalized" == *prod* || "$normalized" == *production* ]]; then
+            echo '::error::Une cible de production est interdite pour cet exercice'
+            exit 1
+          fi
