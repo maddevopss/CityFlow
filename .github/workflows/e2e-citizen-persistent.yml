@@ -1,0 +1,33 @@
+name: E2E citizen persistent
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'e2e/tests/citizen-portal-persistent.mjs'
+      - '.github/workflows/e2e-citizen-persistent.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate scenario syntax
+        run: node --check e2e/tests/citizen-portal-persistent.mjs
+      - name: Run against staging
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          CITYFLOW_API_URL: ${{ secrets.CITYFLOW_API_URL }}
+          CITYFLOW_E2E_CITIZEN_TOKEN: ${{ secrets.CITYFLOW_E2E_CITIZEN_TOKEN }}
+          CITYFLOW_E2E_AGENT_TOKEN: ${{ secrets.CITYFLOW_E2E_AGENT_TOKEN }}
+        run: |
+          for name in CITYFLOW_API_URL CITYFLOW_E2E_CITIZEN_TOKEN CITYFLOW_E2E_AGENT_TOKEN; do
+            test -n "${!name}" || { echo "::error::$name is required"; exit 1; }
+          done
+          node e2e/tests/citizen-portal-persistent.mjs
