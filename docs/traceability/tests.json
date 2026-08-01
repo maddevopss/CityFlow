@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "TST-CF-GOV-001",
+      "title": "Valider la chaîne de traçabilité",
+      "type": "automated",
+      "runner": "Node.js 24",
+      "status": "active",
+      "path": "scripts/validate-traceability.mjs",
+      "expectedResult": "Aucun identifiant dupliqué, aucune référence cassée et couverture obligatoire complète."
+    }
+  ]
+}
