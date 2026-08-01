@@ -93,6 +93,32 @@ describe('Inspection assignments API', () => {
     expect(prisma.inspection.update).not.toHaveBeenCalled();
   });
 
+  it('retourne 404 lorsque l’inspection à affecter est absente', async () => {
+    prisma.inspection.findFirst.mockResolvedValue(null);
+    prisma.user.findFirst.mockResolvedValue({ id: inspectorId });
+
+    const res = await request(app)
+      .post(`/api/v1/inspections/${inspectionId}/assign`)
+      .set('Authorization', `Bearer ${agentToken}`)
+      .send({ inspectorId });
+
+    expect(res.status).toBe(404);
+    expect(prisma.inspection.update).not.toHaveBeenCalled();
+  });
+
+  it('refuse d’affecter une inspection déjà terminée', async () => {
+    prisma.inspection.findFirst.mockResolvedValue({ id: inspectionId, status: 'COMPLETED' });
+    prisma.user.findFirst.mockResolvedValue({ id: inspectorId });
+
+    const res = await request(app)
+      .post(`/api/v1/inspections/${inspectionId}/assign`)
+      .set('Authorization', `Bearer ${agentToken}`)
+      .send({ inspectorId });
+
+    expect(res.status).toBe(409);
+    expect(prisma.inspection.update).not.toHaveBeenCalled();
+  });
+
   it('limite un inspecteur à ses propres inspections', async () => {
     prisma.inspection.findMany.mockResolvedValue([]);
 
