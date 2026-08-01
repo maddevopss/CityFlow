@@ -1,0 +1,27 @@
+name: Final compliance gate
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=require('./config/final-compliance-gate.json');
+          if(c.productVersion!=='1.0.0'||c.minimumScore<95||!c.humanApprovalRequired||!c.automaticClosureForbidden) process.exit(1);
+          const missing=c.requiredEvidence.filter(p=>!fs.existsSync(p));
+          const isPr=process.env.GITHUB_EVENT_NAME==='pull_request';
+          if(missing.length&&!isPr){console.error(`Missing evidence: ${missing.join(', ')}`);process.exit(1)}
+          if(missing.length) console.log(`Declared PR dependencies: ${missing.join(', ')}`);
+          const present=c.requiredEvidence.length-missing.length;
+          const score=Math.round((present/c.requiredEvidence.length)*100);
+          if(!isPr&&score<c.minimumScore) process.exit(1);
+          console.log(`Final compliance score: ${score}%`);
+          NODE
