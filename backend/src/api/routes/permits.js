@@ -6,7 +6,11 @@ const config = require('../../config');
 const { permitWebhookLimiter } = require('../middleware/rateLimiters');
 const { authenticate, authorize } = require('../middleware/auth');
 const { ingestPermit } = require('../../services/permitIngestion');
-const { ALLOWED_STATUSES, listMunicipalPermits } = require('../../services/permitRegister');
+const {
+  ALLOWED_STATUSES,
+  listMunicipalPermits,
+  getMunicipalPermitDetail
+} = require('../../services/permitRegister');
 
 const router = express.Router();
 
@@ -16,6 +20,8 @@ const registerQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   pageSize: Joi.number().integer().min(1).max(100).default(25)
 });
+
+const permitIdSchema = Joi.string().guid({ version: ['uuidv4'] }).required();
 
 const permitSchema = Joi.object({
   permit_id: Joi.string().trim().max(100).required(),
@@ -49,12 +55,28 @@ function verifyPermitWebhook(req, res, next) {
   next();
 }
 
-router.get('/', authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'VIEWER'), async (req, res) => {
+const municipalPermitAccess = [authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'VIEWER')];
+
+router.get('/', ...municipalPermitAccess, async (req, res) => {
   const { error, value } = registerQuerySchema.validate(req.query, { abortEarly: false, stripUnknown: true });
   if (error) return res.status(400).json({ message: 'Filtres de permis invalides', details: error.details.map(detail => detail.message) });
   if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
   const result = await listMunicipalPermits(prisma, { municipalityId: req.user.municipalityId, ...value });
   return res.json(result);
+});
+
+router.get('/:permitId', ...municipalPermitAccess, async (req, res) => {
+  const { error, value: permitId } = permitIdSchema.validate(req.params.permitId);
+  if (error) return res.status(400).json({ message: 'Identifiant de permis invalide' });
+  if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
+
+  const detail = await getMunicipalPermitDetail(prisma, {
+    municipalityId: req.user.municipalityId,
+    permitId
+  });
+
+  if (!detail) return res.status(404).json({ message: 'Permis introuvable' });
+  return res.json(detail);
 });
 
 router.post('/hook', permitWebhookLimiter, verifyPermitWebhook, async (req, res, next) => {
