@@ -6,7 +6,7 @@ Ce bloc permet de consulter les équipes et les véhicules municipaux, puis d’
 
 - isolation stricte par municipalité;
 - équipe active requise;
-- véhicule disponible requis;
+- véhicule disponible requis uniquement lorsqu’un véhicule est spécifié;
 - historique d’affectation append-only;
 - authentification, rôles explicites et limitation de débit.
 
