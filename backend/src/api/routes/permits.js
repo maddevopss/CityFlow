@@ -24,8 +24,48 @@ const documentReviewSchema = Joi.object({ status: Joi.string().valid('ACCEPTED',
 const requirementSchema = Joi.object({ permitSubtype: Joi.string().trim().min(2).max(100).required(), requiredDocumentTypes: Joi.array().items(Joi.string().trim().min(2).max(100)).max(50).required() });
 const permitSchema = Joi.object({ permit_id: Joi.string().trim().max(100).required(), contractor: Joi.string().trim().max(200).allow('', null), start_date: Joi.date().iso().required(), end_date: Joi.date().iso().min(Joi.ref('start_date')).allow(null), municipalityId: Joi.number().integer().positive().required(), geometry: Joi.object({ type: Joi.string().valid('Point', 'LineString', 'Polygon').required(), coordinates: Joi.array().required() }).required(), impacts: Joi.array().items(Joi.string().trim().max(100)).default([]) });
 
-function safeEqual(expected, received) { const a = Buffer.from(expected, 'utf8'); const b = Buffer.from(received || '', 'utf8'); return a.length === b.length && crypto.timingSafeEqual(a, b); }
-function verifyPermitWebhook(req, res, next) { const timestamp = req.get('x-cityflow-timestamp'); const signature = req.get('x-cityflow-signature'); const seconds = Number(timestamp); if (!timestamp || !signature || !Number.isFinite(seconds)) return res.status(401).json({ message: 'Signature du webhook manquante' }); if (Math.abs(Math.floor(Date.now() / 1000) - seconds) > config.permitWebhookToleranceSeconds) return res.status(401).json({ message: 'Signature du webhook expirée' }); const expected = crypto.createHmac('sha256', config.permitWebhookSecret).update(`${timestamp}.${JSON.stringify(req.body)}`).digest('hex'); if (!safeEqual(expected, signature)) return res.status(401).json({ message: 'Signature du webhook invalide' }); next(); }
+function safeEqual(expected, received) {
+  const a = Buffer.from(expected, 'utf8');
+  const b = Buffer.from(received, 'utf8');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+function verifyPermitWebhook(req, res, next) {
+  if (!req.is('application/json')) {
+    return res.status(415).json({ message: 'Le webhook exige un corps JSON' });
+  }
+
+  const timestamp = req.get('x-cityflow-timestamp');
+  const signature = req.get('x-cityflow-signature');
+  if (!timestamp || !signature) {
+    return res.status(401).json({ message: 'Signature du webhook manquante' });
+  }
+  if (!/^\d{1,13}$/.test(timestamp) || !/^[a-f0-9]{64}$/i.test(signature)) {
+    return res.status(401).json({ message: 'Signature du webhook invalide' });
+  }
+
+  const seconds = Number(timestamp);
+  if (!Number.isSafeInteger(seconds)) {
+    return res.status(401).json({ message: 'Signature du webhook invalide' });
+  }
+  if (Math.abs(Math.floor(Date.now() / 1000) - seconds) > config.permitWebhookToleranceSeconds) {
+    return res.status(401).json({ message: 'Signature du webhook expirée' });
+  }
+  if (!Buffer.isBuffer(req.rawBody)) {
+    return res.status(400).json({ message: 'Corps brut du webhook indisponible' });
+  }
+
+  const expected = crypto
+    .createHmac('sha256', config.permitWebhookSecret)
+    .update(`${timestamp}.`)
+    .update(req.rawBody)
+    .digest('hex');
+  if (!safeEqual(expected, signature)) {
+    return res.status(401).json({ message: 'Signature du webhook invalide' });
+  }
+  return next();
+}
+
 function validatePermitId(req, res) { const { error, value } = permitIdSchema.validate(req.params.permitId); if (error) { res.status(400).json({ message: 'Identifiant de permis invalide' }); return null; } return value; }
 function mapPermitError(error, res, next) {
   if (error.code === 'PERMIT_NOT_FOUND') return res.status(404).json({ message: error.message, code: error.code });
