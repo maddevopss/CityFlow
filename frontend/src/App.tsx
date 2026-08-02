@@ -38,7 +38,13 @@ const App: React.FC = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route element={<Layout />}>
+          <Route
+            element={
+              <ProtectedRoute requiredRole="CITIZEN">
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
             <Route path="/" element={<Dashboard />} />
             <Route
               path="/events"
