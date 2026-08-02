@@ -61,7 +61,7 @@ jobs:
 
           echo "Fichiers vérifiés par Prettier :"
           cat /tmp/prettier-files.txt
-          xargs --no-run-if-empty npx prettier --check < /tmp/prettier-files.txt
+          xargs --no-run-if-empty npm exec --no -- prettier --check < /tmp/prettier-files.txt
 
       - name: Lint
         run: npm run lint
