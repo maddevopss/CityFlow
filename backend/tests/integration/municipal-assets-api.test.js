@@ -35,7 +35,7 @@ describe('municipal assets API', () => {
   it('exige une municipalité', async () => {
     const response = await request(app)
       .get('/api/v1/municipal-assets')
-      .set('Authorization', `Bearer ${token('ADMIN', undefined)}`);
+      .set('Authorization', `Bearer ${token('ADMIN', null)}`);
     expect(response.status).toBe(403);
     expect(service.listAssets).not.toHaveBeenCalled();
   });
