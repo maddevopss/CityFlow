@@ -49,9 +49,7 @@ describe("AuthProvider", () => {
     });
 
     expect(mockedGetMe).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId("user")).toHaveTextContent(
-      "citoyen@example.com",
-    );
+    expect(screen.getByTestId("user")).toHaveTextContent("citoyen@example.com");
   });
 
   it("synchronise le jeton exposé avec le stockage restauré", async () => {
