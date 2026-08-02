@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
 import { Button } from '../components/common/Button';
 import { InspectionForm } from '../components/forms/InspectionForm';
-import { createInspection, getInspections } from '../services/inspectionService';
+import { useCreateInspection, useInspections } from '../hooks/useInspections';
 import type { CreateInspectionInput, InspectionStatus, InspectionType } from '../types';
 
 const statusLabels: Record<InspectionStatus, string> = {
@@ -21,23 +19,10 @@ const typeLabels: Record<InspectionType, string> = {
 };
 
 const InspectionsPage: React.FC = () => {
-  const queryClient = useQueryClient();
   const [status, setStatus] = useState<InspectionStatus | ''>('');
   const [showForm, setShowForm] = useState(false);
-  const inspectionsQuery = useQuery({
-    queryKey: ['inspections', status],
-    queryFn: () => getInspections(status || undefined)
-  });
-
-  const createMutation = useMutation({
-    mutationFn: createInspection,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['inspections'] });
-      setShowForm(false);
-      toast.success('Inspection planifiée');
-    },
-    onError: () => toast.error('Impossible de planifier l’inspection')
-  });
+  const inspectionsQuery = useInspections(status);
+  const createMutation = useCreateInspection(() => setShowForm(false));
 
   const handleFormSubmit = (data: CreateInspectionInput) => {
     createMutation.mutate(data);
@@ -56,10 +41,7 @@ const InspectionsPage: React.FC = () => {
       </div>
 
       {showForm && (
-        <InspectionForm
-          onSubmit={handleFormSubmit}
-          isLoading={createMutation.isPending}
-        />
+        <InspectionForm onSubmit={handleFormSubmit} isLoading={createMutation.isPending} />
       )}
 
       <div className="flex items-center gap-3">
