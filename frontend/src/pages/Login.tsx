@@ -3,14 +3,14 @@ import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/common/Button";
 import { Input } from "../components/forms/Input";
+import {
+  resolveSafeReturnLocation,
+  type ReturnLocation,
+} from "../features/auth/returnLocation";
 import { useAuth } from "../hooks/useAuth";
 
 type LoginLocationState = {
-  from?: {
-    pathname?: string;
-    search?: string;
-    hash?: string;
-  };
+  from?: ReturnLocation;
 };
 
 const Login: React.FC = () => {
@@ -30,8 +30,7 @@ const Login: React.FC = () => {
     try {
       await login(email, password);
       const { from } = (location.state as LoginLocationState | null) ?? {};
-      const returnTo = `${from?.pathname ?? "/"}${from?.search ?? ""}${from?.hash ?? ""}`;
-      navigate(returnTo, { replace: true });
+      navigate(resolveSafeReturnLocation(from), { replace: true });
     } catch (err) {
       const message = axios.isAxiosError(err)
         ? err.response?.data?.message
