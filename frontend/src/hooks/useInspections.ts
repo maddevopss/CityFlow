@@ -95,7 +95,7 @@ export const useInspectionTrends = (months: number) => {
 
 export const useInspectionCalendar = (from: string, to: string) => {
   const query = useQuery({
-    queryKey: ['inspection-calendar', from],
+    queryKey: ['inspection-calendar', from, to],
     queryFn: () => getInspectionCalendar(from, to)
   });
 
