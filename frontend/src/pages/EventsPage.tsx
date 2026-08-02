@@ -1,8 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getEvents } from '../services/eventService';
 import { useAuth } from '../hooks/useAuth';
+import { useEvents } from '../hooks/useEvents';
 import { Button } from '../components/common/Button';
 
 const statusBadges: Record<string, string> = {
@@ -16,10 +15,7 @@ const statusBadges: Record<string, string> = {
 
 const EventsPage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
-  const { data: events, isLoading } = useQuery({
-    queryKey: ['events'],
-    queryFn: () => getEvents()
-  });
+  const { events, isLoading } = useEvents();
 
   if (isLoading) {
     return (

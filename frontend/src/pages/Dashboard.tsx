@@ -1,7 +1,6 @@
 import React from 'react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
-import { useQuery } from '@tanstack/react-query';
-import { getEventsGeoJSON } from '../services/eventService';
+import { useEventsGeoJSON } from '../hooks/useEvents';
 import type { Feature } from 'geojson';
 import type { Layer, Path } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -15,10 +14,7 @@ const typeColors: Record<string, string> = {
 };
 
 const Dashboard: React.FC = () => {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['events-geojson'],
-    queryFn: () => getEventsGeoJSON({ status: 'ACTIVE,PLANNED' })
-  });
+  const { data, isLoading, error } = useEventsGeoJSON();
 
   const onEachFeature = (feature: Feature, layer: Layer) => {
     if (feature.properties) {

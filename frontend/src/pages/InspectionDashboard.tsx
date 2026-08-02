@@ -1,19 +1,6 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import api from '../services/api';
-
-type DashboardData = {
-  total: number;
-  scheduled: number;
-  completed: number;
-  cancelled: number;
-  upcoming: number;
-  overdue: number;
-  unassigned: number;
-  unreadReminders: number;
-  completionRate: number;
-  outcomes: Record<string, number>;
-};
+import { useInspectionDashboard } from '../hooks/useInspections';
+import type { DashboardData } from '../services/inspectionService';
 
 const cards: Array<{ key: keyof DashboardData; label: string }> = [
   { key: 'scheduled', label: 'Planifiées' },
@@ -25,10 +12,7 @@ const cards: Array<{ key: keyof DashboardData; label: string }> = [
 ];
 
 const InspectionDashboard: React.FC = () => {
-  const { data, isLoading, error } = useQuery<DashboardData>({
-    queryKey: ['inspection-dashboard'],
-    queryFn: async () => (await api.get('/inspection-dashboard')).data
-  });
+  const { dashboardData: data, isLoading, isError: error } = useInspectionDashboard();
 
   if (isLoading) return <div className="p-6 text-gray-600">Chargement des indicateurs...</div>;
   if (error || !data) return <div className="p-6 text-red-600">Impossible de charger le tableau de bord.</div>;

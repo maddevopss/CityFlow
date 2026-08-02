@@ -1,19 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import api from '../services/api';
-
-interface CalendarInspection {
-  id: string;
-  scheduledAt: string;
-  address: string;
-  inspectionType: string;
-  status: string;
-}
-
-interface CalendarResponse {
-  inspections: CalendarInspection[];
-  conflicts: string[];
-}
+import { useInspectionCalendar } from '../hooks/useInspections';
 
 const startOfWeek = (date: Date) => {
   const copy = new Date(date);
@@ -28,15 +15,10 @@ const InspectionCalendar: React.FC = () => {
   const from = useMemo(() => startOfWeek(anchor), [anchor]);
   const to = useMemo(() => new Date(from.getTime() + 7 * 24 * 60 * 60 * 1000), [from]);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['inspection-calendar', from.toISOString()],
-    queryFn: async () => {
-      const response = await api.get<CalendarResponse>('/inspection-calendar', {
-        params: { from: from.toISOString(), to: to.toISOString() }
-      });
-      return response.data;
-    }
-  });
+  const { calendarData: data, isLoading } = useInspectionCalendar(
+    from.toISOString(),
+    to.toISOString()
+  );
 
   const days = Array.from({ length: 7 }, (_, index) => new Date(from.getTime() + index * 86400000));
 

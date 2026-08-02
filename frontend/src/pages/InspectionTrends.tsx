@@ -1,16 +1,9 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import api from '../services/api';
-
-type Trend = { month: string; scheduled: number; completed: number; compliant: number; nonCompliant: number };
-type TrendsResponse = { trends: Trend[] };
+import { useInspectionTrends } from '../hooks/useInspections';
 
 const InspectionTrends: React.FC = () => {
   const [months, setMonths] = useState(6);
-  const { data, isLoading, error } = useQuery<TrendsResponse>({
-    queryKey: ['inspection-trends', months],
-    queryFn: async () => (await api.get('/inspection-trends', { params: { months } })).data
-  });
+  const { trendsData: data, isLoading, isError: error } = useInspectionTrends(months);
 
   if (isLoading) return <div className="p-6 text-gray-600">Chargement des tendances...</div>;
   if (error || !data) return <div className="p-6 text-red-600">Impossible de charger les tendances.</div>;
