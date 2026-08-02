@@ -154,9 +154,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 }`
               }
             >
-              <span className="text-lg" aria-hidden="true">
-                {item.icon}
-              </span>
+              <span className="text-lg" aria-hidden="true">{item.icon}</span>
               <span className="flex-1">{item.name}</span>
               {item.badge && unreadCount > 0 ? (
                 <span
