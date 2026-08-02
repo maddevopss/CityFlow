@@ -23,7 +23,7 @@ describe('GET /metrics/http', () => {
     expect(response.status).toBe(403);
   });
 
-  it('autorise un administrateur', async () => {
+  it('autorise et limite un administrateur', async () => {
     const token = jwt.sign(
       { id: 'admin-id', role: 'ADMIN', municipalityId: 1 },
       config.jwtSecret
@@ -34,6 +34,7 @@ describe('GET /metrics/http', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
+    expect(response.headers.ratelimit).toBeDefined();
     expect(response.body).toEqual({
       generatedAt: expect.any(String),
       metrics: expect.any(Array)

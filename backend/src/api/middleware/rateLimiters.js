@@ -48,11 +48,20 @@ const citizenReadLimiter = rateLimit({
   message: { message: 'Trop de consultations, réessayez plus tard' }
 });
 
+const metricsReadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de consultations des métriques, réessayez plus tard' }
+});
+
 module.exports = {
   loginLimiter,
   permitWebhookLimiter,
   permitWriteLimiter,
   permitReadLimiter,
   citizenWriteLimiter,
-  citizenReadLimiter
+  citizenReadLimiter,
+  metricsReadLimiter
 };
