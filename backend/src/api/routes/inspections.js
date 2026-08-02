@@ -2,6 +2,10 @@ const express = require('express');
 const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const { authenticate, authorize } = require('../middleware/auth');
+const {
+  operationsReadLimiter,
+  operationsWriteLimiter
+} = require('../middleware/rateLimiters');
 
 const router = express.Router();
 const allowedRoles = ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'];
@@ -43,11 +47,16 @@ function validate(schema) {
       });
     }
     req.validatedBody = value;
-    next();
+    return next();
   };
 }
 
-router.use(authenticate, authorize(...allowedRoles));
+function inspectionRateLimiter(req, res, next) {
+  const limiter = req.method === 'GET' ? operationsReadLimiter : operationsWriteLimiter;
+  return limiter(req, res, next);
+}
+
+router.use(inspectionRateLimiter, authenticate, authorize(...allowedRoles));
 
 router.get('/inspectors', async (req, res) => {
   const inspectors = await prisma.user.findMany({
@@ -55,7 +64,7 @@ router.get('/inspectors', async (req, res) => {
     select: { id: true, fullName: true, email: true },
     orderBy: [{ fullName: 'asc' }, { email: 'asc' }]
   });
-  res.json(inspectors);
+  return res.json(inspectors);
 });
 
 router.get('/', async (req, res) => {
@@ -108,7 +117,7 @@ router.get('/', async (req, res) => {
     })
   ]);
 
-  res.json({
+  return res.json({
     items: inspections,
     pagination: {
       page,
@@ -134,7 +143,7 @@ router.post('/', validate(createInspectionSchema), async (req, res) => {
       createdBy: req.user.sub
     }
   });
-  res.status(201).json(inspection);
+  return res.status(201).json(inspection);
 });
 
 router.get('/:id', async (req, res) => {
@@ -150,7 +159,7 @@ router.get('/:id', async (req, res) => {
   });
 
   if (!inspection) return res.status(404).json({ message: 'Inspection introuvable' });
-  res.json(inspection);
+  return res.json(inspection);
 });
 
 router.post('/:id/assign', authorize('ADMIN', 'MUNICIPAL_AGENT'), validate(assignmentSchema), async (req, res) => {
@@ -184,7 +193,7 @@ router.post('/:id/assign', authorize('ADMIN', 'MUNICIPAL_AGENT'), validate(assig
     data: { assignedTo: inspector.id, assignedAt: new Date(), assignedBy: req.user.sub },
     include: { inspector: { select: { id: true, fullName: true, email: true } } }
   });
-  res.json(updated);
+  return res.json(updated);
 });
 
 router.post('/:id/complete', validate(completeInspectionSchema), async (req, res) => {
@@ -215,7 +224,7 @@ router.post('/:id/complete', validate(completeInspectionSchema), async (req, res
       completedBy: req.user.sub
     }
   });
-  res.json(inspection);
+  return res.json(inspection);
 });
 
 module.exports = router;
