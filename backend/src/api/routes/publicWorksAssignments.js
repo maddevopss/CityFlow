@@ -8,9 +8,9 @@ const { listTeams, listVehicles, assignWorkOrder } = require('../../services/pub
 const router = express.Router();
 const uuid = Joi.string().guid({ version: ['uuidv4'] });
 const assignmentSchema = Joi.object({
-  teamId: uuid.allow(null),
-  vehicleId: uuid.allow(null)
-}).or('teamId', 'vehicleId');
+  teamId: uuid.required(),
+  vehicleId: uuid.allow(null).optional()
+});
 
 router.get('/teams', permitReadLimiter, authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'INSPECTOR', 'VIEWER'), async (req, res) => {
   if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
@@ -31,7 +31,7 @@ router.post('/work-orders/:workOrderId/assign', permitWriteLimiter, authenticate
     const item = await assignWorkOrder(prisma, {
       municipalityId: req.user.municipalityId,
       workOrderId: idResult.value,
-      teamId: bodyResult.value.teamId || null,
+      teamId: bodyResult.value.teamId,
       vehicleId: bodyResult.value.vehicleId || null,
       actorId: req.user.sub
     });
