@@ -54,13 +54,27 @@ function packageNameFromSpecifier(specifier) {
   return specifier.split("/")[0];
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function scriptUsesDependency(scriptCommands, dependency) {
+  const escapedDependency = escapeRegExp(dependency);
+  const packageNameCharacter = "A-Za-z0-9@._/-";
+  const pattern = new RegExp(
+    `(^|[^${packageNameCharacter}])${escapedDependency}($|[^${packageNameCharacter}])`,
+  );
+
+  return pattern.test(scriptCommands);
+}
+
 const auditedFiles = [
   ...(await collectFiles(sourceRoot)),
   ...(await collectFiles(frontendRoot, false)),
 ];
 const usedPackages = new Set();
 const importPattern =
-  /(?:from\s*|import\s*\(|require\s*\()\s*["']([^"']+)["']/g;
+  /(?:from\s*|import\s+|import\s*\(|require\s*\()\s*["']([^"']+)["']/g;
 
 for (const file of auditedFiles) {
   const content = await readFile(file, "utf8");
@@ -80,7 +94,7 @@ const unusedDependencies = declaredDependencies.filter(
   (dependency) =>
     !ignoredDependencies.has(dependency) &&
     !usedPackages.has(dependency) &&
-    !scriptCommands.includes(dependency),
+    !scriptUsesDependency(scriptCommands, dependency),
 );
 
 if (unusedDependencies.length === 0) {
