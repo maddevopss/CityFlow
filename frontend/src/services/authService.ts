@@ -29,5 +29,4 @@ export const getMe = async () => {
 
 export const logout = () => {
   localStorage.removeItem("token");
-  localStorage.removeItem("user");
 };
