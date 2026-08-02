@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { Button } from '../components/common/Button';
+import { InspectionForm } from '../components/forms/InspectionForm';
 import { createInspection, getInspections } from '../services/inspectionService';
 import type { CreateInspectionInput, InspectionStatus, InspectionType } from '../types';
 
@@ -23,14 +24,6 @@ const InspectionsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<InspectionStatus | ''>('');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<CreateInspectionInput>({
-    scheduledAt: '',
-    address: '',
-    inspectionType: 'PRE_WORK',
-    permitId: '',
-    notes: ''
-  });
-
   const inspectionsQuery = useQuery({
     queryKey: ['inspections', status],
     queryFn: () => getInspections(status || undefined)
@@ -41,20 +34,13 @@ const InspectionsPage: React.FC = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['inspections'] });
       setShowForm(false);
-      setForm({ scheduledAt: '', address: '', inspectionType: 'PRE_WORK', permitId: '', notes: '' });
       toast.success('Inspection planifiée');
     },
     onError: () => toast.error('Impossible de planifier l’inspection')
   });
 
-  const submit = (event: React.FormEvent) => {
-    event.preventDefault();
-    createMutation.mutate({
-      ...form,
-      scheduledAt: new Date(form.scheduledAt).toISOString(),
-      permitId: form.permitId || null,
-      notes: form.notes || null
-    });
+  const handleFormSubmit = (data: CreateInspectionInput) => {
+    createMutation.mutate(data);
   };
 
   return (
@@ -70,59 +56,10 @@ const InspectionsPage: React.FC = () => {
       </div>
 
       {showForm && (
-        <form onSubmit={submit} className="grid gap-4 rounded-lg bg-white p-6 shadow md:grid-cols-2">
-          <label className="text-sm font-medium text-gray-700">
-            Date et heure
-            <input
-              required
-              type="datetime-local"
-              value={form.scheduledAt}
-              onChange={event => setForm({ ...form, scheduledAt: event.target.value })}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-            />
-          </label>
-          <label className="text-sm font-medium text-gray-700">
-            Type
-            <select
-              value={form.inspectionType}
-              onChange={event => setForm({ ...form, inspectionType: event.target.value as InspectionType })}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-            >
-              {Object.entries(typeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-            </select>
-          </label>
-          <label className="text-sm font-medium text-gray-700 md:col-span-2">
-            Adresse
-            <input
-              required
-              minLength={3}
-              value={form.address}
-              onChange={event => setForm({ ...form, address: event.target.value })}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-            />
-          </label>
-          <label className="text-sm font-medium text-gray-700">
-            Identifiant du permis (optionnel)
-            <input
-              value={form.permitId || ''}
-              onChange={event => setForm({ ...form, permitId: event.target.value })}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-            />
-          </label>
-          <label className="text-sm font-medium text-gray-700">
-            Notes
-            <textarea
-              value={form.notes || ''}
-              onChange={event => setForm({ ...form, notes: event.target.value })}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-            />
-          </label>
-          <div className="md:col-span-2">
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? 'Planification…' : 'Planifier'}
-            </Button>
-          </div>
-        </form>
+        <InspectionForm
+          onSubmit={handleFormSubmit}
+          isLoading={createMutation.isPending}
+        />
       )}
 
       <div className="flex items-center gap-3">
