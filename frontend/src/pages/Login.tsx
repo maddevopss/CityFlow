@@ -29,7 +29,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cityflow-50 to-cityflow-100">
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cityflow-50 to-cityflow-100">
       <div className="max-w-md w-full mx-4">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
@@ -38,21 +38,22 @@ const Login: React.FC = () => {
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6" role="alert">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Courriel
               </label>
               <input
+                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input-field"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cityflow-500 focus:border-transparent"
                 placeholder="vous@exemple.com"
                 required
                 autoFocus
@@ -60,14 +61,15 @@ const Login: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Mot de passe
               </label>
               <input
+                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input-field"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cityflow-500 focus:border-transparent"
                 placeholder="••••••••"
                 required
               />
@@ -83,12 +85,14 @@ const Login: React.FC = () => {
             </Button>
           </form>
 
-          <p className="text-xs text-gray-500 text-center mt-6">
-            CityFlow © 2026 - Plateforme de Gestion Dynamique de la Voirie
-          </p>
+          <footer className="mt-6 text-center">
+            <p className="text-xs text-gray-500">
+              CityFlow © 2026 - Plateforme de Gestion Dynamique de la Voirie
+            </p>
+          </footer>
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 
