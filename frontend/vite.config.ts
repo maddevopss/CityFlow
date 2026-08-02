@@ -11,5 +11,17 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          leaflet: ['leaflet', 'react-leaflet', 'leaflet-draw', 'react-leaflet-draw'],
+          query: ['@tanstack/react-query'],
+          ui: ['lucide-react', 'react-toastify']
+        }
+      }
+    }
   }
 });
