@@ -1,5 +1,14 @@
-import React, { createContext, useCallback, useEffect, useState } from "react";
-import { getMe, login as loginApi, logout as logoutApi } from "../services/authService";
+import React, {
+  createContext,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+import {
+  getMe,
+  login as loginApi,
+  logout as logoutApi,
+} from "../services/authService";
 import type { User } from "../types";
 
 interface AuthContextType {
