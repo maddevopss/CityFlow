@@ -8,10 +8,19 @@ const packageJson = JSON.parse(
   await readFile(path.join(frontendRoot, "package.json"), "utf8"),
 );
 
-const sourceExtensions = new Set([".css", ".js", ".jsx", ".ts", ".tsx"]);
+const sourceExtensions = new Set([
+  ".cjs",
+  ".css",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".ts",
+  ".tsx",
+]);
 const ignoredDependencies = new Set(["react", "react-dom"]);
+const ignoredDirectories = new Set(["dist", "node_modules"]);
 
-async function collectSourceFiles(directory) {
+async function collectFiles(directory, recursive = true) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
 
@@ -19,7 +28,9 @@ async function collectSourceFiles(directory) {
     const entryPath = path.join(directory, entry.name);
 
     if (entry.isDirectory()) {
-      files.push(...(await collectSourceFiles(entryPath)));
+      if (recursive && !ignoredDirectories.has(entry.name)) {
+        files.push(...(await collectFiles(entryPath)));
+      }
       continue;
     }
 
@@ -43,11 +54,15 @@ function packageNameFromSpecifier(specifier) {
   return specifier.split("/")[0];
 }
 
-const sourceFiles = await collectSourceFiles(sourceRoot);
+const auditedFiles = [
+  ...(await collectFiles(sourceRoot)),
+  ...(await collectFiles(frontendRoot, false)),
+];
 const usedPackages = new Set();
-const importPattern = /(?:from\s*|import\s*\(|require\s*\()\s*["']([^"']+)["']/g;
+const importPattern =
+  /(?:from\s*|import\s*\(|require\s*\()\s*["']([^"']+)["']/g;
 
-for (const file of sourceFiles) {
+for (const file of auditedFiles) {
   const content = await readFile(file, "utf8");
 
   for (const match of content.matchAll(importPattern)) {
@@ -59,10 +74,13 @@ for (const file of sourceFiles) {
   }
 }
 
+const scriptCommands = Object.values(packageJson.scripts ?? {}).join(" ");
 const declaredDependencies = Object.keys(packageJson.dependencies ?? {});
 const unusedDependencies = declaredDependencies.filter(
   (dependency) =>
-    !ignoredDependencies.has(dependency) && !usedPackages.has(dependency),
+    !ignoredDependencies.has(dependency) &&
+    !usedPackages.has(dependency) &&
+    !scriptCommands.includes(dependency),
 );
 
 if (unusedDependencies.length === 0) {
@@ -70,11 +88,13 @@ if (unusedDependencies.length === 0) {
   process.exit(0);
 }
 
-console.log("Dépendances déclarées sans import détecté dans src :");
+console.log(
+  "Dépendances déclarées sans usage détecté dans src, la configuration ou les scripts npm :",
+);
 for (const dependency of unusedDependencies.sort()) {
   console.log(`- ${dependency}`);
 }
 
 console.log(
-  "Vérifier les usages dynamiques, CSS ou de configuration avant tout retrait.",
+  "Vérifier les usages générés, externes ou chargés à l’exécution avant tout retrait.",
 );
