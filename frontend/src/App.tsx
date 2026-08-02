@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastContainer } from "react-toastify";
@@ -7,24 +7,33 @@ import "react-toastify/dist/ReactToastify.css";
 import { AuthProvider } from "./context/AuthContext";
 import Layout from "./components/layout/Layout";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import EventsPage from "./pages/EventsPage";
-import CreateEvent from "./pages/CreateEvent";
-import EditEvent from "./pages/EditEvent";
-import Exports from "./pages/Exports";
-import InspectionsPage from "./pages/InspectionsPage";
-import InspectionDetail from "./pages/InspectionDetail";
-import InspectionCalendar from "./pages/InspectionCalendar";
-import InspectionDashboard from "./pages/InspectionDashboard";
-import InspectionTrends from "./pages/InspectionTrends";
-import CitizenPortalPage from "./pages/CitizenPortalPage";
-import MunicipalCitizenRequestsPage from "./pages/MunicipalCitizenRequestsPage";
-import MunicipalCitizenRequestDetailPage from "./pages/MunicipalCitizenRequestDetailPage";
-import CitizenServiceLevelsPage from "./pages/CitizenServiceLevelsPage";
-import CitizenEscalationHistoryPage from "./pages/CitizenEscalationHistoryPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import PermitsPage from "./pages/PermitsPage";
 import ProtectedRoute from "./components/common/ProtectedRoute";
+
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const EventsPage = lazy(() => import("./pages/EventsPage"));
+const CreateEvent = lazy(() => import("./pages/CreateEvent"));
+const EditEvent = lazy(() => import("./pages/EditEvent"));
+const Exports = lazy(() => import("./pages/Exports"));
+const InspectionsPage = lazy(() => import("./pages/InspectionsPage"));
+const InspectionDetail = lazy(() => import("./pages/InspectionDetail"));
+const InspectionCalendar = lazy(() => import("./pages/InspectionCalendar"));
+const InspectionDashboard = lazy(() => import("./pages/InspectionDashboard"));
+const InspectionTrends = lazy(() => import("./pages/InspectionTrends"));
+const CitizenPortalPage = lazy(() => import("./pages/CitizenPortalPage"));
+const MunicipalCitizenRequestsPage = lazy(
+  () => import("./pages/MunicipalCitizenRequestsPage"),
+);
+const MunicipalCitizenRequestDetailPage = lazy(
+  () => import("./pages/MunicipalCitizenRequestDetailPage"),
+);
+const CitizenServiceLevelsPage = lazy(
+  () => import("./pages/CitizenServiceLevelsPage"),
+);
+const CitizenEscalationHistoryPage = lazy(
+  () => import("./pages/CitizenEscalationHistoryPage"),
+);
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const PermitsPage = lazy(() => import("./pages/PermitsPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,151 +41,159 @@ const queryClient = new QueryClient({
   },
 });
 
+const routeFallback = (
+  <div role="status" aria-live="polite">
+    Chargement de la page…
+  </div>
+);
+
 const App: React.FC = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            element={
-              <ProtectedRoute requiredRole="CITIZEN">
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/" element={<Dashboard />} />
+        <Suspense fallback={routeFallback}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
             <Route
-              path="/events"
-              element={
-                <ProtectedRoute requiredRole="VIEWER">
-                  <EventsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/events/new"
-              element={
-                <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
-                  <CreateEvent />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/events/:id/edit"
-              element={
-                <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
-                  <EditEvent />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/exports"
-              element={
-                <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
-                  <Exports />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/permits"
-              element={
-                <ProtectedRoute requiredRole="VIEWER">
-                  <PermitsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/inspections"
-              element={
-                <ProtectedRoute requiredRole="INSPECTOR">
-                  <InspectionsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/inspections/dashboard"
-              element={
-                <ProtectedRoute requiredRole="INSPECTOR">
-                  <InspectionDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/inspections/trends"
-              element={
-                <ProtectedRoute requiredRole="INSPECTOR">
-                  <InspectionTrends />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/inspections/calendar"
-              element={
-                <ProtectedRoute requiredRole="INSPECTOR">
-                  <InspectionCalendar />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/inspections/:id"
-              element={
-                <ProtectedRoute requiredRole="INSPECTOR">
-                  <InspectionDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/citizen"
               element={
                 <ProtectedRoute requiredRole="CITIZEN">
-                  <CitizenPortalPage />
+                  <Layout />
                 </ProtectedRoute>
               }
-            />
-            <Route
-              path="/municipal/citizen-requests"
-              element={
-                <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
-                  <MunicipalCitizenRequestsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/municipal/citizen-requests/service-levels"
-              element={
-                <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
-                  <CitizenServiceLevelsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/municipal/citizen-requests/escalations/history"
-              element={
-                <ProtectedRoute requiredRole="MANAGER">
-                  <CitizenEscalationHistoryPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/municipal/citizen-requests/:id"
-              element={
-                <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
-                  <MunicipalCitizenRequestDetailPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notifications"
-              element={
-                <ProtectedRoute requiredRole="CITIZEN">
-                  <NotificationsPage />
-                </ProtectedRoute>
-              }
-            />
-          </Route>
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+            >
+              <Route path="/" element={<Dashboard />} />
+              <Route
+                path="/events"
+                element={
+                  <ProtectedRoute requiredRole="VIEWER">
+                    <EventsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/events/new"
+                element={
+                  <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
+                    <CreateEvent />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/events/:id/edit"
+                element={
+                  <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
+                    <EditEvent />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/exports"
+                element={
+                  <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
+                    <Exports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/permits"
+                element={
+                  <ProtectedRoute requiredRole="VIEWER">
+                    <PermitsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inspections"
+                element={
+                  <ProtectedRoute requiredRole="INSPECTOR">
+                    <InspectionsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inspections/dashboard"
+                element={
+                  <ProtectedRoute requiredRole="INSPECTOR">
+                    <InspectionDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inspections/trends"
+                element={
+                  <ProtectedRoute requiredRole="INSPECTOR">
+                    <InspectionTrends />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inspections/calendar"
+                element={
+                  <ProtectedRoute requiredRole="INSPECTOR">
+                    <InspectionCalendar />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inspections/:id"
+                element={
+                  <ProtectedRoute requiredRole="INSPECTOR">
+                    <InspectionDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/citizen"
+                element={
+                  <ProtectedRoute requiredRole="CITIZEN">
+                    <CitizenPortalPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/municipal/citizen-requests"
+                element={
+                  <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
+                    <MunicipalCitizenRequestsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/municipal/citizen-requests/service-levels"
+                element={
+                  <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
+                    <CitizenServiceLevelsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/municipal/citizen-requests/escalations/history"
+                element={
+                  <ProtectedRoute requiredRole="MANAGER">
+                    <CitizenEscalationHistoryPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/municipal/citizen-requests/:id"
+                element={
+                  <ProtectedRoute requiredRole="MUNICIPAL_AGENT">
+                    <MunicipalCitizenRequestDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute requiredRole="CITIZEN">
+                    <NotificationsPage />
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
       <ToastContainer position="bottom-right" />
     </AuthProvider>
