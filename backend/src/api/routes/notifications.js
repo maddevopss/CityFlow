@@ -17,7 +17,7 @@ const querySchema = Joi.object({
 router.use(citizenReadLimiter);
 router.use(authenticate);
 
-router.get('/', citizenReadLimiter, async (req, res) => {
+router.get('/', async (req, res) => {
   const { error, value } = querySchema.validate(req.query, { convert: true, stripUnknown: true });
   if (error) return res.status(400).json({ message: 'Filtres invalides' });
   const { eventType, status, page, pageSize } = value;
@@ -36,7 +36,10 @@ router.get('/', citizenReadLimiter, async (req, res) => {
       take: pageSize
     })
   ]);
-  res.json({ items, pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) } });
+  return res.json({
+    items,
+    pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) }
+  });
 });
 
 module.exports = router;
