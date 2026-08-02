@@ -2,6 +2,10 @@ const express = require('express');
 const Joi = require('joi');
 const { authenticate, authorize } = require('../middleware/auth');
 const {
+  operationsReadLimiter,
+  operationsWriteLimiter
+} = require('../middleware/rateLimiters');
+const {
   getOutboxSummary,
   listDeadOutboxEvents,
   retryDeadOutboxEvent
@@ -21,7 +25,7 @@ const router = express.Router();
 const idSchema = Joi.string().uuid().required();
 const alertStatusSchema = Joi.string().valid('OPEN', 'ACKNOWLEDGED').default('OPEN');
 
-router.use(authenticate, authorize('ADMIN'));
+router.use(operationsReadLimiter, authenticate, authorize('ADMIN'));
 
 router.get('/diffusion', async (req, res) => {
   const municipalityId = req.user.municipalityId;
@@ -40,7 +44,7 @@ router.get('/diffusion/service-levels', async (req, res) => {
   res.json(serviceLevels);
 });
 
-router.post('/diffusion/:id/retry', async (req, res) => {
+router.post('/diffusion/:id/retry', operationsWriteLimiter, async (req, res) => {
   const { error, value: id } = idSchema.validate(req.params.id);
   if (error) return res.status(400).json({ message: 'Identifiant de diffusion invalide' });
 
@@ -70,7 +74,7 @@ router.get('/alerts', async (req, res) => {
   res.json({ summary, alerts });
 });
 
-router.post('/alerts/:id/acknowledge', async (req, res) => {
+router.post('/alerts/:id/acknowledge', operationsWriteLimiter, async (req, res) => {
   const { error, value: id } = idSchema.validate(req.params.id);
   if (error) return res.status(400).json({ message: 'Identifiant d’alerte invalide' });
 
