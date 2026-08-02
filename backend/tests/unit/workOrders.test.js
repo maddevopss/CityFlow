@@ -96,6 +96,24 @@ test('liste avec les valeurs par défaut', async () => {
   );
 });
 
+test('remplace une limite invalide par la limite par défaut', async () => {
+  const db = { $queryRawUnsafe: jest.fn().mockResolvedValue([]) };
+
+  await expect(listWorkOrders(db, {
+    municipalityId: 7,
+    limit: 'invalide',
+  })).resolves.toEqual([]);
+
+  expect(db.$queryRawUnsafe).toHaveBeenCalledWith(
+    expect.any(String),
+    7,
+    null,
+    null,
+    null,
+    50
+  );
+});
+
 test('retourne null quand un ordre est absent', async () => {
   const db = { $queryRawUnsafe: jest.fn().mockResolvedValue([]) };
   await expect(getWorkOrder(db, { municipalityId: 7, id: WORK_ORDER_ID })).resolves.toBeNull();
