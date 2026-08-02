@@ -1,18 +1,32 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const config = require('../../config');
 const { authenticate } = require('../middleware/auth');
-const { loginLimiter } = require('../middleware/rateLimiters');
+const { loginLimiter, authReadLimiter } = require('../middleware/rateLimiters');
 
 const router = express.Router();
 
+const loginSchema = Joi.object({
+  email: Joi.string().trim().lowercase().email().max(254).required(),
+  password: Joi.string().min(8).max(128).required()
+});
+
 router.post('/login', loginLimiter, async (req, res) => {
-  const { email, password } = req.body;
-  const user = await prisma.user.findUnique({ where: { email } });
-  
-  if (!user || !bcrypt.compareSync(password, user.password)) {
+  const { error, value } = loginSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true
+  });
+
+  if (error) {
+    return res.status(400).json({ message: 'Identifiants invalides' });
+  }
+
+  const user = await prisma.user.findUnique({ where: { email: value.email } });
+
+  if (!user || !bcrypt.compareSync(value.password, user.password)) {
     return res.status(401).json({ message: 'Identifiants invalides' });
   }
 
@@ -27,15 +41,20 @@ router.post('/login', loginLimiter, async (req, res) => {
     data: { lastLogin: new Date() }
   });
 
-  res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+  return res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
 });
 
-router.get('/me', authenticate, async (req, res) => {
+router.get('/me', authReadLimiter, authenticate, async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.sub },
     select: { id: true, email: true, fullName: true, role: true, municipalityId: true }
   });
-  res.json(user);
+
+  if (!user) {
+    return res.status(401).json({ message: 'Session invalide' });
+  }
+
+  return res.json(user);
 });
 
 module.exports = router;
