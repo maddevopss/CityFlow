@@ -10,7 +10,12 @@ const { loginLimiter, authReadLimiter } = require('../middleware/rateLimiters');
 const router = express.Router();
 
 const loginSchema = Joi.object({
-  email: Joi.string().trim().lowercase().email().max(254).required(),
+  email: Joi.string()
+    .trim()
+    .lowercase()
+    .email({ tlds: { allow: false } })
+    .max(254)
+    .required(),
   password: Joi.string().min(1).max(128).required()
 });
 
