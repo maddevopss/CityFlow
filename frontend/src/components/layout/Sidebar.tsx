@@ -125,6 +125,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
+        requestAnimationFrame(() => {
+          document
+            .querySelector<HTMLButtonElement>(
+              'button[aria-controls="primary-sidebar"]',
+            )
+            ?.focus();
+        });
       }
     };
 
