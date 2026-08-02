@@ -11,7 +11,8 @@
     "test:e2e": "cypress open",
     "lint": "eslint src/ --ext .ts,.tsx",
     "format": "prettier --write src/",
-    "check:lock": "node scripts/check-package-lock.mjs"
+    "check:lock": "node scripts/check-package-lock.mjs",
+    "audit:deps": "node scripts/audit-unused-dependencies.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
