@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import "./api";
 
 const interceptorMocks = vi.hoisted(() => {
   const state: {
@@ -39,8 +40,6 @@ vi.mock("axios", () => ({
   },
 }));
 
-await import("./api");
-
 describe("intercepteurs API", () => {
   const getItem = vi.fn();
   const removeItem = vi.fn();
@@ -50,6 +49,10 @@ describe("intercepteurs API", () => {
     removeItem.mockReset();
     vi.stubGlobal("localStorage", { getItem, removeItem });
     vi.stubGlobal("window", { location: { href: "/" } });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("ajoute le jeton Bearer aux requêtes authentifiées", () => {
