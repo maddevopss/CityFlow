@@ -60,7 +60,7 @@ function escapeRegExp(value) {
 
 function scriptUsesDependency(scriptCommands, dependency) {
   const escapedDependency = escapeRegExp(dependency);
-  const packageNameCharacter = "A-Za-z0-9@._/-";
+  const packageNameCharacter = "A-Za-z0-9@._-";
   const pattern = new RegExp(
     `(^|[^${packageNameCharacter}])${escapedDependency}($|[^${packageNameCharacter}])`,
   );
