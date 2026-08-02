@@ -2,6 +2,10 @@ const express = require('express');
 const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const { authenticate, authorize } = require('../middleware/auth');
+const {
+  operationsReadLimiter,
+  operationsWriteLimiter
+} = require('../middleware/rateLimiters');
 
 const router = express.Router({ mergeParams: true });
 const allowedRoles = ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'];
@@ -25,7 +29,12 @@ function inspectionScope(req) {
   };
 }
 
-router.use(authenticate, authorize(...allowedRoles));
+function evidenceRateLimiter(req, res, next) {
+  const limiter = req.method === 'GET' ? operationsReadLimiter : operationsWriteLimiter;
+  return limiter(req, res, next);
+}
+
+router.use(evidenceRateLimiter, authenticate, authorize(...allowedRoles));
 
 router.get('/', async (req, res) => {
   const { error } = Joi.string().uuid().validate(req.params.inspectionId);
@@ -44,7 +53,7 @@ router.get('/', async (req, res) => {
     },
     orderBy: [{ capturedAt: 'asc' }, { createdAt: 'asc' }]
   });
-  res.json(evidence);
+  return res.json(evidence);
 });
 
 router.post('/', async (req, res) => {
@@ -96,7 +105,7 @@ router.post('/', async (req, res) => {
     }
   });
 
-  res.status(201).json(evidence);
+  return res.status(201).json(evidence);
 });
 
 module.exports = router;
