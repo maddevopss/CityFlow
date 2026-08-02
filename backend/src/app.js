@@ -41,7 +41,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), requestId: req.requestId });
 });
 
-app.get('/metrics/http', authenticate, authorize('ADMIN'), metricsReadLimiter, (req, res) => {
+app.get('/metrics/http', metricsReadLimiter, authenticate, authorize('ADMIN'), (req, res) => {
   res.json({ generatedAt: new Date().toISOString(), metrics: snapshotMetrics() });
 });
 
