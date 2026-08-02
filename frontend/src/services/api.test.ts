@@ -56,7 +56,9 @@ describe("intercepteurs API", () => {
     getItem.mockReturnValue("token-valide");
     const config = { headers: {} as Record<string, string> };
 
-    const result = interceptorMocks.state.requestHandler?.(config) as typeof config;
+    const result = interceptorMocks.state.requestHandler?.(
+      config,
+    ) as typeof config;
 
     expect(result.headers.Authorization).toBe("Bearer token-valide");
   });
