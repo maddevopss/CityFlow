@@ -1,6 +1,7 @@
 const express = require('express');
 const Joi = require('joi');
 const prisma = require('../../db/prisma');
+const { publicReadLimiter } = require('../middleware/rateLimiters');
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ const querySchema = Joi.object({
     .optional()
 });
 
-router.get('/geojson', async (req, res) => {
+router.get('/geojson', publicReadLimiter, async (req, res) => {
   const { error, value } = querySchema.validate(req.query, {
     abortEarly: false,
     convert: true,
