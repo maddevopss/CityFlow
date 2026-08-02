@@ -18,18 +18,32 @@ const historySchema = Joi.object({
   limit: Joi.number().integer().min(1).max(100).default(25)
 });
 
-router.use(authenticate, authorize('ADMIN', 'MANAGER'));
+function citizenEscalationLimiter(req, res, next) {
+  const limiter = req.method === 'GET' ? citizenReadLimiter : citizenWriteLimiter;
+  return limiter(req, res, next);
+}
 
-router.get('/history', citizenReadLimiter, async (req, res) => {
+router.use(
+  citizenEscalationLimiter,
+  authenticate,
+  authorize('ADMIN', 'MANAGER')
+);
+
+router.get('/history', async (req, res) => {
   const { error, value } = historySchema.validate(req.query, { convert: true, stripUnknown: true });
-  if (error) return res.status(400).json({ message: 'Données invalides', details: error.details.map((item) => item.message) });
+  if (error) {
+    return res.status(400).json({
+      message: 'Données invalides',
+      details: error.details.map((item) => item.message)
+    });
+  }
 
   const items = await listCitizenEscalationRuns(prisma, req.user.municipalityId, value.limit);
   const retention = getCitizenEscalationRetentionConfig();
-  res.json({ items, limit: value.limit, retention });
+  return res.json({ items, limit: value.limit, retention });
 });
 
-router.post('/run', citizenWriteLimiter, async (req, res) => {
+router.post('/run', async (req, res) => {
   const startedAt = new Date();
   try {
     const result = await executeCitizenEscalationWithLock(
@@ -48,7 +62,7 @@ router.post('/run', citizenWriteLimiter, async (req, res) => {
       durationMs: completedAt - startedAt
     });
 
-    res.status(202).json({ generatedAt: completedAt.toISOString(), ...result });
+    return res.status(202).json({ generatedAt: completedAt.toISOString(), ...result });
   } catch (error) {
     if (error instanceof CitizenEscalationAlreadyRunningError) {
       return res.status(409).json({ message: error.message, code: error.code });
