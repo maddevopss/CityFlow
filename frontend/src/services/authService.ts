@@ -1,4 +1,4 @@
-import api from './api';
+import api from "./api";
 
 export interface LoginCredentials {
   email: string;
@@ -14,19 +14,20 @@ export interface LoginResponse {
   };
 }
 
-export const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
-  const { data } = await api.post('/auth/login', credentials);
-  localStorage.setItem('token', data.token);
-  localStorage.setItem('user', JSON.stringify(data.user));
+export const login = async (
+  credentials: LoginCredentials,
+): Promise<LoginResponse> => {
+  const { data } = await api.post("/auth/login", credentials);
+  localStorage.setItem("token", data.token);
   return data;
 };
 
 export const getMe = async () => {
-  const { data } = await api.get('/auth/me');
+  const { data } = await api.get("/auth/me");
   return data;
 };
 
 export const logout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
 };
