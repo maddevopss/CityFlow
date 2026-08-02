@@ -99,7 +99,9 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const { unreadCount } = useUnreadNotifications();
-  const filteredNav = navigation.filter(item => user && item.roles.includes(user.role));
+  const filteredNav = navigation.filter(
+    (item) => user && item.roles.includes(user.role)
+  );
 
   return (
     <>
@@ -119,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         aria-label="Navigation principale"
       >
         <nav className="h-full space-y-1 overflow-y-auto p-4">
-          {filteredNav.map(item => (
+          {filteredNav.map((item) => (
             <NavLink
               key={item.href}
               to={item.href}
