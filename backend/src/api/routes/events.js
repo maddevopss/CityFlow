@@ -2,6 +2,7 @@ const express = require('express');
 const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const { authenticate, authorize } = require('../middleware/auth');
+const { eventWriteLimiter, eventReadLimiter } = require('../middleware/rateLimiters');
 const { appendEventAudit, listEventAudit } = require('../../services/eventAudit');
 const { appendOutboxEvent } = require('../../services/outbox');
 
@@ -100,7 +101,7 @@ async function transition(req, res, { from, to, action, data = {}, diffuse = fal
   return res.json(result.updated);
 }
 
-router.post('/', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => {
+router.post('/', eventWriteLimiter, authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => {
   const { error, value } = createSchema.validate(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
@@ -122,21 +123,21 @@ router.post('/', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req
   res.status(201).json(event);
 });
 
-router.post('/:id/submit', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => transition(req, res, {
+router.post('/:id/submit', eventWriteLimiter, authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => transition(req, res, {
   from: ['DRAFT', 'REJECTED'],
   to: 'SUBMITTED',
   action: 'SUBMITTED',
   data: { submittedBy: req.user.sub, submittedAt: new Date() }
 }));
 
-router.post('/:id/approve', authenticate, authorize('ADMIN'), async (req, res) => transition(req, res, {
+router.post('/:id/approve', eventWriteLimiter, authenticate, authorize('ADMIN'), async (req, res) => transition(req, res, {
   from: 'SUBMITTED',
   to: 'APPROVED',
   action: 'APPROVED',
   data: { approvedBy: req.user.sub, approvedAt: new Date() }
 }));
 
-router.post('/:id/reject', authenticate, authorize('ADMIN'), async (req, res) => {
+router.post('/:id/reject', eventWriteLimiter, authenticate, authorize('ADMIN'), async (req, res) => {
   const { error, value } = reasonSchema.validate(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
@@ -148,7 +149,7 @@ router.post('/:id/reject', authenticate, authorize('ADMIN'), async (req, res) =>
   });
 });
 
-router.post('/:id/publish', authenticate, authorize('ADMIN'), async (req, res) => transition(req, res, {
+router.post('/:id/publish', eventWriteLimiter, authenticate, authorize('ADMIN'), async (req, res) => transition(req, res, {
   from: 'APPROVED',
   to: 'PLANNED',
   action: 'PUBLISHED',
@@ -156,14 +157,14 @@ router.post('/:id/publish', authenticate, authorize('ADMIN'), async (req, res) =
   diffuse: true
 }));
 
-router.post('/:id/activate', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => transition(req, res, {
+router.post('/:id/activate', eventWriteLimiter, authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => transition(req, res, {
   from: 'PLANNED',
   to: 'ACTIVE',
   action: 'ACTIVATED',
   diffuse: true
 }));
 
-router.post('/:id/close', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => transition(req, res, {
+router.post('/:id/close', eventWriteLimiter, authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => transition(req, res, {
   from: ['PLANNED', 'ACTIVE'],
   to: 'CLOSED',
   action: 'CLOSED',
@@ -171,7 +172,7 @@ router.post('/:id/close', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), a
   diffuse: true
 }));
 
-router.get('/:id/audit', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => {
+router.get('/:id/audit', eventReadLimiter, authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), async (req, res) => {
   const event = await findMunicipalEvent(req, res);
   if (!event) return;
 
@@ -183,7 +184,7 @@ router.get('/:id/audit', authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT'), as
   res.json(entries);
 });
 
-router.get('/', authenticate, async (req, res) => {
+router.get('/', eventReadLimiter, authenticate, async (req, res) => {
   const { eventType, status } = req.query;
   const where = { municipalityId: req.user.municipalityId };
 

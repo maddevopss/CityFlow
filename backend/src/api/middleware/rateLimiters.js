@@ -56,6 +56,22 @@ const metricsReadLimiter = rateLimit({
   message: { message: 'Trop de consultations des métriques, réessayez plus tard' }
 });
 
+const eventWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de modifications d’événements, réessayez plus tard' }
+});
+
+const eventReadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de consultations d’événements, réessayez plus tard' }
+});
+
 module.exports = {
   loginLimiter,
   permitWebhookLimiter,
@@ -63,5 +79,7 @@ module.exports = {
   permitReadLimiter,
   citizenWriteLimiter,
   citizenReadLimiter,
-  metricsReadLimiter
+  metricsReadLimiter,
+  eventWriteLimiter,
+  eventReadLimiter
 };
