@@ -38,30 +38,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check formatting of changed files
+      - name: Diagnose Prettier output
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            base_sha="${{ github.event.pull_request.base.sha }}"
-            head_sha="${{ github.event.pull_request.head.sha }}"
-          else
-            base_sha="${{ github.event.before }}"
-            head_sha="${{ github.sha }}"
-          fi
-
-          git diff --name-only --diff-filter=ACMRT "$base_sha" "$head_sha" -- ../frontend/src \
-            | grep -E '\.(css|js|jsx|json|md|ts|tsx)$' \
-            | sed 's#^frontend/##' \
-            > /tmp/prettier-files.txt || true
-
-          if [[ ! -s /tmp/prettier-files.txt ]]; then
-            echo "Aucun fichier frontend compatible avec Prettier n’a été modifié."
-            exit 0
-          fi
-
-          echo "Fichiers vérifiés par Prettier :"
-          cat /tmp/prettier-files.txt
-          xargs --no-run-if-empty npm exec --no -- prettier --check < /tmp/prettier-files.txt
+          npm exec --no -- prettier --write src/types/index.ts
+          git diff -- src/types/index.ts
+          exit 1
 
       - name: Lint
         run: npm run lint
