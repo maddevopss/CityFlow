@@ -1,29 +1,42 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { Button } from '../components/common/Button';
-import { Input } from '../components/forms/Input';
+import axios from "axios";
+import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Button } from "../components/common/Button";
+import { Input } from "../components/forms/Input";
+import { useAuth } from "../hooks/useAuth";
+
+type LoginLocationState = {
+  from?: {
+    pathname?: string;
+    search?: string;
+    hash?: string;
+  };
+};
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
-    
+
     try {
       await login(email, password);
-      navigate('/');
+      const { from } = (location.state as LoginLocationState | null) ?? {};
+      const returnTo = `${from?.pathname ?? "/"}${from?.search ?? ""}${from?.hash ?? ""}`;
+      navigate(returnTo, { replace: true });
     } catch (err) {
-      const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
-      setError(message || 'Erreur de connexion');
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.message
+        : undefined;
+      setError(message || "Erreur de connexion");
     } finally {
       setLoading(false);
     }
@@ -34,12 +47,17 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full mx-4">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-cityflow-700">🏙️ CityFlow</h1>
+            <h1 className="text-3xl font-bold text-cityflow-700">
+              🏙️ CityFlow
+            </h1>
             <p className="text-gray-600 mt-2">Connectez-vous à votre compte</p>
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6" role="alert">
+            <div
+              className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6"
+              role="alert"
+            >
               {error}
             </div>
           )}
