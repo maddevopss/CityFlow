@@ -45,13 +45,22 @@ function validate(schema, source = 'body') {
       });
     }
     req[source] = value;
-    next();
+    return next();
   };
 }
 
-router.use(authenticate, authorize(...municipalRoles));
+function municipalCitizenRequestLimiter(req, res, next) {
+  const limiter = req.method === 'GET' ? citizenReadLimiter : citizenWriteLimiter;
+  return limiter(req, res, next);
+}
 
-router.get('/summary', citizenReadLimiter, async (req, res) => {
+router.use(
+  municipalCitizenRequestLimiter,
+  authenticate,
+  authorize(...municipalRoles)
+);
+
+router.get('/summary', async (req, res) => {
   const municipalityId = req.user.municipalityId;
   const overdueBefore = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const [byStatus, unassigned, overdue] = await Promise.all([
@@ -68,7 +77,7 @@ router.get('/summary', citizenReadLimiter, async (req, res) => {
     })
   ]);
 
-  res.json({
+  return res.json({
     generatedAt: new Date().toISOString(),
     byStatus: Object.fromEntries(byStatus.map((row) => [row.status, row._count._all])),
     unassigned,
@@ -76,7 +85,7 @@ router.get('/summary', citizenReadLimiter, async (req, res) => {
   });
 });
 
-router.get('/service-levels', citizenReadLimiter, validate(serviceLevelSchema, 'query'), async (req, res) => {
+router.get('/service-levels', validate(serviceLevelSchema, 'query'), async (req, res) => {
   const requests = await prisma.citizenRequest.findMany({
     where: { municipalityId: req.user.municipalityId },
     select: {
@@ -97,14 +106,14 @@ router.get('/service-levels', citizenReadLimiter, validate(serviceLevelSchema, '
     ? evaluated.items.filter((item) => item.serviceLevel.level === req.query.level)
     : evaluated.items;
 
-  res.json({
+  return res.json({
     generatedAt: new Date().toISOString(),
     summary: evaluated.summary,
     items
   });
 });
 
-router.get('/', citizenReadLimiter, validate(listSchema, 'query'), async (req, res) => {
+router.get('/', validate(listSchema, 'query'), async (req, res) => {
   const { status, category, assignedTeam, unassigned, q, page, pageSize } = req.query;
   const where = {
     municipalityId: req.user.municipalityId,
@@ -130,7 +139,7 @@ router.get('/', citizenReadLimiter, validate(listSchema, 'query'), async (req, r
     prisma.citizenRequest.count({ where })
   ]);
 
-  res.json({
+  return res.json({
     items,
     pagination: {
       page,
@@ -141,7 +150,7 @@ router.get('/', citizenReadLimiter, validate(listSchema, 'query'), async (req, r
   });
 });
 
-router.post('/bulk-assign', citizenWriteLimiter, validate(bulkAssignSchema), async (req, res) => {
+router.post('/bulk-assign', validate(bulkAssignSchema), async (req, res) => {
   const municipalityId = req.user.municipalityId;
   const { requestIds, team } = req.body;
   const existing = await prisma.citizenRequest.findMany({
@@ -188,7 +197,7 @@ router.post('/bulk-assign', citizenWriteLimiter, validate(bulkAssignSchema), asy
     return update;
   });
 
-  res.json({ updated: result.count, team, assignedAt: assignedAt.toISOString() });
+  return res.json({ updated: result.count, team, assignedAt: assignedAt.toISOString() });
 });
 
 module.exports = router;
