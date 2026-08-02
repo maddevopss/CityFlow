@@ -17,11 +17,12 @@ const InspectionTrends: React.FC = () => {
           <h1 className="text-2xl font-semibold text-gray-900">Tendances des inspections</h1>
           <p className="text-sm text-gray-600">Évolution mensuelle de la planification, de la réalisation et de la conformité.</p>
         </div>
-        <label className="text-sm text-gray-600">Période
-          <select className="ml-2 rounded border border-gray-300 px-3 py-2" value={months} onChange={event => setMonths(Number(event.target.value))}>
+        <div className="flex items-center">
+          <label htmlFor="trends-period" className="text-sm text-gray-600 mr-2">Période</label>
+          <select id="trends-period" className="rounded border border-gray-300 px-3 py-2" value={months} onChange={event => setMonths(Number(event.target.value))}>
             <option value={3}>3 mois</option><option value={6}>6 mois</option><option value={12}>12 mois</option>
           </select>
-        </label>
+        </div>
       </header>
 
       <section className="overflow-x-auto rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
