@@ -48,11 +48,29 @@ const citizenReadLimiter = rateLimit({
   message: { message: 'Trop de consultations, réessayez plus tard' }
 });
 
+const assetWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de modifications d’actifs municipaux, réessayez plus tard' }
+});
+
+const assetReadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 180,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de consultations d’actifs municipaux, réessayez plus tard' }
+});
+
 module.exports = {
   loginLimiter,
   permitWebhookLimiter,
   permitWriteLimiter,
   permitReadLimiter,
   citizenWriteLimiter,
-  citizenReadLimiter
+  citizenReadLimiter,
+  assetWriteLimiter,
+  assetReadLimiter
 };
