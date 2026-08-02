@@ -16,6 +16,14 @@ const authReadLimiter = rateLimit({
   message: { message: 'Trop de restaurations de session, réessayez plus tard' }
 });
 
+const publicReadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 180,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de consultations publiques, réessayez plus tard' }
+});
+
 const permitWebhookLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 60,
@@ -99,6 +107,7 @@ const operationsWriteLimiter = rateLimit({
 module.exports = {
   loginLimiter,
   authReadLimiter,
+  publicReadLimiter,
   permitWebhookLimiter,
   permitWriteLimiter,
   permitReadLimiter,
