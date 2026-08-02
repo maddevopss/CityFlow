@@ -29,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem("token");
+      setToken(storedToken);
 
       if (storedToken) {
         try {
