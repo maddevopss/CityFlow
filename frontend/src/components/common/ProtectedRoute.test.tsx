@@ -12,10 +12,14 @@ vi.mock("../../hooks/useAuth", () => ({
 }));
 
 const mockedUseAuth = vi.mocked(useAuth);
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+};
 
 const renderProtectedRoute = (requiredRole: "CITIZEN" | "ADMIN" = "CITIZEN") =>
   render(
-    <MemoryRouter initialEntries={["/protected"]}>
+    <MemoryRouter initialEntries={["/protected"]} future={routerFuture}>
       <Routes>
         <Route path="/login" element={<div>Connexion</div>} />
         <Route path="/" element={<div>Accueil</div>} />
