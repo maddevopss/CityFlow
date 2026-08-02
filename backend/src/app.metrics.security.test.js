@@ -4,10 +4,11 @@ const app = require('./app');
 const config = require('./config');
 
 describe('GET /metrics/http', () => {
-  it('refuse une requête sans jeton', async () => {
+  it('limite puis refuse une requête sans jeton', async () => {
     const response = await request(app).get('/metrics/http');
 
     expect(response.status).toBe(401);
+    expect(response.headers.ratelimit).toBeDefined();
   });
 
   it('refuse un utilisateur non administrateur', async () => {
