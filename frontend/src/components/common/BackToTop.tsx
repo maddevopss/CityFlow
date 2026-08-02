@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowUp } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { ArrowUp } from "lucide-react";
 
 interface BackToTopProps {
   containerId: string;
@@ -21,11 +21,11 @@ export const BackToTop: React.FC<BackToTopProps> = ({ containerId }) => {
       }
     };
 
-    container.addEventListener('scroll', handleScroll);
+    container.addEventListener("scroll", handleScroll);
     // Vérification initiale
     handleScroll();
 
-    return () => container.removeEventListener('scroll', handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
   }, [containerId]);
 
   const scrollToTop = () => {
@@ -33,11 +33,13 @@ export const BackToTop: React.FC<BackToTopProps> = ({ containerId }) => {
     if (!container) return;
 
     // Respect des préférences de mouvement réduit
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
     container.scrollTo({
       top: 0,
-      behavior: prefersReducedMotion ? 'auto' : 'smooth'
+      behavior: prefersReducedMotion ? "auto" : "smooth",
     });
   };
 
@@ -45,13 +47,16 @@ export const BackToTop: React.FC<BackToTopProps> = ({ containerId }) => {
     <button
       type="button"
       onClick={scrollToTop}
-      className={`fixed bottom-6 right-6 p-3 rounded-full bg-cityflow-600 text-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cityflow-400 focus:ring-offset-2 z-50 ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
+      tabIndex={isVisible ? 0 : -1}
+      className={`fixed bottom-6 right-6 z-50 rounded-full bg-cityflow-600 p-3 text-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cityflow-400 focus:ring-offset-2 ${
+        isVisible
+          ? "translate-y-0 opacity-100"
+          : "pointer-events-none translate-y-10 opacity-0"
       }`}
       aria-label="Retour en haut"
       aria-hidden={!isVisible}
     >
-      <ArrowUp className="w-5 h-5" />
+      <ArrowUp className="h-5 w-5" />
     </button>
   );
 };
