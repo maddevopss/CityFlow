@@ -1,6 +1,10 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
-import type { User } from '../types';
-import { getMe, logout as logoutApi, login as loginApi } from '../services/authService';
+import React, { createContext, useCallback, useEffect, useState } from "react";
+import {
+  getMe,
+  login as loginApi,
+  logout as logoutApi,
+} from "../services/authService";
+import type { User } from "../types";
 
 interface AuthContextType {
   user: User | null;
@@ -13,26 +17,34 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType>(null!);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem("token"),
+  );
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const initAuth = async () => {
-      if (token) {
+      const storedToken = localStorage.getItem("token");
+
+      if (storedToken) {
         try {
           const userData = await getMe();
           setUser(userData);
         } catch {
-          localStorage.removeItem('token');
+          localStorage.removeItem("token");
           setToken(null);
         }
       }
+
       setIsLoading(false);
     };
+
     initAuth();
-  }, [token]);
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const response = await loginApi({ email, password });
@@ -49,7 +61,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAuthenticated = !!user;
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated, isLoading }}>
+    <AuthContext.Provider
+      value={{ user, token, login, logout, isAuthenticated, isLoading }}
+    >
       {children}
     </AuthContext.Provider>
   );
