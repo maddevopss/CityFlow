@@ -22,10 +22,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRole = "VIEWER",
   children,
 }) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, token, user } = useAuth();
 
-  if (isLoading) {
-    return null;
+  if (isLoading && token) {
+    return (
+      <span className="sr-only" role="status">
+        Restauration de la session en cours.
+      </span>
+    );
   }
 
   if (!isAuthenticated) {
