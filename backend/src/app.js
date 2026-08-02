@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const errorHandler = require('./api/middleware/errorHandler');
+const { authenticate, authorize } = require('./api/middleware/auth');
 const { observabilityMiddleware, snapshotMetrics } = require('./api/middleware/observability');
 
 const app = express();
@@ -39,7 +40,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), requestId: req.requestId });
 });
 
-app.get('/metrics/http', (req, res) => {
+app.get('/metrics/http', authenticate, authorize('ADMIN'), (req, res) => {
   res.json({ generatedAt: new Date().toISOString(), metrics: snapshotMetrics() });
 });
 
