@@ -6,65 +6,94 @@ CityFlow transforme les permis, arrêtés et changements de chantier en informat
 
 ## Statut
 
-CityFlow est actuellement un prototype en phase de fondation. Il ne doit pas encore être utilisé pour publier de l'information routière de production.
+**Version 1.0.0 — candidate livrable pour un projet pilote municipal contrôlé.**
 
-## Objectifs
+Cette version couvre les parcours essentiels de gestion des événements routiers, permis, inspections, demandes citoyennes, notifications, opérations et diffusion. Son utilisation en production exige l’exécution complète de la checklist de livraison, une base PostgreSQL dédiée, Redis, des secrets robustes et une validation municipale du périmètre pilote.
 
-- centraliser les entraves et événements de voirie;
-- maintenir une source officielle par municipalité;
-- produire des flux géographiques normalisés;
-- conserver l'historique des validations et publications;
-- simplifier les confirmations des entrepreneurs;
-- réduire le délai entre une décision municipale et sa diffusion.
+## Périmètre livré
 
-## Architecture actuelle
+- gestion des événements routiers et de leur cycle de validation;
+- registre des permis, documents, frais et délivrance;
+- inspections, affectations, preuves, calendrier, rappels et tendances;
+- demandes citoyennes, messages, niveaux de service et escalades;
+- notifications et tableaux d’opérations;
+- export GeoJSON public contrôlé;
+- webhook de permis signé sur le corps brut reçu;
+- isolation des données par municipalité;
+- authentification, rôles, limitation de débit et journalisation HTTP;
+- contrôle de santé versionné sur `/health`.
 
-Le dépôt contient un service backend Node.js basé sur Express, PostgreSQL/Prisma, Redis/BullMQ et Socket.IO.
+## Architecture
+
+Le dépôt contient :
 
 ```text
-backend/
-├── prisma/       Schéma et données de développement
-├── src/api/      Routes et middlewares HTTP
-├── src/services/ Services métier et diffusion
-├── src/workers/  Traitements asynchrones
-└── tests/        Tests Jest et Supertest
+backend/     API Node.js/Express, PostgreSQL/Prisma, Redis/BullMQ et Socket.IO
+frontend/    Interface React/TypeScript/Vite
+scripts/     Vérifications de gouvernance et d’intégrité
 ```
 
 ## Démarrage local
 
 ### Prérequis
 
-- Node.js 20 ou une version LTS compatible;
+- Node.js 20 LTS;
 - PostgreSQL;
 - Redis.
 
-### Installation
+### Backend
 
 ```bash
 cd backend
 cp .env.example .env
-npm install
+npm ci
 npm run prisma:generate
 npm run prisma:migrate
-npm test
 npm run dev
 ```
 
-L'API répond par défaut sur `http://localhost:3000`. Le contrôle de santé est disponible sur `/health`.
+L’API répond par défaut sur `http://localhost:3000`. Le contrôle de santé est disponible sur `/health` et retourne le nom du service, la version, l’horodatage et l’identifiant de requête.
+
+### Frontend
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+## Validation ciblée avant livraison
+
+```bash
+cd backend
+npx jest src/app.release-readiness.test.js --runInBand --silent
+npm run lint -- --quiet
+
+cd ../frontend
+npm run build
+```
+
+Les tests complets et les contrôles CI demeurent obligatoires avant fusion et création du tag de version.
 
 ## Sécurité
 
-Les secrets réels ne doivent jamais être versionnés. Les valeurs de `.env.example` sont uniquement des exemples locaux. Toute configuration de production devra refuser de démarrer lorsqu'un secret obligatoire est absent ou faible.
+Les secrets réels ne doivent jamais être versionnés. Les valeurs de `.env.example` sont uniquement des exemples locaux. Une installation de production doit notamment fournir :
 
-## Feuille de route immédiate
+- un `JWT_SECRET` robuste;
+- un secret distinct pour le webhook des permis;
+- une URL PostgreSQL dédiée;
+- une URL Redis protégée;
+- une origine frontend explicite;
+- HTTPS devant le frontend et l’API.
 
-1. stabiliser le dépôt et l'intégration continue;
-2. renforcer l'isolation entre municipalités;
-3. sécuriser les webhooks et les connexions temps réel;
-4. introduire PostGIS et la validation géographique;
-5. implanter le cycle brouillon, validation, approbation et publication;
-6. ajouter l'audit et les versions immuables;
-7. préparer un projet pilote municipal limité.
+Les compteurs de limitation de débit sont actuellement locaux au processus. Un stockage partagé est requis avant un déploiement horizontal à plusieurs instances.
+
+## Livraison
+
+Les documents suivants définissent la livraison :
+
+- `docs/releases/CITYFLOW_V1_0_0.md` : périmètre, preuves et limites;
+- `docs/releases/DEPLOYMENT_CHECKLIST_V1.md` : étapes de déploiement et retour arrière.
 
 ## Contribution
 
