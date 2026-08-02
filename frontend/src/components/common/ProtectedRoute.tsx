@@ -1,7 +1,7 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import type { UserRole } from '../../types';
+import React from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+import type { UserRole } from "../../types";
 
 interface ProtectedRouteProps {
   requiredRole?: UserRole;
@@ -9,15 +9,19 @@ interface ProtectedRouteProps {
 }
 
 const roleHierarchy: Record<UserRole, number> = {
-  VIEWER: 0,
-  CONTRACTOR: 1,
-  INSPECTOR: 2,
-  MUNICIPAL_AGENT: 3,
-  MANAGER: 4,
-  ADMIN: 5
+  CITIZEN: 0,
+  VIEWER: 1,
+  CONTRACTOR: 2,
+  INSPECTOR: 3,
+  MUNICIPAL_AGENT: 4,
+  MANAGER: 5,
+  ADMIN: 6,
 };
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRole = 'VIEWER', children }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  requiredRole = "VIEWER",
+  children,
+}) => {
   const { isAuthenticated, user } = useAuth();
 
   if (!isAuthenticated) {
