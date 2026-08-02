@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getMe } from "../services/authService";
 import { AuthContext, AuthProvider } from "./AuthContext";
 
@@ -30,6 +30,10 @@ describe("AuthProvider", () => {
   beforeEach(() => {
     localStorage.clear();
     mockedGetMe.mockReset();
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   it("restaure la session une seule fois au montage", async () => {
