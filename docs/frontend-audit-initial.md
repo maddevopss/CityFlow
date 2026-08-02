@@ -21,7 +21,7 @@ Ce document présente l'audit initial du frontend de CityFlow et le plan de déc
 2. **Formulaires inline** : Les formulaires (ex: Créer une inspection) sont codés en ligne dans les pages au lieu d'être dans des composants form dédiés (`src/components/forms/`), limitant la réutilisabilité.
 3. **Styles globaux vs locaux** : `index.css` utilise des `@apply` pour `.btn-primary` et `.input-field`. C'est une bonne base, mais cela doit être systématisé à travers des composants fonctionnels plutôt que de reposer uniquement sur les classes globales ou des styles inline.
 4. **Accessibilité (A11y)** : Des améliorations sont nécessaires sur la structure sémantique, la gestion du focus dans les modales/formulaires, et l'ordre de tabulation, tel qu'exigé par la norme MADPROOF.
-5. **Avertissements de compilation** : Un avertissement concernant l'usage obsolète de `baseUrl` dans `tsconfig.json` bloquait `npm run build`. Il a été corrigé lors de cet audit.
+5. **Configuration TypeScript incohérente** : `tsconfig.json` déclarait un alias `@/*` sans usage dans le code et sans configuration de résolution nécessaire. Ce mapping inutilisé a été retiré afin que la configuration reflète le comportement réel du projet.
 
 ## 3. Plan de restructuration (Découpage en blocs)
 
@@ -36,6 +36,6 @@ Ce document présente l'audit initial du frontend de CityFlow et le plan de déc
 
 ## 4. Vérifications et Résultats (Bloc 1)
 - `npm run lint` : PASS
-- `npm run typecheck` / `npm run build` : PASS (Suite à l'ajustement du `tsconfig.json`)
-- Tests existants : N/A (non exécutés à ce stade, couverts par Vitest)
-- Risque identifié : L'ajustement des chemins TS pourrait impacter des imports obsolètes, vérifié via build.
+- `npm run typecheck` / `npm run build` : PASS après l'ajustement de `tsconfig.json`.
+- Tests existants : non exécutés pendant l'audit initial; Vitest était déjà installé et configuré, puis les tests ont été couverts par les validations CI ultérieures.
+- Risque identifié : la configuration d'alias pouvait induire les contributeurs en erreur sans fournir de résolution effective. Le mapping inutilisé a été retiré après vérification de l'absence d'import `@/` dans le dépôt.
