@@ -129,8 +129,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
       <aside
         id="primary-sidebar"
-        className={`absolute inset-y-0 left-0 z-40 w-64 transform border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
+        className={`absolute inset-y-0 left-0 z-40 w-64 transform border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out md:relative md:visible md:translate-x-0 ${
+          isOpen ? "visible translate-x-0" : "invisible -translate-x-full"
         }`}
         aria-label="Navigation principale"
       >
