@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
+const { version } = require('../package.json');
 const errorHandler = require('./api/middleware/errorHandler');
 const { authenticate, authorize } = require('./api/middleware/auth');
 const { metricsReadLimiter } = require('./api/middleware/rateLimiters');
@@ -47,7 +48,13 @@ app.use('/api/v1/inspections/:inspectionId/evidence', require('./api/routes/insp
 app.use('/api/v1/inspections', require('./api/routes/inspections'));
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), requestId: req.requestId });
+  res.json({
+    status: 'ok',
+    service: 'cityflow-backend',
+    version,
+    timestamp: new Date().toISOString(),
+    requestId: req.requestId
+  });
 });
 
 app.get('/metrics/http', metricsReadLimiter, authenticate, authorize('ADMIN'), (req, res) => {
