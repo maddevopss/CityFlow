@@ -2,9 +2,14 @@ const express = require('express');
 const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const { authenticate, authorize } = require('../middleware/auth');
+const { operationsReadLimiter } = require('../middleware/rateLimiters');
 
 const router = express.Router();
-router.use(authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'));
+router.use(
+  operationsReadLimiter,
+  authenticate,
+  authorize('ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR')
+);
 
 const rangeSchema = Joi.object({
   from: Joi.date().iso().required(),
@@ -45,7 +50,7 @@ router.get('/', async (req, res) => {
     )
   ).map(item => item.id);
 
-  res.json({ inspections, conflicts: [...new Set(conflicts)] });
+  return res.json({ inspections, conflicts: [...new Set(conflicts)] });
 });
 
 router.get('/export.ics', async (req, res) => {
@@ -75,7 +80,7 @@ router.get('/export.ics', async (req, res) => {
   ].join('\r\n')).join('\r\n');
 
   res.type('text/calendar').set('Content-Disposition', 'attachment; filename="inspections.ics"');
-  res.send(`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//CityFlow//Inspections//FR\r\n${events}\r\nEND:VCALENDAR\r\n`);
+  return res.send(`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//CityFlow//Inspections//FR\r\n${events}\r\nEND:VCALENDAR\r\n`);
 });
 
 module.exports = router;
