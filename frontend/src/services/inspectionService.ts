@@ -56,3 +56,57 @@ export const completeInspection = async (id: string, input: CompleteInspectionIn
   const { data } = await api.post<Inspection>(`/inspections/${id}/complete`, input);
   return data;
 };
+
+export interface DashboardData {
+  total: number;
+  scheduled: number;
+  completed: number;
+  cancelled: number;
+  upcoming: number;
+  overdue: number;
+  unassigned: number;
+  unreadReminders: number;
+  completionRate: number;
+  outcomes: Record<string, number>;
+}
+
+export const getInspectionDashboard = async () => {
+  const { data } = await api.get<DashboardData>('/inspection-dashboard');
+  return data;
+};
+
+export type Trend = { month: string; scheduled: number; completed: number; compliant: number; nonCompliant: number };
+export type TrendsResponse = { trends: Trend[] };
+
+export const getInspectionTrends = async (months: number) => {
+  const { data } = await api.get<TrendsResponse>('/inspection-trends', { params: { months } });
+  return data;
+};
+
+export interface CalendarInspection {
+  id: string;
+  scheduledAt: string;
+  address: string;
+  inspectionType: string;
+  status: string;
+}
+
+export interface CalendarResponse {
+  inspections: CalendarInspection[];
+  conflicts: string[];
+}
+
+export const getInspectionCalendar = async (from: string, to: string) => {
+  const { data } = await api.get<CalendarResponse>('/inspection-calendar', {
+    params: { from, to }
+  });
+  return data;
+};
+
+export const exportInspectionCalendarIcs = async (from: string, to: string) => {
+  const { data } = await api.get('/inspection-calendar/export.ics', {
+    params: { from, to },
+    responseType: 'blob'
+  });
+  return data;
+};
