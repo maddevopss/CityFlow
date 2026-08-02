@@ -47,10 +47,15 @@ const routeFallback = (
   </div>
 );
 
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+};
+
 const App: React.FC = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter future={routerFuture}>
         <Suspense fallback={routeFallback}>
           <Routes>
             <Route path="/login" element={<Login />} />
