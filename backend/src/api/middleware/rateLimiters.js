@@ -72,6 +72,22 @@ const eventReadLimiter = rateLimit({
   message: { message: 'Trop de consultations d’événements, réessayez plus tard' }
 });
 
+const operationsReadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop de consultations opérationnelles, réessayez plus tard' }
+});
+
+const operationsWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Trop d’actions opérationnelles, réessayez plus tard' }
+});
+
 module.exports = {
   loginLimiter,
   permitWebhookLimiter,
@@ -81,5 +97,7 @@ module.exports = {
   citizenReadLimiter,
   metricsReadLimiter,
   eventWriteLimiter,
-  eventReadLimiter
+  eventReadLimiter,
+  operationsReadLimiter,
+  operationsWriteLimiter
 };
