@@ -16,7 +16,16 @@ app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
 app.use(compression());
 app.use(observabilityMiddleware);
 app.use(morgan('dev'));
-app.use(express.json({ limit: '10mb' }));
+app.use(
+  express.json({
+    limit: '10mb',
+    verify: (req, res, buffer) => {
+      if (req.originalUrl.startsWith('/api/v1/permits/hook')) {
+        req.rawBody = Buffer.from(buffer);
+      }
+    }
+  })
+);
 
 app.use('/api/v1/auth', require('./api/routes/auth'));
 app.use('/api/v1/events', require('./api/routes/events'));
