@@ -16,11 +16,16 @@ const app = require('../../src/app');
 const config = require('../../src/config');
 const prisma = require('../../src/db/prisma');
 
-function sign(body, timestamp) {
+function signRaw(rawBody, timestamp) {
   return crypto
     .createHmac('sha256', config.permitWebhookSecret)
-    .update(`${timestamp}.${JSON.stringify(body)}`)
+    .update(`${timestamp}.`)
+    .update(rawBody)
     .digest('hex');
+}
+
+function sign(body, timestamp) {
+  return signRaw(JSON.stringify(body), timestamp);
 }
 
 describe('Permit webhook security', () => {
@@ -61,6 +66,66 @@ describe('Permit webhook security', () => {
       .send(validBody);
 
     expect(response.status).toBe(401);
+    expect(prisma.roadEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse un timestamp ou une signature mal formés', async () => {
+    const response = await request(app)
+      .post('/api/v1/permits/hook')
+      .set('x-cityflow-timestamp', '1e3')
+      .set('x-cityflow-signature', 'signature-invalide')
+      .send(validBody);
+
+    expect(response.status).toBe(401);
+    expect(prisma.municipality.findUnique).not.toHaveBeenCalled();
+    expect(prisma.roadEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse un type de contenu autre que JSON', async () => {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const rawBody = 'permit_id=PERMIT-001';
+
+    const response = await request(app)
+      .post('/api/v1/permits/hook')
+      .set('Content-Type', 'text/plain')
+      .set('x-cityflow-timestamp', String(timestamp))
+      .set('x-cityflow-signature', signRaw(rawBody, timestamp))
+      .send(rawBody);
+
+    expect(response.status).toBe(415);
+    expect(prisma.municipality.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('vérifie la signature sur les octets JSON exacts reçus', async () => {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const rawBody = JSON.stringify(validBody, null, 2);
+    prisma.municipality.findUnique.mockResolvedValue({ id: 1 });
+    prisma.roadEvent.create.mockResolvedValue({ id: 'event-1' });
+
+    const response = await request(app)
+      .post('/api/v1/permits/hook')
+      .set('Content-Type', 'application/json')
+      .set('x-cityflow-timestamp', String(timestamp))
+      .set('x-cityflow-signature', signRaw(rawBody, timestamp))
+      .send(rawBody);
+
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual({ eventId: 'event-1', status: 'draft', operation: 'created' });
+  });
+
+  it('refuse une signature calculée sur un JSON différent', async () => {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const rawBody = JSON.stringify(validBody, null, 2);
+
+    const response = await request(app)
+      .post('/api/v1/permits/hook')
+      .set('Content-Type', 'application/json')
+      .set('x-cityflow-timestamp', String(timestamp))
+      .set('x-cityflow-signature', sign(validBody, timestamp))
+      .send(rawBody);
+
+    expect(response.status).toBe(401);
+    expect(prisma.municipality.findUnique).not.toHaveBeenCalled();
     expect(prisma.roadEvent.create).not.toHaveBeenCalled();
   });
 
