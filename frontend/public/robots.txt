@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /events
+Disallow: /permits
+Disallow: /inspections
+Disallow: /municipal
+Disallow: /notifications
+
+Sitemap: https://cityflow.maddevops.com/sitemap.xml
