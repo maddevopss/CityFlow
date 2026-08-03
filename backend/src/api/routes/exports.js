@@ -7,6 +7,7 @@ const router = express.Router();
 
 const querySchema = Joi.object({
   municipalityId: Joi.number().integer().positive().required(),
+  limit: Joi.number().integer().min(1).max(1000).default(500),
   eventType: Joi.string()
     .valid('CONSTRUCTION', 'REGULATION', 'EVENT', 'INCIDENT', 'RESTRICTION')
     .optional()
@@ -45,7 +46,8 @@ router.get('/geojson', publicReadLimiter, async (req, res) => {
       status: true,
       updatedAt: true
     },
-    orderBy: { startTime: 'asc' }
+    orderBy: { startTime: 'asc' },
+    take: value.limit
   });
 
   const features = events.map((event) => ({
@@ -65,7 +67,8 @@ router.get('/geojson', publicReadLimiter, async (req, res) => {
 
   res.set({
     'Cache-Control': 'public, max-age=30, stale-while-revalidate=60',
-    'Content-Type': 'application/geo+json; charset=utf-8'
+    'Content-Type': 'application/geo+json; charset=utf-8',
+    'X-Content-Type-Options': 'nosniff'
   });
 
   return res.json({
