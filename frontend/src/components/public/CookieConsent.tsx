@@ -5,11 +5,12 @@ const storageKey = "cityflow-cookie-consent-v1";
 
 type CookieChoice = "necessary" | "all";
 
-function shouldShowConsent() {
-  return (
-    typeof window !== "undefined" &&
-    !window.localStorage.getItem(storageKey)
-  );
+function shouldShowConsent(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.localStorage.getItem(storageKey) === null;
 }
 
 export default function CookieConsent() {
@@ -37,8 +38,8 @@ export default function CookieConsent() {
         Les témoins nécessaires assurent le fonctionnement et la sécurité. Les
         témoins facultatifs restent désactivés sans votre accord. {" "}
         <Link className="underline" to="/cookies">
-          Consulter la politique
-        </Link>.
+          Consulter la politique.
+        </Link>
       </p>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <button
