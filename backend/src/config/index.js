@@ -51,6 +51,7 @@ module.exports = {
   permitWebhookSecret,
   permitWebhookToleranceSeconds: Number(process.env.PERMIT_WEBHOOK_TOLERANCE_SECONDS || 300),
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+  redisRateLimitEnabled: process.env.REDIS_RATE_LIMIT_ENABLED === 'true',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   databaseUrl: process.env.DATABASE_URL,
   wazeCcpUrl: requireProductionUrl('WAZE_CCP_URL', process.env.WAZE_CCP_URL),

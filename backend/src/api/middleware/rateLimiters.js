@@ -1,11 +1,21 @@
 const rateLimit = require('express-rate-limit');
+const Redis = require('ioredis');
+const RedisRateLimitStore = require('./redisRateLimitStore');
+const config = require('../../config');
+
+const redisClient = config.redisRateLimitEnabled
+  ? new Redis(config.redisUrl, { lazyConnect: true, maxRetriesPerRequest: 1 })
+  : null;
+if (redisClient) redisClient.connect().catch(() => {});
+const sharedStore = redisClient ? new RedisRateLimitStore({ client: redisClient }) : undefined;
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Trop de tentatives de connexion, réessayez plus tard' }
+  message: { message: 'Trop de tentatives de connexion, réessayez plus tard' },
+  store: sharedStore
 });
 
 const authReadLimiter = rateLimit({
@@ -13,7 +23,8 @@ const authReadLimiter = rateLimit({
   limit: 120,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Trop de restaurations de session, réessayez plus tard' }
+  message: { message: 'Trop de restaurations de session, réessayez plus tard' },
+  store: sharedStore
 });
 
 const publicReadLimiter = rateLimit({
@@ -21,7 +32,8 @@ const publicReadLimiter = rateLimit({
   limit: 180,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Trop de consultations publiques, réessayez plus tard' }
+  message: { message: 'Trop de consultations publiques, réessayez plus tard' },
+  store: sharedStore
 });
 
 const permitWebhookLimiter = rateLimit({
