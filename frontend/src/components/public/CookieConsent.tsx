@@ -38,8 +38,7 @@ export default function CookieConsent() {
         témoins facultatifs restent désactivés sans votre accord. {" "}
         <Link className="underline" to="/cookies">
           Consulter la politique
-        </Link>
-        .
+        </Link>.
       </p>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <button
