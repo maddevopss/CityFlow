@@ -19,7 +19,10 @@ export default function PublicLayout() {
           <Link to="/" className="text-xl font-black tracking-tight">
             CityFlow
           </Link>
-          <nav aria-label="Navigation publique" className="flex items-center gap-1">
+          <nav
+            aria-label="Navigation publique"
+            className="flex items-center gap-1"
+          >
             <NavLink to="/" end className={linkClass}>
               Accueil
             </NavLink>
