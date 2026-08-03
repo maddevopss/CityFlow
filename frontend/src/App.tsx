@@ -13,6 +13,7 @@ import HomePage from "./pages/public/HomePage";
 import PasswordRecoveryPage from "./pages/public/PasswordRecoveryPage";
 import RegisterPage from "./pages/public/RegisterPage";
 
+const ContactPage = lazy(() => import("./pages/public/ContactPage"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const EventsPage = lazy(() => import("./pages/EventsPage"));
 const CreateEvent = lazy(() => import("./pages/CreateEvent"));
@@ -65,6 +66,7 @@ const App: React.FC = () => (
             <Route element={<PublicLayout />}>
               <Route index element={<HomePage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/contact" element={<ContactPage />} />
               <Route
                 path="/forgot-password"
                 element={<PasswordRecoveryPage />}

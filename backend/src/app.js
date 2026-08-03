@@ -28,6 +28,7 @@ app.use(
   })
 );
 
+app.use('/api/v1/public', require('./api/routes/publicContact'));
 app.use('/api/v1/auth', require('./api/routes/auth'));
 app.use('/api/v1/events', require('./api/routes/events'));
 app.use('/api/v1/exports', require('./api/routes/exports'));
