@@ -2,18 +2,30 @@ const request = require('supertest');
 
 jest.mock('bcryptjs', () => ({ compareSync: jest.fn() }));
 
-jest.mock('../../src/db/prisma', () => ({
-  user: {
-    findUnique: jest.fn(),
-    update: jest.fn()
-  },
-  inspection: {
-    findMany: jest.fn(),
-    create: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn()
-  }
-}));
+jest.mock('../../src/db/prisma', () => {
+  const mockUserUpdate = jest.fn();
+  const mockExecuteRaw = jest.fn();
+  const mockTransactionClient = {
+    user: { update: mockUserUpdate },
+    $executeRaw: mockExecuteRaw
+  };
+
+  return {
+    user: {
+      findUnique: jest.fn(),
+      update: mockUserUpdate
+    },
+    inspection: {
+      findMany: jest.fn(),
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn()
+    },
+    $executeRaw: mockExecuteRaw,
+    $queryRaw: jest.fn(),
+    $transaction: jest.fn(callback => callback(mockTransactionClient))
+  };
+});
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -44,6 +56,10 @@ describe('Auth API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.$transaction.mockImplementation(callback => callback({
+      user: { update: prisma.user.update },
+      $executeRaw: prisma.$executeRaw
+    }));
   });
 
   it('refuse un utilisateur inconnu sans comparer le mot de passe', async () => {
@@ -79,12 +95,13 @@ describe('Auth API', () => {
     expect(res.status).toBe(401);
     expect(res.body).toEqual({ message: 'Identifiants invalides' });
     expect(bcrypt.compareSync).not.toHaveBeenCalled();
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it('connecte un utilisateur valide avec le contrat JWT attendu', async () => {
+  it('crée une session persistante avec le contrat JWT attendu', async () => {
     prisma.user.findUnique.mockResolvedValue(user);
     prisma.user.update.mockResolvedValue(user);
+    prisma.$executeRaw.mockResolvedValue(1);
     bcrypt.compareSync.mockReturnValue(true);
 
     const res = await request(app)
@@ -92,21 +109,25 @@ describe('Auth API', () => {
       .send({ email: user.email, password: 'valide' });
 
     expect(res.status).toBe(200);
-    expect(res.body.user).toEqual({ id: user.id, email: user.email, role: user.role });
-    expect(
-      jwt.verify(res.body.token, config.jwtSecret, {
-        algorithms: [config.jwtAlgorithm],
-        issuer: config.jwtIssuer,
-        audience: config.jwtAudience
-      })
-    ).toEqual(expect.objectContaining({ sub: user.id, municipalityId: 7 }));
+    const decoded = jwt.verify(res.body.token, config.jwtSecret, {
+      algorithms: [config.jwtAlgorithm],
+      issuer: config.jwtIssuer,
+      audience: config.jwtAudience
+    });
+    expect(decoded).toEqual(expect.objectContaining({
+      sub: user.id,
+      municipalityId: 7,
+      jti: expect.any(String)
+    }));
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: user.id },
       data: { lastLogin: expect.any(Date) }
     });
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
   });
 
-  it('retourne le profil associé à un jeton conforme', async () => {
+  it('retourne le profil associé à un ancien jeton conforme en environnement de test', async () => {
     const token = signToken({ sub: user.id, role: user.role, municipalityId: 7 });
     prisma.user.findUnique
       .mockResolvedValueOnce({ isActive: true })
@@ -124,6 +145,39 @@ describe('Auth API', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.email).toBe(user.email);
+  });
+
+  it('refuse une session persistante révoquée', async () => {
+    const token = signToken(
+      { sub: user.id, role: user.role, municipalityId: 7 },
+      { jwtid: '33333333-3333-4333-8333-333333333333' }
+    );
+    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+    prisma.$queryRaw.mockResolvedValue([]);
+
+    const res = await request(app)
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: 'Session invalide' });
+  });
+
+  it('révoque la session active lors de la déconnexion', async () => {
+    const token = signToken(
+      { sub: user.id, role: user.role, municipalityId: 7 },
+      { jwtid: '33333333-3333-4333-8333-333333333333' }
+    );
+    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+    prisma.$queryRaw.mockResolvedValue([{ id: 'session-id' }]);
+    prisma.$executeRaw.mockResolvedValue(1);
+
+    const res = await request(app)
+      .post('/api/v1/auth/logout')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(204);
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
   });
 
   it.each([
