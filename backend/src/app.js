@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const { version } = require('../package.json');
+const prisma = require('./db/prisma');
 const errorHandler = require('./api/middleware/errorHandler');
 const { authenticate, authorize } = require('./api/middleware/auth');
 const { metricsReadLimiter } = require('./api/middleware/rateLimiters');
@@ -55,6 +56,37 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     requestId: req.requestId
   });
+});
+
+app.get('/health/live', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'cityflow-backend',
+    version,
+    requestId: req.requestId,
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/health/ready', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({
+      status: 'ready',
+      service: 'cityflow-backend',
+      version,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'not_ready',
+      service: 'cityflow-backend',
+      version,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 app.get('/metrics/http', metricsReadLimiter, authenticate, authorize('ADMIN'), (req, res) => {
