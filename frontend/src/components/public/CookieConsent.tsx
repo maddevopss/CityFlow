@@ -5,12 +5,15 @@ const storageKey = "cityflow-cookie-consent-v1";
 
 type CookieChoice = "necessary" | "all";
 
-export default function CookieConsent() {
-  const [visible, setVisible] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      !window.localStorage.getItem(storageKey),
+function shouldShowConsent() {
+  return (
+    typeof window !== "undefined" &&
+    !window.localStorage.getItem(storageKey)
   );
+}
+
+export default function CookieConsent() {
+  const [visible, setVisible] = useState(shouldShowConsent);
 
   if (!visible) return null;
 
