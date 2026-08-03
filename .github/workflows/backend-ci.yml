@@ -25,6 +25,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://cityflow:cityflow@localhost:5432/cityflow_test
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: test-secret-cityflow-at-least-32-characters
     defaults:
       run:
         working-directory: backend
@@ -54,8 +59,3 @@ jobs:
 
       - name: Run tests
         run: npm test -- --runInBand --passWithNoTests
-        env:
-          NODE_ENV: test
-          DATABASE_URL: postgresql://cityflow:cityflow@localhost:5432/cityflow_test
-          REDIS_URL: redis://localhost:6379
-          JWT_SECRET: test-secret-cityflow-at-least-32-characters
