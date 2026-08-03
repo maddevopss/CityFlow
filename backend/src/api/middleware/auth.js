@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const config = require('../../config');
 const prisma = require('../../db/prisma');
+const { isSessionActive } = require('../../services/authSession');
 
 function getVerificationOptions(token) {
   const options = {
@@ -31,6 +32,11 @@ async function authenticate(req, res, next) {
   try {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, config.jwtSecret, getVerificationOptions(token));
+
+    if (!decoded.jti && config.nodeEnv !== 'test') {
+      return res.status(401).json({ message: 'Session invalide' });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: decoded.sub },
       select: { isActive: true }
@@ -38,6 +44,16 @@ async function authenticate(req, res, next) {
 
     if (!user || !user.isActive) {
       return res.status(401).json({ message: 'Session invalide' });
+    }
+
+    if (decoded.jti) {
+      const active = await isSessionActive(prisma, {
+        userId: decoded.sub,
+        tokenId: decoded.jti
+      });
+      if (!active) {
+        return res.status(401).json({ message: 'Session invalide' });
+      }
     }
 
     req.user = decoded;
