@@ -1,12 +1,14 @@
 import React, { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import { AuthProvider } from "./context/AuthContext";
 import Layout from "./components/layout/Layout";
+import PublicLayout from "./components/public/PublicLayout";
 import Login from "./pages/Login";
+import PublicPlaceholderPage from "./pages/public/PublicPlaceholderPage";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -52,13 +54,62 @@ const routerFuture = {
   v7_relativeSplatPath: true,
 };
 
+const publicPage = (title: string, description: string) => (
+  <PublicPlaceholderPage title={title} description={description} />
+);
+
 const App: React.FC = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <BrowserRouter future={routerFuture}>
         <Suspense fallback={routeFallback}>
           <Routes>
+            <Route element={<PublicLayout />}>
+              <Route
+                index
+                element={publicPage(
+                  "Bienvenue sur CityFlow",
+                  "La page d’accueil publique sera livrée dans la PR 2.",
+                )}
+              />
+              <Route
+                path="signup"
+                element={publicPage(
+                  "Créer un compte",
+                  "Le parcours d’inscription sera livré dans la PR 3.",
+                )}
+              />
+              <Route
+                path="forgot-password"
+                element={publicPage(
+                  "Mot de passe oublié",
+                  "Le parcours de récupération sera livré dans la PR 4.",
+                )}
+              />
+              <Route
+                path="reset-password/:token"
+                element={publicPage(
+                  "Réinitialiser le mot de passe",
+                  "La réinitialisation sécurisée sera livrée dans la PR 4.",
+                )}
+              />
+              <Route
+                path="contact"
+                element={publicPage(
+                  "Nous joindre",
+                  "Le formulaire de contact sera livré dans la PR 5.",
+                )}
+              />
+              <Route path="about" element={publicPage("À propos", "Cette page sera livrée dans la PR 6.")} />
+              <Route path="privacy" element={publicPage("Politique de confidentialité", "Cette page sera livrée dans la PR 6.")} />
+              <Route path="terms" element={publicPage("Conditions d’utilisation", "Cette page sera livrée dans la PR 6.")} />
+              <Route path="cookies" element={publicPage("Politique sur les témoins", "Cette page sera livrée dans la PR 6.")} />
+              <Route path="accessibility" element={publicPage("Accessibilité", "Cette page sera livrée dans la PR 6.")} />
+              <Route path="not-found" element={publicPage("Page introuvable", "La page demandée n’existe pas ou a été déplacée.")} />
+            </Route>
+
             <Route path="/login" element={<Login />} />
+
             <Route
               element={
                 <ProtectedRoute requiredRole="CITIZEN">
@@ -66,7 +117,7 @@ const App: React.FC = () => (
                 </ProtectedRoute>
               }
             >
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/app" element={<Dashboard />} />
               <Route
                 path="/events"
                 element={
@@ -196,7 +247,7 @@ const App: React.FC = () => (
                 }
               />
             </Route>
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/not-found" replace />} />
           </Routes>
         </Suspense>
       </BrowserRouter>
@@ -204,4 +255,5 @@ const App: React.FC = () => (
     </AuthProvider>
   </QueryClientProvider>
 );
+
 export default App;
