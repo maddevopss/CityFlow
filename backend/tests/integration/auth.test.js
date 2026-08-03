@@ -3,16 +3,22 @@ const request = require('supertest');
 jest.mock('bcryptjs', () => ({ compareSync: jest.fn() }));
 
 jest.mock('../../src/db/prisma', () => {
+  const mockUserFindUnique = jest.fn();
   const mockUserUpdate = jest.fn();
   const mockExecuteRaw = jest.fn();
+  const mockQueryRaw = jest.fn();
   const mockTransactionClient = {
-    user: { update: mockUserUpdate },
-    $executeRaw: mockExecuteRaw
+    user: {
+      findUnique: mockUserFindUnique,
+      update: mockUserUpdate
+    },
+    $executeRaw: mockExecuteRaw,
+    $queryRaw: mockQueryRaw
   };
 
   return {
     user: {
-      findUnique: jest.fn(),
+      findUnique: mockUserFindUnique,
       update: mockUserUpdate
     },
     inspection: {
@@ -22,7 +28,7 @@ jest.mock('../../src/db/prisma', () => {
       update: jest.fn()
     },
     $executeRaw: mockExecuteRaw,
-    $queryRaw: jest.fn(),
+    $queryRaw: mockQueryRaw,
     $transaction: jest.fn(callback => callback(mockTransactionClient))
   };
 });
@@ -57,8 +63,12 @@ describe('Auth API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma.$transaction.mockImplementation(callback => callback({
-      user: { update: prisma.user.update },
-      $executeRaw: prisma.$executeRaw
+      user: {
+        findUnique: prisma.user.findUnique,
+        update: prisma.user.update
+      },
+      $executeRaw: prisma.$executeRaw,
+      $queryRaw: prisma.$queryRaw
     }));
   });
 
@@ -98,7 +108,7 @@ describe('Auth API', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it('crée une session persistante avec le contrat JWT attendu', async () => {
+  it('crée une session et un refresh token avec le contrat JWT attendu', async () => {
     prisma.user.findUnique.mockResolvedValue(user);
     prisma.user.update.mockResolvedValue(user);
     prisma.$executeRaw.mockResolvedValue(1);
@@ -109,6 +119,8 @@ describe('Auth API', () => {
       .send({ email: user.email, password: 'valide' });
 
     expect(res.status).toBe(200);
+    expect(res.body.refreshToken).toEqual(expect.any(String));
+    expect(res.body.refreshToken.length).toBeGreaterThanOrEqual(32);
     const decoded = jwt.verify(res.body.token, config.jwtSecret, {
       algorithms: [config.jwtAlgorithm],
       issuer: config.jwtIssuer,
@@ -124,7 +136,51 @@ describe('Auth API', () => {
       where: { id: user.id },
       data: { lastLogin: expect.any(Date) }
     });
-    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it('fait tourner un refresh token une seule fois', async () => {
+    const refreshToken = 'ancien-refresh-token-valide-1234567890';
+    prisma.$queryRaw.mockResolvedValue([{ user_id: user.id }]);
+    prisma.user.findUnique.mockResolvedValue(user);
+    prisma.$executeRaw.mockResolvedValue(1);
+
+    const res = await request(app)
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken });
+
+    expect(res.status).toBe(200);
+    expect(res.body.token).toEqual(expect.any(String));
+    expect(res.body.refreshToken).toEqual(expect.any(String));
+    expect(res.body.refreshToken).not.toBe(refreshToken);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it('refuse un refresh token déjà utilisé ou révoqué', async () => {
+    prisma.$queryRaw.mockResolvedValue([]);
+
+    const res = await request(app)
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: 'refresh-token-consomme-123456789012345' });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: 'Jeton de renouvellement invalide' });
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('refuse la rotation pour un compte désactivé', async () => {
+    prisma.$queryRaw.mockResolvedValue([{ user_id: user.id }]);
+    prisma.user.findUnique.mockResolvedValue({ ...user, isActive: false });
+
+    const res = await request(app)
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: 'refresh-token-compte-desactive-12345678' });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: 'Session invalide' });
   });
 
   it('retourne le profil associé à un ancien jeton conforme en environnement de test', async () => {
