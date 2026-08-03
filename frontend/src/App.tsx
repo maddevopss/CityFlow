@@ -9,6 +9,7 @@ import Layout from "./components/layout/Layout";
 import PublicLayout from "./components/public/PublicLayout";
 import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login";
+import ContactPage from "./pages/public/ContactPage";
 import HomePage from "./pages/public/HomePage";
 import PasswordRecoveryPage from "./pages/public/PasswordRecoveryPage";
 import RegisterPage from "./pages/public/RegisterPage";
@@ -65,6 +66,7 @@ const App: React.FC = () => (
             <Route element={<PublicLayout />}>
               <Route index element={<HomePage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/contact" element={<ContactPage />} />
               <Route
                 path="/forgot-password"
                 element={<PasswordRecoveryPage />}
