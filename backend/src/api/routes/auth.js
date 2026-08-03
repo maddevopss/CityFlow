@@ -8,6 +8,7 @@ const config = require('../../config');
 const { authenticate } = require('../middleware/auth');
 const { loginLimiter, authReadLimiter } = require('../middleware/rateLimiters');
 const { createSession, revokeSession } = require('../../services/authSession');
+const { createRefreshToken, rotateRefreshToken } = require('../../services/refreshToken');
 
 const router = express.Router();
 
@@ -20,6 +21,36 @@ const loginSchema = Joi.object({
     .required(),
   password: Joi.string().min(1).max(128).required()
 });
+
+const refreshSchema = Joi.object({
+  refreshToken: Joi.string().min(32).max(256).required()
+});
+
+function getRefreshTokenExpiration() {
+  return new Date(Date.now() + config.refreshTokenTtlDays * 24 * 60 * 60 * 1000);
+}
+
+function issueAccessToken(user) {
+  const tokenId = randomUUID();
+  const token = jwt.sign(
+    { sub: user.id, role: user.role, municipalityId: user.municipalityId },
+    config.jwtSecret,
+    {
+      algorithm: config.jwtAlgorithm,
+      expiresIn: config.jwtExpiration,
+      issuer: config.jwtIssuer,
+      audience: config.jwtAudience,
+      jwtid: tokenId
+    }
+  );
+  const decoded = jwt.decode(token);
+
+  return {
+    token,
+    tokenId,
+    expiresAt: new Date(decoded.exp * 1000)
+  };
+}
 
 router.post('/login', loginLimiter, async (req, res) => {
   const { error, value } = loginSchema.validate(req.body, {
@@ -37,33 +68,82 @@ router.post('/login', loginLimiter, async (req, res) => {
     return res.status(401).json({ message: 'Identifiants invalides' });
   }
 
-  const tokenId = randomUUID();
-  const token = jwt.sign(
-    { sub: user.id, role: user.role, municipalityId: user.municipalityId },
-    config.jwtSecret,
-    {
-      algorithm: config.jwtAlgorithm,
-      expiresIn: config.jwtExpiration,
-      issuer: config.jwtIssuer,
-      audience: config.jwtAudience,
-      jwtid: tokenId
-    }
-  );
-  const decoded = jwt.decode(token);
-
-  await prisma.$transaction(async tx => {
+  const access = issueAccessToken(user);
+  const refreshToken = await prisma.$transaction(async tx => {
     await tx.user.update({
       where: { id: user.id },
       data: { lastLogin: new Date() }
     });
     await createSession(tx, {
       userId: user.id,
-      tokenId,
-      expiresAt: new Date(decoded.exp * 1000)
+      tokenId: access.tokenId,
+      expiresAt: access.expiresAt
+    });
+    return createRefreshToken(tx, {
+      userId: user.id,
+      expiresAt: getRefreshTokenExpiration()
     });
   });
 
-  return res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+  return res.json({
+    token: access.token,
+    refreshToken,
+    user: { id: user.id, email: user.email, role: user.role }
+  });
+});
+
+router.post('/refresh', authReadLimiter, async (req, res) => {
+  const { error, value } = refreshSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true
+  });
+
+  if (error) {
+    return res.status(400).json({ message: 'Jeton de renouvellement invalide' });
+  }
+
+  try {
+    const rotated = await prisma.$transaction(async tx => {
+      const rotation = await rotateRefreshToken(tx, {
+        token: value.refreshToken,
+        expiresAt: getRefreshTokenExpiration()
+      });
+
+      if (!rotation) {
+        return null;
+      }
+
+      const user = await tx.user.findUnique({ where: { id: rotation.userId } });
+      if (!user || !user.isActive) {
+        const sessionError = new Error('SESSION_INVALID');
+        sessionError.code = 'SESSION_INVALID';
+        throw sessionError;
+      }
+
+      const access = issueAccessToken(user);
+      await createSession(tx, {
+        userId: user.id,
+        tokenId: access.tokenId,
+        expiresAt: access.expiresAt
+      });
+
+      return {
+        token: access.token,
+        refreshToken: rotation.refreshToken
+      };
+    });
+
+    if (!rotated) {
+      return res.status(401).json({ message: 'Jeton de renouvellement invalide' });
+    }
+
+    return res.json(rotated);
+  } catch (err) {
+    if (err.code === 'SESSION_INVALID') {
+      return res.status(401).json({ message: 'Session invalide' });
+    }
+    throw err;
+  }
 });
 
 router.post('/logout', authReadLimiter, authenticate, async (req, res) => {

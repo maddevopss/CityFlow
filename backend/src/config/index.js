@@ -30,6 +30,7 @@ module.exports = {
   jwtAlgorithm: 'HS256',
   jwtIssuer: process.env.JWT_ISSUER || 'cityflow',
   jwtAudience: process.env.JWT_AUDIENCE || 'cityflow-api',
+  refreshTokenTtlDays: Number(process.env.REFRESH_TOKEN_TTL_DAYS || 30),
   permitWebhookSecret,
   permitWebhookToleranceSeconds: Number(process.env.PERMIT_WEBHOOK_TOLERANCE_SECONDS || 300),
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
