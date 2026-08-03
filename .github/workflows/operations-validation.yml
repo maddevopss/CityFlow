@@ -23,23 +23,26 @@ jobs:
   validate-observability:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Validate Prometheus rules
-        uses: docker://prom/prometheus:v3.5.0
-        with:
-          args: >-
-            promtool check rules
-            /github/workspace/observability/prometheus/cityflow-alerts.yml
-            /github/workspace/observability/prometheus/cityflow-recording-rules.yml
+        run: >-
+          docker run --rm
+          -v "$GITHUB_WORKSPACE:/workspace:ro"
+          --entrypoint /bin/promtool
+          prom/prometheus:v3.5.0
+          check rules
+          /workspace/observability/prometheus/cityflow-alerts.yml
+          /workspace/observability/prometheus/cityflow-recording-rules.yml
 
       - name: Validate Alertmanager configuration
-        uses: docker://prom/alertmanager:v0.28.1
-        with:
-          entrypoint: amtool
-          args: >-
-            check-config
-            /github/workspace/observability/alertmanager/alertmanager.yml
+        run: >-
+          docker run --rm
+          -v "$GITHUB_WORKSPACE:/workspace:ro"
+          --entrypoint /bin/amtool
+          prom/alertmanager:v0.28.1
+          check-config
+          /workspace/observability/alertmanager/alertmanager.yml
 
       - name: Validate Grafana dashboard JSON
         run: python -m json.tool observability/grafana/dashboards/cityflow-diffusion.json >/dev/null
