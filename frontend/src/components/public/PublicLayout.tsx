@@ -47,8 +47,8 @@ export default function PublicLayout() {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-slate-600 sm:px-6 lg:px-8">
           <strong className="text-slate-900">CityFlow</strong>
           <p>
-            Une source municipale claire pour les entraves, permis,
-            inspections et demandes citoyennes.
+            Une source municipale claire pour les entraves, permis, inspections
+            et demandes citoyennes.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link to="/contact" className="hover:text-slate-950">
