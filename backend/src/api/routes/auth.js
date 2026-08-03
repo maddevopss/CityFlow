@@ -38,7 +38,12 @@ router.post('/login', loginLimiter, async (req, res) => {
   const token = jwt.sign(
     { sub: user.id, role: user.role, municipalityId: user.municipalityId },
     config.jwtSecret,
-    { expiresIn: config.jwtExpiration }
+    {
+      algorithm: config.jwtAlgorithm,
+      expiresIn: config.jwtExpiration,
+      issuer: config.jwtIssuer,
+      audience: config.jwtAudience
+    }
   );
 
   await prisma.user.update({
