@@ -1,11 +1,15 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 
+const inactiveLink = "text-slate-700 hover:bg-slate-100";
+const activeLink = "bg-slate-900 text-white";
+const navigationLink = "rounded-md px-3 py-2 text-sm font-medium";
+const loginLink =
+  "rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100";
+const registerLink =
+  "rounded-md bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700";
+
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded-md px-3 py-2 text-sm font-medium ${
-    isActive
-      ? "bg-slate-900 text-white"
-      : "text-slate-700 hover:bg-slate-100"
-  }`;
+  `${navigationLink} ${isActive ? activeLink : inactiveLink}`;
 
 export default function PublicLayout() {
   return (
@@ -15,26 +19,17 @@ export default function PublicLayout() {
           <Link to="/" className="text-xl font-black tracking-tight">
             CityFlow
           </Link>
-          <nav
-            aria-label="Navigation publique"
-            className="flex items-center gap-1"
-          >
+          <nav aria-label="Navigation publique" className="flex items-center gap-1">
             <NavLink to="/" end className={linkClass}>
               Accueil
             </NavLink>
             <NavLink to="/contact" className={linkClass}>
               Contact
             </NavLink>
-            <Link
-              to="/login"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
-            >
+            <Link to="/login" className={loginLink}>
               Connexion
             </Link>
-            <Link
-              to="/register"
-              className="rounded-md bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700"
-            >
+            <Link to="/register" className={registerLink}>
               Inscription
             </Link>
           </nav>
