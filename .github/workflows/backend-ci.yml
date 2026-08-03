@@ -4,45 +4,74 @@ on:
   pull_request:
     paths:
       - 'backend/**'
+      - 'scripts/validate-project.mjs'
       - '.github/workflows/backend-ci.yml'
   push:
     branches:
       - main
     paths:
       - 'backend/**'
+      - 'scripts/validate-project.mjs'
       - '.github/workflows/backend-ci.yml'
 
 permissions:
   contents: read
 
+concurrency:
+  group: backend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://cityflow:cityflow@localhost:5432/cityflow_test
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: test-secret-cityflow-at-least-32-characters
     defaults:
       run:
         working-directory: backend
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       - name: Generate Prisma client
         run: npm run prisma:generate
 
-      - name: Run tests
-        run: npm test -- --runInBand
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
+      - name: Lint changed backend production files
         env:
-          NODE_ENV: test
-          DATABASE_URL: postgresql://cityflow:cityflow@localhost:5432/cityflow_test
-          REDIS_URL: redis://localhost:6379
-          JWT_SECRET: test-secret-cityflow-at-least-32-characters
+          LINT_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          mapfile -t files < <(
+            git -C .. diff --name-only "${LINT_BASE_REF}...HEAD" -- backend/src \
+              | grep -E '^backend/src/.*\.js$' \
+              | grep -Ev '\.test\.js$' \
+              | sed 's#^backend/##' \
+              || true
+          )
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo 'Aucun fichier backend de production modifié à lint.'
+            exit 0
+          fi
+          npx eslint --quiet "${files[@]}"
+
+      - name: Run tests
+        run: npm test -- --runInBand --passWithNoTests
