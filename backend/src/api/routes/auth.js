@@ -76,4 +76,6 @@ router.get('/me', authReadLimiter, authenticate, async (req, res) => {
   return res.json(user);
 });
 
+router.use(require('./passwordRecovery'));
+
 module.exports = router;
