@@ -28,8 +28,9 @@ jobs:
       - name: Validate Prometheus rules
         uses: docker://prom/prometheus:v3.5.0
         with:
+          entrypoint: /bin/promtool
           args: >-
-            promtool check rules
+            check rules
             /github/workspace/observability/prometheus/cityflow-alerts.yml
             /github/workspace/observability/prometheus/cityflow-recording-rules.yml
 
