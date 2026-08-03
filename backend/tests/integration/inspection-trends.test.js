@@ -1,7 +1,10 @@
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
-jest.mock('../../src/db/prisma', () => ({ inspection: { findMany: jest.fn() } }));
+jest.mock('../../src/db/prisma', () => ({
+  user: { findUnique: jest.fn() },
+  inspection: { findMany: jest.fn() }
+}));
 const prisma = require('../../src/db/prisma');
 const app = require('../../src/app');
 
@@ -10,7 +13,10 @@ const agentToken = jwt.sign({ sub: '11111111-1111-4111-8111-111111111111', role:
 const inspectorToken = jwt.sign({ sub: '22222222-2222-4222-8222-222222222222', role: 'INSPECTOR', municipalityId: 7 }, secret);
 
 describe('Inspection trends API', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+  });
 
   it('retourne les tendances mensuelles isolées par municipalité', async () => {
     const now = new Date();

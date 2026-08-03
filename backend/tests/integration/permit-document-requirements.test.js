@@ -2,6 +2,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
+  user: { findUnique: jest.fn() },
   permitDocumentRequirement: { findMany: jest.fn(), upsert: jest.fn() },
   municipality: { findUnique: jest.fn() }
 }));
@@ -14,7 +15,10 @@ const managerToken = jwt.sign({ sub: '11111111-1111-4111-8111-111111111111', mun
 const viewerToken = jwt.sign({ sub: '22222222-2222-4222-8222-222222222222', municipalityId: 7, role: 'VIEWER' }, config.jwtSecret);
 const citizenToken = jwt.sign({ sub: '33333333-3333-4333-8333-333333333333', municipalityId: 7, role: 'CITIZEN' }, config.jwtSecret);
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  prisma.user.findUnique.mockResolvedValue({ isActive: true });
+});
 
 test('liste les exigences de la municipalité', async () => {
   prisma.permitDocumentRequirement.findMany.mockResolvedValue([{ permitSubtype: 'CONSTRUCTION', requiredDocumentTypes: ['PLAN'] }]);

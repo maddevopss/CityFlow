@@ -2,6 +2,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
+  user: { findUnique: jest.fn() },
   inspection: { findMany: jest.fn() },
   inspectionReminder: {
     findMany: jest.fn(),
@@ -21,7 +22,10 @@ describe('Inspection reminders API', () => {
   const agentToken = jwt.sign({ sub: '11111111-1111-4111-8111-111111111111', role: 'MUNICIPAL_AGENT', municipalityId: 7 }, secret);
   const inspectorToken = jwt.sign({ sub: inspectorId, role: 'INSPECTOR', municipalityId: 7 }, secret);
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+  });
 
   it('limite un inspecteur à ses propres rappels', async () => {
     prisma.inspectionReminder.findMany.mockResolvedValue([]);

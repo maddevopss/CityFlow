@@ -1,6 +1,10 @@
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
+jest.mock('../../src/db/prisma', () => ({
+  user: { findUnique: jest.fn() }
+}));
+
 jest.mock('../../src/services/outbox', () => ({
   getOutboxSummary: jest.fn(),
   listDeadOutboxEvents: jest.fn(),
@@ -18,6 +22,7 @@ jest.mock('../../src/services/deliveryServiceLevels', () => ({
   createDeliverySlaAlerts: jest.fn()
 }));
 
+const prisma = require('../../src/db/prisma');
 const app = require('../../src/app');
 const {
   getOutboxSummary,
@@ -54,6 +59,7 @@ describe('Operations API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.user.findUnique.mockResolvedValue({ isActive: true });
   });
 
   it('réserve les opérations aux administrateurs', async () => {

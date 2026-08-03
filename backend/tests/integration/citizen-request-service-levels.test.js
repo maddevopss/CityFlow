@@ -2,6 +2,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
+  user: { findUnique: jest.fn() },
   $transaction: jest.fn(),
   citizenRequest: {
     groupBy: jest.fn(),
@@ -22,7 +23,10 @@ const token = jwt.sign({
   role: 'MUNICIPAL_AGENT'
 }, config.jwtSecret);
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  prisma.user.findUnique.mockResolvedValue({ isActive: true });
+});
 
 test('retourne et filtre les niveaux de service de la municipalité', async () => {
   prisma.citizenRequest.findMany.mockResolvedValue([

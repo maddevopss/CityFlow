@@ -2,6 +2,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
+  user: { findUnique: jest.fn() },
   $transaction: jest.fn(),
   citizenRequest: {
     groupBy: jest.fn(),
@@ -24,6 +25,7 @@ const citizenToken = jwt.sign({ sub: agentId, municipalityId: 7, role: 'CITIZEN'
 
 beforeEach(() => {
   jest.clearAllMocks();
+  prisma.user.findUnique.mockResolvedValue({ isActive: true });
   prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
 });
 

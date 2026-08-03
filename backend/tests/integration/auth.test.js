@@ -27,7 +27,8 @@ describe('Auth API', () => {
     password: 'hash',
     role: 'MUNICIPAL_AGENT',
     municipalityId: 7,
-    fullName: 'Agent municipal'
+    fullName: 'Agent municipal',
+    isActive: true
   };
 
   beforeEach(() => {
@@ -57,6 +58,19 @@ describe('Auth API', () => {
     expect(bcrypt.compareSync).toHaveBeenCalledWith('mauvais', 'hash');
   });
 
+  it('refuse un utilisateur désactivé avec un message générique', async () => {
+    prisma.user.findUnique.mockResolvedValue({ ...user, isActive: false });
+
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: user.email, password: 'valide' });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: 'Identifiants invalides' });
+    expect(bcrypt.compareSync).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
   it('connecte un utilisateur valide et inscrit la dernière connexion', async () => {
     prisma.user.findUnique.mockResolvedValue(user);
     prisma.user.update.mockResolvedValue(user);
@@ -83,13 +97,15 @@ describe('Auth API', () => {
       process.env.JWT_SECRET || 'test-secret',
       { expiresIn: '1h' }
     );
-    prisma.user.findUnique.mockResolvedValue({
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role,
-      municipalityId: 7
-    });
+    prisma.user.findUnique
+      .mockResolvedValueOnce({ isActive: true })
+      .mockResolvedValueOnce({
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        municipalityId: 7
+      });
 
     const res = await request(app)
       .get('/api/v1/auth/me')
@@ -101,5 +117,22 @@ describe('Auth API', () => {
       where: { id: user.id },
       select: { id: true, email: true, fullName: true, role: true, municipalityId: true }
     });
+  });
+
+  it('refuse un jeton existant après la désactivation du compte', async () => {
+    const token = jwt.sign(
+      { sub: user.id, role: user.role, municipalityId: 7 },
+      process.env.JWT_SECRET || 'test-secret',
+      { expiresIn: '1h' }
+    );
+    prisma.user.findUnique.mockResolvedValue({ isActive: false });
+
+    const res = await request(app)
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: 'Session invalide' });
+    expect(prisma.user.findUnique).toHaveBeenCalledTimes(1);
   });
 });

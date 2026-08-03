@@ -1,7 +1,14 @@
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
-jest.mock('../../src/db/prisma', () => ({}));
+jest.mock('../../src/db/prisma', () => ({
+  user: {
+    findUnique: jest.fn().mockResolvedValue({ isActive: true })
+  },
+  user: {
+    findUnique: jest.fn().mockResolvedValue({ isActive: true })
+  }
+}));
 jest.mock('../../src/services/permitDocuments', () => ({
   listPermitDocuments: jest.fn(),
   addPermitDocument: jest.fn(),

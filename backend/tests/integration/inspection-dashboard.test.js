@@ -2,6 +2,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
+  user: { findUnique: jest.fn() },
   inspection: { groupBy: jest.fn(), count: jest.fn() },
   inspectionReminder: { count: jest.fn() }
 }));
@@ -17,6 +18,7 @@ const inspectorToken = jwt.sign({ sub: inspectorId, role: 'INSPECTOR', municipal
 describe('Inspection dashboard API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.user.findUnique.mockResolvedValue({ isActive: true });
     prisma.inspection.groupBy
       .mockResolvedValueOnce([
         { status: 'SCHEDULED', _count: { _all: 6 } },

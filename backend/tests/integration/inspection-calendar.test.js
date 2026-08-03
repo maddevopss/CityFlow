@@ -2,6 +2,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
+  user: { findUnique: jest.fn() },
   inspection: { findMany: jest.fn() }
 }));
 
@@ -24,7 +25,10 @@ const inspectorToken = jwt.sign(
 const range = '?from=2026-08-03T00:00:00.000Z&to=2026-08-10T00:00:00.000Z';
 
 describe('Inspection calendar API', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+  });
 
   it('refuse une plage invalide', async () => {
     const res = await request(app)
