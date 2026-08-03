@@ -81,6 +81,7 @@ describe('Auth API', () => {
 
     expect(res.status).toBe(401);
     expect(bcrypt.compareSync).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
   });
 
   it('refuse un mot de passe invalide', async () => {
@@ -93,6 +94,7 @@ describe('Auth API', () => {
 
     expect(res.status).toBe(401);
     expect(bcrypt.compareSync).toHaveBeenCalledWith('mauvais', 'hash');
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
   });
 
   it('refuse un utilisateur désactivé avec un message générique', async () => {
@@ -106,6 +108,7 @@ describe('Auth API', () => {
     expect(res.body).toEqual({ message: 'Identifiants invalides' });
     expect(bcrypt.compareSync).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
   });
 
   it('crée une session et un refresh token avec le contrat JWT attendu', async () => {
@@ -168,7 +171,7 @@ describe('Auth API', () => {
     expect(res.status).toBe(401);
     expect(res.body).toEqual({ message: 'Jeton de renouvellement invalide' });
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
-    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
   });
 
   it('refuse la rotation pour un compte désactivé', async () => {
