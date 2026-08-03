@@ -1,4 +1,5 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
+import CookieConsent from "./CookieConsent";
 
 const inactiveLink = "text-slate-700 hover:bg-slate-100";
 const activeLink = "bg-slate-900 text-white";
@@ -25,6 +26,9 @@ export default function PublicLayout() {
           >
             <NavLink to="/" end className={linkClass}>
               Accueil
+            </NavLink>
+            <NavLink to="/about" className={linkClass}>
+              À propos
             </NavLink>
             <NavLink to="/contact" className={linkClass}>
               Contact
@@ -60,12 +64,16 @@ export default function PublicLayout() {
             <Link to="/terms" className="hover:text-slate-950">
               Conditions
             </Link>
+            <Link to="/cookies" className="hover:text-slate-950">
+              Témoins
+            </Link>
             <Link to="/accessibility" className="hover:text-slate-950">
               Accessibilité
             </Link>
           </div>
         </div>
       </footer>
+      <CookieConsent />
     </div>
   );
 }
