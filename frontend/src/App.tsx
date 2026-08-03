@@ -10,6 +10,7 @@ import PublicLayout from "./components/public/PublicLayout";
 import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login";
 import HomePage from "./pages/public/HomePage";
+import PasswordRecoveryPage from "./pages/public/PasswordRecoveryPage";
 import RegisterPage from "./pages/public/RegisterPage";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -64,6 +65,14 @@ const App: React.FC = () => (
             <Route element={<PublicLayout />}>
               <Route index element={<HomePage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route
+                path="/forgot-password"
+                element={<PasswordRecoveryPage />}
+              />
+              <Route
+                path="/reset-password/:token"
+                element={<PasswordRecoveryPage />}
+              />
             </Route>
             <Route path="/login" element={<Login />} />
             <Route
