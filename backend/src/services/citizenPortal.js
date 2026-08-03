@@ -1,5 +1,7 @@
 'use strict';
 
+const { normalizeAttachments } = require('./attachmentMetadata');
+
 const VISIBLE_STATUSES = new Set(['SUBMITTED', 'ACKNOWLEDGED', 'IN_REVIEW', 'PLANNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']);
 const TRANSITIONS = {
   SUBMITTED: ['ACKNOWLEDGED'],
@@ -17,8 +19,6 @@ function normalizeCitizenRequest(input, actor) {
   const description = String(input?.description || '').trim();
   if (title.length < 5 || title.length > 140) throw new Error('invalid title');
   if (description.length < 10 || description.length > 5000) throw new Error('invalid description');
-  const attachments = Array.isArray(input.attachments) ? input.attachments : [];
-  if (attachments.length > 10) throw new Error('too many attachments');
   return {
     municipalityId: actor.municipalityId,
     citizenId: actor.id,
@@ -26,12 +26,7 @@ function normalizeCitizenRequest(input, actor) {
     description,
     category: String(input.category || 'OTHER').toUpperCase(),
     location: input.location || null,
-    attachments: attachments.map(item => ({
-      fileName: String(item.fileName || '').slice(0, 255),
-      mimeType: String(item.mimeType || 'application/octet-stream'),
-      sizeBytes: Number(item.sizeBytes || 0),
-      storageKey: String(item.storageKey || '')
-    })),
+    attachments: normalizeAttachments(input.attachments),
     status: 'SUBMITTED'
   };
 }
