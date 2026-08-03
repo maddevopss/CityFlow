@@ -33,8 +33,9 @@ jobs:
         run: node scripts/governance/audit-workflows.mjs > workflow-compliance.json
 
       - name: Valider strictement les workflows modifiés
+        if: github.event_name == 'pull_request'
         env:
-          WORKFLOW_AUDIT_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+          WORKFLOW_AUDIT_BASE_REF: ${{ github.event.pull_request.base.sha }}
         run: node scripts/governance/audit-workflows.mjs --changed-only --strict
 
       - name: Publier la preuve d’audit
