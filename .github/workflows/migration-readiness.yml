@@ -6,6 +6,7 @@ jobs:
   validate:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - run: node --check scripts/release/check-migrations.mjs
       - run: node scripts/release/check-migrations.mjs
