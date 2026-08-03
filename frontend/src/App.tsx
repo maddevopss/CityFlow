@@ -1,13 +1,15 @@
 import React, { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import { AuthProvider } from "./context/AuthContext";
-import Layout from "./components/layout/Layout";
-import Login from "./pages/Login";
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import Layout from "./components/layout/Layout";
+import PublicLayout from "./components/public/PublicLayout";
+import { AuthProvider } from "./context/AuthContext";
+import Login from "./pages/Login";
+import HomePage from "./pages/public/HomePage";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const EventsPage = lazy(() => import("./pages/EventsPage"));
@@ -58,6 +60,9 @@ const App: React.FC = () => (
       <BrowserRouter future={routerFuture}>
         <Suspense fallback={routeFallback}>
           <Routes>
+            <Route element={<PublicLayout />}>
+              <Route index element={<HomePage />} />
+            </Route>
             <Route path="/login" element={<Login />} />
             <Route
               element={
@@ -66,7 +71,7 @@ const App: React.FC = () => (
                 </ProtectedRoute>
               }
             >
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route
                 path="/events"
                 element={
@@ -196,7 +201,7 @@ const App: React.FC = () => (
                 }
               />
             </Route>
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </BrowserRouter>
@@ -204,4 +209,5 @@ const App: React.FC = () => (
     </AuthProvider>
   </QueryClientProvider>
 );
+
 export default App;

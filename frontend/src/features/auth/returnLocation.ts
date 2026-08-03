@@ -4,6 +4,8 @@ export type ReturnLocation = {
   hash?: string;
 };
 
+const DEFAULT_AUTHENTICATED_PATH = "/dashboard";
+
 const isSafePathname = (pathname: string): boolean =>
   pathname.startsWith("/") &&
   !pathname.startsWith("//") &&
@@ -15,7 +17,7 @@ const isSafeSuffix = (value: string, prefix: "?" | "#"): boolean =>
 export const resolveSafeReturnLocation = (
   location?: ReturnLocation,
 ): string => {
-  const pathname = location?.pathname ?? "/";
+  const pathname = location?.pathname ?? DEFAULT_AUTHENTICATED_PATH;
   const search = location?.search ?? "";
   const hash = location?.hash ?? "";
 
@@ -24,7 +26,7 @@ export const resolveSafeReturnLocation = (
     !isSafeSuffix(search, "?") ||
     !isSafeSuffix(hash, "#")
   ) {
-    return "/";
+    return DEFAULT_AUTHENTICATED_PATH;
   }
 
   return `${pathname}${search}${hash}`;
