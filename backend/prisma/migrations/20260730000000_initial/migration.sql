@@ -354,10 +354,3 @@ ALTER TABLE "Notification" ADD CONSTRAINT "Notification_recipientId_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "Notification" ADD CONSTRAINT "Notification_requestId_fkey" FOREIGN KEY ("requestId") REFERENCES "CitizenRequest"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-npm notice
-npm notice New minor version of npm available! 11.9.0 -> 11.19.0
-npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.19.0
-npm notice To update run: npm install -g npm@11.19.0
-npm notice
-
