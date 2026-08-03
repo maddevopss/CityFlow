@@ -31,6 +31,19 @@ function getRefreshTokenExpiration() {
   return new Date(Date.now() + config.refreshTokenTtlDays * 24 * 60 * 60 * 1000);
 }
 
+async function recordAuthFailure(action, req, metadata = {}) {
+  try {
+    await appendSecurityAudit({
+      action,
+      result: 'FAILURE',
+      requestId: req.requestId,
+      metadata
+    });
+  } catch (_err) {
+    // Une panne du journal ne doit pas révéler l’état du compte au client.
+  }
+}
+
 function issueAccessToken(user) {
   const tokenId = randomUUID();
   const token = jwt.sign(
@@ -60,12 +73,19 @@ router.post('/login', loginLimiter, async (req, res) => {
   });
 
   if (error) {
+    await recordAuthFailure('auth.login.failed', req, { reason: 'invalid_payload' });
     return res.status(400).json({ message: 'Identifiants invalides' });
   }
 
   const user = await prisma.user.findUnique({ where: { email: value.email } });
+  const passwordValid = user?.isActive ? bcrypt.compareSync(value.password, user.password) : false;
 
-  if (!user || !user.isActive || !bcrypt.compareSync(value.password, user.password)) {
+  if (!user || !user.isActive || !passwordValid) {
+    await recordAuthFailure('auth.login.failed', req, {
+      reason: !user ? 'unknown_account' : !user.isActive ? 'inactive_account' : 'invalid_password',
+      municipalityId: user?.municipalityId ?? null,
+      actorId: user?.id ?? null
+    });
     return res.status(401).json({ message: 'Identifiants invalides' });
   }
 
@@ -109,6 +129,7 @@ router.post('/refresh', authReadLimiter, async (req, res) => {
   });
 
   if (error) {
+    await recordAuthFailure('auth.refresh.failed', req, { reason: 'invalid_payload' });
     return res.status(400).json({ message: 'Jeton de renouvellement invalide' });
   }
 
@@ -153,12 +174,14 @@ router.post('/refresh', authReadLimiter, async (req, res) => {
     });
 
     if (!rotated) {
+      await recordAuthFailure('auth.refresh.failed', req, { reason: 'invalid_or_consumed_token' });
       return res.status(401).json({ message: 'Jeton de renouvellement invalide' });
     }
 
     return res.json(rotated);
   } catch (err) {
     if (err.code === 'SESSION_INVALID') {
+      await recordAuthFailure('auth.refresh.failed', req, { reason: 'inactive_account' });
       return res.status(401).json({ message: 'Session invalide' });
     }
     throw err;
