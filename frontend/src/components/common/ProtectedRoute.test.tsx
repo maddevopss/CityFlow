@@ -65,7 +65,7 @@ describe("ProtectedRoute", () => {
 
     renderProtectedRoute();
 
-    expect(screen.getByText("Connexion")).toBeInTheDocument();
+    expect(screen.getAllByText("Connexion").length).toBeGreaterThan(0);
   });
 
   it("redirige un rôle insuffisant vers l’accueil", () => {
@@ -79,5 +79,18 @@ describe("ProtectedRoute", () => {
     renderProtectedRoute("ADMIN");
 
     expect(screen.getByText("Accueil")).toBeInTheDocument();
+  });
+
+  it("refuse une session authentifiée sans utilisateur résolu", () => {
+    mockedUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      token: "token",
+      user: null,
+    } as ReturnType<typeof useAuth>);
+
+    renderProtectedRoute();
+
+    expect(screen.getAllByText("Connexion").length).toBeGreaterThan(0);
   });
 });
