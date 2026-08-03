@@ -35,6 +35,7 @@ function resolveChangedWorkflowFiles() {
 
 const changedWorkflowFiles = resolveChangedWorkflowFiles();
 const findings = [];
+const workflowNames = new Map();
 
 for (const file of allWorkflowFiles) {
   const filePath = path.join(workflowDirectory, file);
@@ -45,6 +46,13 @@ for (const file of allWorkflowFiles) {
   const usesPullRequestTarget = /^\s*pull_request_target\s*:/m.test(text);
   const writePermissions = [...text.matchAll(/^\s+([A-Za-z-]+):\s*write\s*$/gm)].map(match => match[1]);
   const unpinnedActions = [];
+  const workflowName = text.match(/^name:\s*(.+)$/m)?.[1]?.trim();
+
+  if (workflowName) {
+    const files = workflowNames.get(workflowName) ?? [];
+    files.push(file);
+    workflowNames.set(workflowName, files);
+  }
 
   for (const match of text.matchAll(/^\s*-?\s*uses:\s*([^\s#]+)(?:\s+#.*)?$/gm)) {
     const action = match[1];
@@ -62,6 +70,7 @@ for (const file of allWorkflowFiles) {
   findings.push({
     file,
     changed: changedWorkflowFiles.has(file),
+    workflowName,
     hasTopLevelPermissions,
     usesPullRequestTarget,
     writePermissions,
@@ -71,15 +80,12 @@ for (const file of allWorkflowFiles) {
   });
 }
 
-const duplicateNames = Object.entries(
-  findings.reduce((names, finding) => {
-    const text = fs.readFileSync(path.join(workflowDirectory, finding.file), 'utf8');
-    const name = text.match(/^name:\s*(.+)$/m)?.[1]?.trim();
-    if (name) (names[name] ??= []).push(finding.file);
-    return names;
-  }, {})
-).filter(([, files]) => files.length > 1);
-
+const duplicateNames = [...workflowNames.entries()]
+  .filter(([, files]) => files.length > 1)
+  .map(([name, files]) => ({ name, files }));
+const strictDuplicateNames = duplicateNames.filter(
+  duplicate => !changedOnly || duplicate.files.some(file => changedWorkflowFiles.has(file))
+);
 const strictFindings = findings.filter(
   finding => (!changedOnly || finding.changed) && finding.errors.length > 0
 );
@@ -90,12 +96,13 @@ const report = {
   workflowCount: allWorkflowFiles.length,
   changedWorkflowCount: changedWorkflowFiles.size,
   duplicateNames,
+  strictDuplicateNames,
   strictFindings,
   findings
 };
 
 console.log(JSON.stringify(report, null, 2));
 
-if (strict && (strictFindings.length > 0 || duplicateNames.length > 0)) {
+if (strict && (strictFindings.length > 0 || strictDuplicateNames.length > 0)) {
   process.exitCode = 1;
 }
