@@ -20,7 +20,7 @@ Depuis la racine du dépôt:
 
 ~~~bash
 DATABASE_URL='postgresql://...' BACKUP_DIR='/var/backups/cityflow' \
-  BACKUP_RETENTION_DAYS=7 ./scripts/backup-postgres.sh
+  BACKUP_RETENTION_DAYS=7 bash scripts/backup-postgres.sh
 ~~~
 
 Le script produit:
@@ -38,7 +38,7 @@ Une restauration de validation doit être réalisée sur une base distincte:
 
 ~~~bash
 DATABASE_URL='postgresql://...' BACKUP_FILE='/var/backups/cityflow/cityflow-UTC.dump' \
-  CONFIRM_RESTORE=YES ./scripts/restore-postgres.sh
+  CONFIRM_RESTORE=YES bash scripts/restore-postgres.sh
 ~~~
 
 La confirmation YES est obligatoire, car pg_restore --clean --if-exists remplace les objets présents dans la base cible. Après restauration, exécuter les migrations compatibles, /health, puis les parcours minimaux de la checklist de livraison.
