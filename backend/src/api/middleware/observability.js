@@ -1,4 +1,5 @@
 const { randomUUID } = require('crypto');
+const logger = require('../../logger');
 
 const counters = new Map();
 
@@ -43,6 +44,13 @@ function observabilityMiddleware(req, res, next) {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
     const route = req.route?.path || req.baseUrl || req.path || 'unknown';
     recordRequest({ method: req.method, route, statusCode: res.statusCode, durationMs });
+    logger.info('http.request', {
+      requestId,
+      method: req.method,
+      route,
+      statusCode: res.statusCode,
+      durationMs: Number(durationMs.toFixed(2))
+    });
   });
 
   next();
