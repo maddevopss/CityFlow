@@ -7,7 +7,9 @@ type CookieChoice = "necessary" | "all";
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(
-    () => typeof window !== "undefined" && !window.localStorage.getItem(storageKey),
+    () =>
+      typeof window !== "undefined" &&
+      !window.localStorage.getItem(storageKey),
   );
 
   if (!visible) return null;
