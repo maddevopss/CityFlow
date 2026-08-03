@@ -7,10 +7,14 @@ async function authenticate(req, res, next) {
   if (!authHeader?.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Token manquant' });
   }
-  
+
   try {
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, config.jwtSecret);
+    const decoded = jwt.verify(token, config.jwtSecret, {
+      algorithms: [config.jwtAlgorithm],
+      issuer: config.jwtIssuer,
+      audience: config.jwtAudience
+    });
     const user = await prisma.user.findUnique({
       where: { id: decoded.sub },
       select: { isActive: true }
