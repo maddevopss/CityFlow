@@ -59,7 +59,12 @@ describe('Operations API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+    prisma.user.findUnique.mockImplementation(({ where }) => Promise.resolve({
+      id: where.id,
+      role: where.id === '11111111-1111-4111-8111-111111111111' ? 'ADMIN' : 'MUNICIPAL_AGENT',
+      municipalityId: 1,
+      isActive: true
+    }));
   });
 
   it('réserve les opérations aux administrateurs', async () => {

@@ -3,10 +3,12 @@ const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
   user: {
-    findUnique: jest.fn().mockResolvedValue({ isActive: true })
-  },
-  user: {
-    findUnique: jest.fn().mockResolvedValue({ isActive: true })
+    findUnique: jest.fn().mockImplementation(({ where }) => Promise.resolve({
+      id: where.id,
+      role: where.id === '22222222-2222-4222-8222-222222222222' ? 'MANAGER' : 'CITIZEN',
+      municipalityId: 7,
+      isActive: true
+    }))
   },
   roadEvent: {
     findFirst: jest.fn()

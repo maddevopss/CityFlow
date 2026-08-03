@@ -3,10 +3,12 @@ const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
   user: {
-    findUnique: jest.fn().mockResolvedValue({ isActive: true })
-  },
-  user: {
-    findUnique: jest.fn().mockResolvedValue({ isActive: true })
+    findUnique: jest.fn().mockImplementation(({ where }) => Promise.resolve({
+      id: where.id,
+      role: where.id === '55555555-5555-4555-8555-555555555555' ? 'VIEWER' : 'MANAGER',
+      municipalityId: where.id === '66666666-6666-4666-8666-666666666666' ? null : 7,
+      isActive: true
+    }))
   }
 }));
 jest.mock('../../src/services/permitIssuance', () => ({
@@ -28,7 +30,7 @@ const issuance = {
 
 function token(role, municipalityId = 7) {
   return jwt.sign({
-    sub: '22222222-2222-4222-8222-222222222222',
+    sub: role === 'VIEWER' ? '55555555-5555-4555-8555-555555555555' : '22222222-2222-4222-8222-222222222222',
     role,
     municipalityId
   }, config.jwtSecret);
@@ -37,7 +39,7 @@ function token(role, municipalityId = 7) {
 const managerToken = token('MANAGER');
 const viewerToken = token('VIEWER');
 const noMunicipalityToken = jwt.sign({
-  sub: '22222222-2222-4222-8222-222222222222',
+  sub: '66666666-6666-4666-8666-666666666666',
   role: 'MANAGER'
 }, config.jwtSecret);
 
@@ -85,7 +87,7 @@ test('exige une municipalité en lecture', async () => {
     .get(`/api/v1/permits/${permitId}/issuance`)
     .set('Authorization', `Bearer ${noMunicipalityToken}`);
 
-  expect(response.status).toBe(403);
+  expect(response.status).toBe(401);
   expect(getPermitIssuance).not.toHaveBeenCalled();
 });
 
@@ -129,7 +131,7 @@ test('exige une municipalité en écriture', async () => {
     .post(`/api/v1/permits/${permitId}/issuance`)
     .set('Authorization', `Bearer ${noMunicipalityToken}`);
 
-  expect(response.status).toBe(403);
+  expect(response.status).toBe(401);
   expect(issuePermit).not.toHaveBeenCalled();
 });
 

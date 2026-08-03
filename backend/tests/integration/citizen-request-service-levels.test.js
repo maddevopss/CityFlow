@@ -25,7 +25,12 @@ const token = jwt.sign({
 
 beforeEach(() => {
   jest.clearAllMocks();
-  prisma.user.findUnique.mockResolvedValue({ isActive: true });
+  prisma.user.findUnique.mockResolvedValue({
+    id: '22222222-2222-4222-8222-222222222222',
+    role: 'MUNICIPAL_AGENT',
+    municipalityId: 7,
+    isActive: true
+  });
 });
 
 test('retourne et filtre les niveaux de service de la municipalité', async () => {

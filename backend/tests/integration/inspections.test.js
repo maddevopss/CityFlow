@@ -37,7 +37,12 @@ describe('Inspections API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+    prisma.user.findUnique.mockImplementation(({ where }) => Promise.resolve({
+      id: where.id,
+      role: where.id === '22222222-2222-4222-8222-222222222222' ? 'VIEWER' : 'MUNICIPAL_AGENT',
+      municipalityId: 7,
+      isActive: true
+    }));
     prisma.inspection.count.mockResolvedValue(0);
   });
 

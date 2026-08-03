@@ -27,7 +27,12 @@ const range = '?from=2026-08-03T00:00:00.000Z&to=2026-08-10T00:00:00.000Z';
 describe('Inspection calendar API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+    prisma.user.findUnique.mockImplementation(({ where }) => Promise.resolve({
+      id: where.id,
+      role: where.id === inspectorId ? 'INSPECTOR' : 'MUNICIPAL_AGENT',
+      municipalityId: 7,
+      isActive: true
+    }));
   });
 
   it('refuse une plage invalide', async () => {

@@ -47,7 +47,12 @@ describe('Events API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+    prisma.user.findUnique.mockImplementation(({ where }) => Promise.resolve({
+      id: where.id,
+      role: where.id === 'admin-1' ? 'ADMIN' : 'MUNICIPAL_AGENT',
+      municipalityId: 1,
+      isActive: true
+    }));
     prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
     appendOutboxEvent.mockResolvedValue('outbox-1');
   });
