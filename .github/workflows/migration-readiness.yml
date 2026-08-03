@@ -5,8 +5,25 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cityflow
+          POSTGRES_PASSWORD: cityflow
+          POSTGRES_DB: cityflow_migration_check
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cityflow -d cityflow_migration_check"
+          --health-interval 5s --health-timeout 5s --health-retries 12
     steps:
       # v4
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - run: node --check scripts/release/check-migrations.mjs
       - run: node scripts/release/check-migrations.mjs
+      - name: Vérifier le déploiement des migrations
+        working-directory: backend
+        run: npm ci --ignore-scripts --no-audit --no-fund --silent && npm run prisma:generate --silent && npm run prisma:migrate:deploy
+        env:
+          DATABASE_URL: postgresql://cityflow:cityflow@localhost:5432/cityflow_migration_check
