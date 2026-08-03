@@ -2,7 +2,9 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-md px-3 py-2 text-sm font-medium ${
-    isActive ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
+    isActive
+      ? "bg-slate-900 text-white"
+      : "text-slate-700 hover:bg-slate-100"
   }`;
 
 export default function PublicLayout() {
@@ -13,30 +15,56 @@ export default function PublicLayout() {
           <Link to="/" className="text-xl font-black tracking-tight">
             CityFlow
           </Link>
-          <nav aria-label="Navigation publique" className="flex items-center gap-1">
-            <NavLink to="/" end className={linkClass}>Accueil</NavLink>
-            <NavLink to="/contact" className={linkClass}>Contact</NavLink>
-            <Link to="/login" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100">
+          <nav
+            aria-label="Navigation publique"
+            className="flex items-center gap-1"
+          >
+            <NavLink to="/" end className={linkClass}>
+              Accueil
+            </NavLink>
+            <NavLink to="/contact" className={linkClass}>
+              Contact
+            </NavLink>
+            <Link
+              to="/login"
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
+            >
               Connexion
             </Link>
-            <Link to="/register" className="rounded-md bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700">
+            <Link
+              to="/register"
+              className="rounded-md bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700"
+            >
               Inscription
             </Link>
           </nav>
         </div>
       </header>
 
-      <main><Outlet /></main>
+      <main>
+        <Outlet />
+      </main>
 
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-slate-600 sm:px-6 lg:px-8">
           <strong className="text-slate-900">CityFlow</strong>
-          <p>Une source municipale claire pour les entraves, permis, inspections et demandes citoyennes.</p>
+          <p>
+            Une source municipale claire pour les entraves, permis,
+            inspections et demandes citoyennes.
+          </p>
           <div className="flex flex-wrap gap-4">
-            <Link to="/contact" className="hover:text-slate-950">Contact</Link>
-            <Link to="/privacy" className="hover:text-slate-950">Confidentialité</Link>
-            <Link to="/terms" className="hover:text-slate-950">Conditions</Link>
-            <Link to="/accessibility" className="hover:text-slate-950">Accessibilité</Link>
+            <Link to="/contact" className="hover:text-slate-950">
+              Contact
+            </Link>
+            <Link to="/privacy" className="hover:text-slate-950">
+              Confidentialité
+            </Link>
+            <Link to="/terms" className="hover:text-slate-950">
+              Conditions
+            </Link>
+            <Link to="/accessibility" className="hover:text-slate-950">
+              Accessibilité
+            </Link>
           </div>
         </div>
       </footer>
