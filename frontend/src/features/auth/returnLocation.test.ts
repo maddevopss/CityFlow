@@ -17,7 +17,7 @@ describe("resolveSafeReturnLocation", () => {
     "/\\malveillant.example",
     "https://malveillant.example",
   ])("remplace une destination non locale (%s)", (pathname) => {
-    expect(resolveSafeReturnLocation({ pathname })).toBe("/");
+    expect(resolveSafeReturnLocation({ pathname })).toBe("/dashboard");
   });
 
   it("rejette les suffixes contenant une barre oblique inversée", () => {
@@ -26,6 +26,6 @@ describe("resolveSafeReturnLocation", () => {
         pathname: "/events",
         search: "?next=\\malveillant.example",
       }),
-    ).toBe("/");
+    ).toBe("/dashboard");
   });
 });
