@@ -6,6 +6,11 @@ const {
   operationsReadLimiter,
   operationsWriteLimiter
 } = require('../middleware/rateLimiters');
+const {
+  INSPECTION_TYPES,
+  INSPECTION_STATUSES,
+  INSPECTION_OUTCOMES
+} = require('../../domain/inspectionVocabulary');
 
 const router = express.Router();
 const allowedRoles = ['ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'];
@@ -14,12 +19,12 @@ const createInspectionSchema = Joi.object({
   permitId: Joi.string().uuid().allow(null),
   scheduledAt: Joi.date().iso().required(),
   address: Joi.string().trim().min(3).max(300).required(),
-  inspectionType: Joi.string().valid('PRE_WORK', 'IN_PROGRESS', 'FINAL', 'COMPLAINT').required(),
+  inspectionType: Joi.string().valid(...INSPECTION_TYPES).required(),
   notes: Joi.string().trim().max(4000).allow('', null)
 });
 
 const completeInspectionSchema = Joi.object({
-  outcome: Joi.string().valid('COMPLIANT', 'NON_COMPLIANT', 'FOLLOW_UP_REQUIRED').required(),
+  outcome: Joi.string().valid(...INSPECTION_OUTCOMES).required(),
   findings: Joi.string().trim().min(3).max(8000).required(),
   completedAt: Joi.date().iso().default(() => new Date())
 });
@@ -29,8 +34,8 @@ const assignmentSchema = Joi.object({ inspectorId: Joi.string().uuid().required(
 const listInspectionSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   pageSize: Joi.number().integer().min(1).max(100).default(25),
-  status: Joi.string().valid('SCHEDULED', 'COMPLETED', 'CANCELLED'),
-  inspectionType: Joi.string().valid('PRE_WORK', 'IN_PROGRESS', 'FINAL', 'COMPLAINT'),
+  status: Joi.string().valid(...INSPECTION_STATUSES),
+  inspectionType: Joi.string().valid(...INSPECTION_TYPES),
   assignedTo: Joi.string().uuid(),
   scheduledFrom: Joi.date().iso(),
   scheduledTo: Joi.date().iso().min(Joi.ref('scheduledFrom')),
