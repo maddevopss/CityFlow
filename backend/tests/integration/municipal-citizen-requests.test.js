@@ -21,11 +21,16 @@ const agentId = '22222222-2222-4222-8222-222222222222';
 const requestIdA = '33333333-3333-4333-8333-333333333333';
 const requestIdB = '44444444-4444-4444-8444-444444444444';
 const token = jwt.sign({ sub: agentId, municipalityId: 7, role: 'AGENT' }, config.jwtSecret);
-const citizenToken = jwt.sign({ sub: agentId, municipalityId: 7, role: 'CITIZEN' }, config.jwtSecret);
+const citizenToken = jwt.sign({ sub: '55555555-5555-4555-8555-555555555555', municipalityId: 7, role: 'CITIZEN' }, config.jwtSecret);
 
 beforeEach(() => {
   jest.clearAllMocks();
-  prisma.user.findUnique.mockResolvedValue({ isActive: true });
+  prisma.user.findUnique.mockImplementation(({ where }) => Promise.resolve({
+    id: where.id,
+    role: where.id === agentId ? 'AGENT' : 'CITIZEN',
+    municipalityId: 7,
+    isActive: true
+  }));
   prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
 });
 

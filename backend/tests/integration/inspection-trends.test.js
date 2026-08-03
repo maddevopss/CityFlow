@@ -15,7 +15,12 @@ const inspectorToken = jwt.sign({ sub: '22222222-2222-4222-8222-222222222222', r
 describe('Inspection trends API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+    prisma.user.findUnique.mockImplementation(({ where }) => Promise.resolve({
+      id: where.id,
+      role: where.id === '22222222-2222-4222-8222-222222222222' ? 'INSPECTOR' : 'MUNICIPAL_AGENT',
+      municipalityId: 7,
+      isActive: true
+    }));
   });
 
   it('retourne les tendances mensuelles isolées par municipalité', async () => {

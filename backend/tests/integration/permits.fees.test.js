@@ -3,10 +3,12 @@ const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
   user: {
-    findUnique: jest.fn().mockResolvedValue({ isActive: true })
-  },
-  user: {
-    findUnique: jest.fn().mockResolvedValue({ isActive: true })
+    findUnique: jest.fn().mockImplementation(({ where }) => Promise.resolve({
+      id: where.id,
+      role: where.id === '55555555-5555-4555-8555-555555555555' ? 'VIEWER' : 'MANAGER',
+      municipalityId: where.id === '66666666-6666-4666-8666-666666666666' ? null : 7,
+      isActive: true
+    }))
   }
 }));
 jest.mock('../../src/services/permitFees', () => ({
@@ -29,6 +31,7 @@ const config = require('../../src/config');
 
 const permitId = '33333333-3333-4333-8333-333333333333';
 const actorId = '22222222-2222-4222-8222-222222222222';
+const viewerId = '55555555-5555-4555-8555-555555555555';
 const fee = {
   permitId,
   municipalityId: 7,
@@ -38,13 +41,13 @@ const fee = {
 };
 
 function token(role, municipalityId = 7) {
-  return jwt.sign({ sub: actorId, role, municipalityId }, config.jwtSecret);
+  return jwt.sign({ sub: role === 'VIEWER' ? viewerId : actorId, role, municipalityId }, config.jwtSecret);
 }
 
 const adminToken = token('ADMIN');
 const managerToken = token('MANAGER');
 const viewerToken = token('VIEWER');
-const noMunicipalityToken = jwt.sign({ sub: actorId, role: 'MANAGER' }, config.jwtSecret);
+const noMunicipalityToken = jwt.sign({ sub: '66666666-6666-4666-8666-666666666666', role: 'MANAGER' }, config.jwtSecret);
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -79,7 +82,7 @@ test('exige une municipalité en lecture', async () => {
     .get(`/api/v1/permits/${permitId}/fees`)
     .set('Authorization', `Bearer ${noMunicipalityToken}`);
 
-  expect(response.status).toBe(403);
+  expect(response.status).toBe(401);
   expect(getPermitFee).not.toHaveBeenCalled();
 });
 
@@ -168,7 +171,7 @@ test('exige une municipalité lors de l’évaluation', async () => {
     .set('Authorization', `Bearer ${noMunicipalityToken}`)
     .send({ amountCents: 1000 });
 
-  expect(response.status).toBe(403);
+  expect(response.status).toBe(401);
   expect(assessPermitFee).not.toHaveBeenCalled();
 });
 

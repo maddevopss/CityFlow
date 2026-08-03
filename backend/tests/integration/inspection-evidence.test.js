@@ -40,7 +40,12 @@ describe('Inspection evidence API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+    prisma.user.findUnique.mockImplementation(({ where }) => Promise.resolve({
+      id: where.id,
+      role: where.id === '44444444-4444-4444-8444-444444444444' ? 'INSPECTOR' : 'MUNICIPAL_AGENT',
+      municipalityId: 7,
+      isActive: true
+    }));
   });
 
   it('enregistre une preuve dans la municipalité du jeton', async () => {

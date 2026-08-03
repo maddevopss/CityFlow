@@ -24,7 +24,12 @@ describe('Inspection reminders API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+    prisma.user.findUnique.mockImplementation(({ where }) => Promise.resolve({
+      id: where.id,
+      role: where.id === inspectorId ? 'INSPECTOR' : 'MUNICIPAL_AGENT',
+      municipalityId: 7,
+      isActive: true
+    }));
   });
 
   it('limite un inspecteur à ses propres rappels', async () => {

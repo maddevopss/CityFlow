@@ -18,7 +18,12 @@ const inspectorToken = jwt.sign({ sub: inspectorId, role: 'INSPECTOR', municipal
 describe('Inspection dashboard API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+    prisma.user.findUnique.mockImplementation(({ where }) => Promise.resolve({
+      id: where.id,
+      role: where.id === inspectorId ? 'INSPECTOR' : 'MUNICIPAL_AGENT',
+      municipalityId: 7,
+      isActive: true
+    }));
     prisma.inspection.groupBy
       .mockResolvedValueOnce([
         { status: 'SCHEDULED', _count: { _all: 6 } },

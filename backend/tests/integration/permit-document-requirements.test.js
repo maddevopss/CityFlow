@@ -17,7 +17,12 @@ const citizenToken = jwt.sign({ sub: '33333333-3333-4333-8333-333333333333', mun
 
 beforeEach(() => {
   jest.clearAllMocks();
-  prisma.user.findUnique.mockResolvedValue({ isActive: true });
+  prisma.user.findUnique.mockImplementation(({ where }) => Promise.resolve({
+    id: where.id,
+    role: where.id === '11111111-1111-4111-8111-111111111111' ? 'MANAGER' : where.id === '22222222-2222-4222-8222-222222222222' ? 'VIEWER' : 'CITIZEN',
+    municipalityId: 7,
+    isActive: true
+  }));
 });
 
 test('liste les exigences de la municipalité', async () => {

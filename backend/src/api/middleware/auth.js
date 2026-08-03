@@ -39,17 +39,10 @@ async function authenticate(req, res, next) {
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.sub },
-      select: { id: true, role: true, municipalityId: true, isActive: true }
+      select: { isActive: true }
     });
 
-    if (
-      !user
-      || !user.isActive
-      || user.id !== decoded.sub
-      || typeof user.role !== 'string'
-      || !Number.isInteger(user.municipalityId)
-      || user.municipalityId <= 0
-    ) {
+    if (!user || !user.isActive) {
       return res.status(401).json({ message: 'Session invalide' });
     }
 
@@ -63,18 +56,7 @@ async function authenticate(req, res, next) {
       }
     }
 
-    const authContext = Object.freeze({
-      userId: user.id,
-      role: user.role,
-      municipalityId: user.municipalityId,
-      sessionId: decoded.jti || null,
-      // Compatibilité avec les contrôleurs existants; ces champs proviennent de user.
-      sub: user.id,
-      jti: decoded.jti || null
-    });
-
-    req.auth = authContext;
-    req.user = authContext;
+    req.user = decoded;
     next();
   } catch (err) {
     return res.status(401).json({ message: 'Token invalide' });

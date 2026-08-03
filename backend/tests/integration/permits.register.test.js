@@ -3,10 +3,12 @@ const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
   user: {
-    findUnique: jest.fn().mockResolvedValue({ isActive: true })
-  },
-  user: {
-    findUnique: jest.fn().mockResolvedValue({ isActive: true })
+    findUnique: jest.fn().mockImplementation(({ where }) => Promise.resolve({
+      id: where.id,
+      role: where.id === '22222222-2222-4222-8222-222222222222' ? 'CITIZEN' : 'MUNICIPAL_AGENT',
+      municipalityId: 7,
+      isActive: true
+    }))
   },
   roadEvent: { findMany: jest.fn(), count: jest.fn() },
   municipality: { findUnique: jest.fn() }
@@ -17,7 +19,7 @@ const app = require('../../src/app');
 const config = require('../../src/config');
 
 const token = jwt.sign({ sub: '11111111-1111-4111-8111-111111111111', municipalityId: 7, role: 'MUNICIPAL_AGENT' }, config.jwtSecret);
-const citizenToken = jwt.sign({ sub: '11111111-1111-4111-8111-111111111111', municipalityId: 7, role: 'CITIZEN' }, config.jwtSecret);
+const citizenToken = jwt.sign({ sub: '22222222-2222-4222-8222-222222222222', municipalityId: 7, role: 'CITIZEN' }, config.jwtSecret);
 
 beforeEach(() => jest.clearAllMocks());
 
