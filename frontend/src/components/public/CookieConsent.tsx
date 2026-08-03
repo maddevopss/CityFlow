@@ -36,7 +36,7 @@ export default function CookieConsent() {
       </h2>
       <p className="mt-2 text-sm text-slate-700">
         Les témoins nécessaires assurent le fonctionnement et la sécurité. Les
-        témoins facultatifs restent désactivés sans votre accord. {" "}
+        témoins facultatifs restent désactivés sans votre accord.{" "}
         <Link className="underline" to="/cookies">
           Consulter la politique.
         </Link>
