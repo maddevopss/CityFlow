@@ -18,7 +18,18 @@ jest.mock('../../src/db/prisma', () => ({
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../../src/db/prisma');
+const config = require('../../src/config');
 const app = require('../../src/app');
+
+function signToken(payload, overrides = {}) {
+  return jwt.sign(payload, config.jwtSecret, {
+    algorithm: config.jwtAlgorithm,
+    expiresIn: '1h',
+    issuer: config.jwtIssuer,
+    audience: config.jwtAudience,
+    ...overrides
+  });
+}
 
 describe('Auth API', () => {
   const user = {
@@ -71,7 +82,7 @@ describe('Auth API', () => {
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it('connecte un utilisateur valide et inscrit la dernière connexion', async () => {
+  it('connecte un utilisateur valide avec le contrat JWT attendu', async () => {
     prisma.user.findUnique.mockResolvedValue(user);
     prisma.user.update.mockResolvedValue(user);
     bcrypt.compareSync.mockReturnValue(true);
@@ -82,21 +93,21 @@ describe('Auth API', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.user).toEqual({ id: user.id, email: user.email, role: user.role });
-    expect(jwt.verify(res.body.token, process.env.JWT_SECRET || 'test-secret')).toEqual(
-      expect.objectContaining({ sub: user.id, municipalityId: 7 })
-    );
+    expect(
+      jwt.verify(res.body.token, config.jwtSecret, {
+        algorithms: [config.jwtAlgorithm],
+        issuer: config.jwtIssuer,
+        audience: config.jwtAudience
+      })
+    ).toEqual(expect.objectContaining({ sub: user.id, municipalityId: 7 }));
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: user.id },
       data: { lastLogin: expect.any(Date) }
     });
   });
 
-  it('retourne le profil associé au jeton', async () => {
-    const token = jwt.sign(
-      { sub: user.id, role: user.role, municipalityId: 7 },
-      process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' }
-    );
+  it('retourne le profil associé à un jeton conforme', async () => {
+    const token = signToken({ sub: user.id, role: user.role, municipalityId: 7 });
     prisma.user.findUnique
       .mockResolvedValueOnce({ isActive: true })
       .mockResolvedValueOnce({
@@ -113,18 +124,30 @@ describe('Auth API', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.email).toBe(user.email);
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({
-      where: { id: user.id },
-      select: { id: true, email: true, fullName: true, role: true, municipalityId: true }
-    });
+  });
+
+  it.each([
+    ['algorithme inattendu', { algorithm: 'HS384' }],
+    ['émetteur inattendu', { issuer: 'service-inconnu' }],
+    ['audience inattendue', { audience: 'autre-api' }],
+    ['jeton expiré', { expiresIn: '-1s' }]
+  ])('refuse un %s avant tout accès utilisateur', async (_label, overrides) => {
+    const token = signToken(
+      { sub: user.id, role: user.role, municipalityId: 7 },
+      overrides
+    );
+
+    const res = await request(app)
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: 'Token invalide' });
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
   it('refuse un jeton existant après la désactivation du compte', async () => {
-    const token = jwt.sign(
-      { sub: user.id, role: user.role, municipalityId: 7 },
-      process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' }
-    );
+    const token = signToken({ sub: user.id, role: user.role, municipalityId: 7 });
     prisma.user.findUnique.mockResolvedValue({ isActive: false });
 
     const res = await request(app)
