@@ -2,10 +2,12 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
+const { randomUUID } = require('crypto');
 const prisma = require('../../db/prisma');
 const config = require('../../config');
 const { authenticate } = require('../middleware/auth');
 const { loginLimiter, authReadLimiter } = require('../middleware/rateLimiters');
+const { createSession, revokeSession } = require('../../services/authSession');
 
 const router = express.Router();
 
@@ -35,6 +37,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     return res.status(401).json({ message: 'Identifiants invalides' });
   }
 
+  const tokenId = randomUUID();
   const token = jwt.sign(
     { sub: user.id, role: user.role, municipalityId: user.municipalityId },
     config.jwtSecret,
@@ -42,16 +45,30 @@ router.post('/login', loginLimiter, async (req, res) => {
       algorithm: config.jwtAlgorithm,
       expiresIn: config.jwtExpiration,
       issuer: config.jwtIssuer,
-      audience: config.jwtAudience
+      audience: config.jwtAudience,
+      jwtid: tokenId
     }
   );
+  const decoded = jwt.decode(token);
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { lastLogin: new Date() }
+  await prisma.$transaction(async tx => {
+    await tx.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() }
+    });
+    await createSession(tx, {
+      userId: user.id,
+      tokenId,
+      expiresAt: new Date(decoded.exp * 1000)
+    });
   });
 
   return res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+});
+
+router.post('/logout', authReadLimiter, authenticate, async (req, res) => {
+  await revokeSession(prisma, { userId: req.user.sub, tokenId: req.user.jti });
+  return res.status(204).send();
 });
 
 router.get('/me', authReadLimiter, authenticate, async (req, res) => {
