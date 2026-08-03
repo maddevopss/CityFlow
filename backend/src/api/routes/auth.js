@@ -9,6 +9,7 @@ const { authenticate } = require('../middleware/auth');
 const { loginLimiter, authReadLimiter } = require('../middleware/rateLimiters');
 const { createSession, revokeSession } = require('../../services/authSession');
 const { createRefreshToken, rotateRefreshToken } = require('../../services/refreshToken');
+const { appendSecurityAudit } = require('../../services/securityAudit');
 
 const router = express.Router();
 
@@ -79,10 +80,19 @@ router.post('/login', loginLimiter, async (req, res) => {
       tokenId: access.tokenId,
       expiresAt: access.expiresAt
     });
-    return createRefreshToken(tx, {
+    const refreshToken = await createRefreshToken(tx, {
       userId: user.id,
       expiresAt: getRefreshTokenExpiration()
     });
+    await appendSecurityAudit({
+      action: 'auth.login.succeeded',
+      result: 'SUCCESS',
+      municipalityId: user.municipalityId,
+      actorId: user.id,
+      requestId: req.requestId,
+      db: tx
+    });
+    return refreshToken;
   });
 
   return res.json({
@@ -127,6 +137,15 @@ router.post('/refresh', authReadLimiter, async (req, res) => {
         expiresAt: access.expiresAt
       });
 
+      await appendSecurityAudit({
+        action: 'auth.refresh.succeeded',
+        result: 'SUCCESS',
+        municipalityId: user.municipalityId,
+        actorId: user.id,
+        requestId: req.requestId,
+        db: tx
+      });
+
       return {
         token: access.token,
         refreshToken: rotation.refreshToken
@@ -148,6 +167,13 @@ router.post('/refresh', authReadLimiter, async (req, res) => {
 
 router.post('/logout', authReadLimiter, authenticate, async (req, res) => {
   await revokeSession(prisma, { userId: req.user.sub, tokenId: req.user.jti });
+  await appendSecurityAudit({
+    action: 'auth.logout.succeeded',
+    result: 'SUCCESS',
+    municipalityId: req.user.municipalityId,
+    actorId: req.user.sub,
+    requestId: req.requestId
+  });
   return res.status(204).send();
 });
 

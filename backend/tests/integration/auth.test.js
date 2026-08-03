@@ -136,7 +136,7 @@ describe('Auth API', () => {
       where: { id: user.id },
       data: { lastLogin: expect.any(Date) }
     });
-    expect(prisma.$executeRaw).toHaveBeenCalledTimes(2);
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(3);
   });
 
   it('fait tourner un refresh token une seule fois', async () => {
@@ -155,7 +155,7 @@ describe('Auth API', () => {
     expect(res.body.refreshToken).not.toBe(refreshToken);
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
-    expect(prisma.$executeRaw).toHaveBeenCalledTimes(2);
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(3);
   });
 
   it('refuse un refresh token déjà utilisé ou révoqué', async () => {
@@ -233,7 +233,7 @@ describe('Auth API', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(204);
-    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(2);
   });
 
   it.each([
