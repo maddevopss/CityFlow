@@ -2,6 +2,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
+  user: { findUnique: jest.fn() },
   $transaction: jest.fn(operations => Promise.all(operations)),
   inspection: {
     count: jest.fn(),
@@ -36,6 +37,7 @@ describe('Inspections API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.user.findUnique.mockResolvedValue({ isActive: true });
     prisma.inspection.count.mockResolvedValue(0);
   });
 

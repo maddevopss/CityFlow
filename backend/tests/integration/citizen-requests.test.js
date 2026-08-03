@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
   $transaction: jest.fn(),
+  user: { findUnique: jest.fn() },
   citizenRequest: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
   citizenRequestEvent: { create: jest.fn() },
   notification: { create: jest.fn(), count: jest.fn(), findMany: jest.fn() }
@@ -20,6 +21,7 @@ const agentToken = jwt.sign({ sub: agentId, municipalityId: 7, role: 'AGENT' }, 
 
 beforeEach(() => {
   jest.clearAllMocks();
+  prisma.user.findUnique.mockResolvedValue({ isActive: true });
   prisma.$transaction.mockImplementation(async value => {
     if (typeof value === 'function') return value(prisma);
     return Promise.all(value);

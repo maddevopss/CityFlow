@@ -2,6 +2,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
+  user: { findUnique: jest.fn() },
   inspection: { findFirst: jest.fn() },
   inspectionEvidence: {
     findMany: jest.fn(),
@@ -37,7 +38,10 @@ describe('Inspection evidence API', () => {
     capturedAt: '2026-08-01T12:00:00.000Z'
   };
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    prisma.user.findUnique.mockResolvedValue({ isActive: true });
+  });
 
   it('enregistre une preuve dans la municipalité du jeton', async () => {
     prisma.inspection.findFirst.mockResolvedValue({ id: inspectionId });

@@ -12,7 +12,8 @@ jest.mock('../../src/db/prisma', () => ({
   },
   user: {
     findMany: jest.fn(),
-    findFirst: jest.fn()
+    findFirst: jest.fn(),
+    findUnique: jest.fn()
   }
 }));
 
@@ -36,6 +37,7 @@ describe('Inspection assignments API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.user.findUnique.mockResolvedValue({ isActive: true });
     prisma.inspection.count.mockResolvedValue(0);
   });
 

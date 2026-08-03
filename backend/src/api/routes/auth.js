@@ -31,7 +31,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
   const user = await prisma.user.findUnique({ where: { email: value.email } });
 
-  if (!user || !bcrypt.compareSync(value.password, user.password)) {
+  if (!user || !user.isActive || !bcrypt.compareSync(value.password, user.password)) {
     return res.status(401).json({ message: 'Identifiants invalides' });
   }
 

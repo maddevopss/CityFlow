@@ -5,7 +5,7 @@ jest.mock('../../src/db/prisma', () => {
   const prisma = {
     $queryRawUnsafe: jest.fn(),
     citizenRequest: { findMany: jest.fn() },
-    user: { findMany: jest.fn() },
+    user: { findMany: jest.fn(), findUnique: jest.fn() },
     notification: { findMany: jest.fn(), createMany: jest.fn() }
   };
   prisma.$transaction = jest.fn((task) => task(prisma));
@@ -29,6 +29,7 @@ const agentToken = jwt.sign({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  prisma.user.findUnique.mockResolvedValue({ isActive: true });
   prisma.$transaction.mockImplementation((task) => task(prisma));
   prisma.$queryRawUnsafe.mockResolvedValue([{ acquired: true }]);
 });

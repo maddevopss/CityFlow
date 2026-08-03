@@ -2,6 +2,12 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/db/prisma', () => ({
+  user: {
+    findUnique: jest.fn().mockResolvedValue({ isActive: true })
+  },
+  user: {
+    findUnique: jest.fn().mockResolvedValue({ isActive: true })
+  },
   roadEvent: { findMany: jest.fn(), count: jest.fn() },
   municipality: { findUnique: jest.fn() }
 }));
