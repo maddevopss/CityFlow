@@ -24,13 +24,21 @@ function getVerificationOptions(token) {
 }
 
 async function authenticate(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
+  // Try to get token from httpOnly cookie first, then fallback to Authorization header
+  let token = req.cookies?.accessToken;
+
+  if (!token) {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+  }
+
+  if (!token) {
     return res.status(401).json({ message: 'Token manquant' });
   }
 
   try {
-    const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, config.jwtSecret, getVerificationOptions(token));
 
     if (!decoded.jti && config.nodeEnv !== 'test') {
@@ -68,7 +76,6 @@ async function authenticate(req, res, next) {
       role: user.role,
       municipalityId: user.municipalityId,
       sessionId: decoded.jti || null,
-      // Compatibilité avec les contrôleurs existants; ces champs proviennent de user.
       sub: user.id,
       jti: decoded.jti || null
     });
