@@ -5,6 +5,7 @@ const prisma = require('../../db/prisma');
 const config = require('../../config');
 const { permitWebhookLimiter, permitWriteLimiter, permitReadLimiter } = require('../middleware/rateLimiters');
 const { authenticate, authorize } = require('../middleware/auth');
+const { ROLE_SETS } = require('../../constants/roles');
 const { ingestPermit } = require('../../services/permitIngestion');
 const { transitionPermit } = require('../../services/permitDecision');
 const { listPermitDocuments, addPermitDocument, reviewPermitDocument } = require('../../services/permitDocuments');
@@ -141,14 +142,14 @@ async function handleTransition(req, res, next, action, withReason = false) {
   }
 }
 
-const municipalPermitAccess = [authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'VIEWER')];
+const municipalPermitAccess = [authenticate, authorize(...ROLE_SETS.VIEWERS)];
 router.get('/', permitReadLimiter, ...municipalPermitAccess, async (req, res) => { const { error, value } = registerQuerySchema.validate(req.query, { abortEarly: false, stripUnknown: true }); if (error) return res.status(400).json({ message: 'Filtres de permis invalides', details: error.details.map((detail) => detail.message) }); if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' }); return res.json(await listMunicipalPermits(prisma, { municipalityId: req.user.municipalityId, ...value })); });
 
 router.get('/document-requirements', permitReadLimiter, ...municipalPermitAccess, async (req, res) => {
   if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
   return res.json(await listPermitDocumentRequirements(prisma, req.user.municipalityId));
 });
-router.put('/document-requirements', permitWriteLimiter, authenticate, authorize('ADMIN', 'MANAGER'), async (req, res) => {
+router.put('/document-requirements', permitWriteLimiter, authenticate, authorize(...ROLE_SETS.MANAGERS), async (req, res) => {
   if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
   const { error, value } = requirementSchema.validate(req.body, { abortEarly: false, stripUnknown: true });
   if (error) return res.status(400).json({ message: 'Exigences documentaires invalides', details: error.details.map((detail) => detail.message) });
