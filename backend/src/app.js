@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
+const lusca = require('lusca');
 const { version } = require('../package.json');
 const prisma = require('./db/prisma');
 const errorHandler = require('./api/middleware/errorHandler');
@@ -65,6 +66,12 @@ app.use(
     }
   })
 );
+
+// CSRF protection middleware (required for cookie-based authentication)
+app.use(lusca.csrf({
+  key: '_csrf',
+  secret: process.env.CSRF_SECRET || 'change_this_in_production'
+}));
 
 app.use('/api/v1/auth', require('./api/routes/auth'));
 app.use('/api/v1/events', require('./api/routes/events'));
