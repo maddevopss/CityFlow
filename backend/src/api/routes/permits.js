@@ -67,6 +67,18 @@ function verifyPermitWebhook(req, res, next) {
 }
 
 function validatePermitId(req, res) { const { error, value } = permitIdSchema.validate(req.params.permitId); if (error) { res.status(400).json({ message: 'Identifiant de permis invalide' }); return null; } return value; }
+
+async function validatePermitOwnership(permitId, municipalityId) {
+  const permit = await prisma.permit.findUnique({
+    where: { id: permitId },
+    select: { municipalityId: true }
+  });
+  if (!permit || permit.municipalityId !== municipalityId) {
+    throw new Error('UNAUTHORIZED_PERMIT');
+  }
+  return permit;
+}
+
 function mapPermitError(error, res, next) {
   if (error.code === 'PERMIT_NOT_FOUND') return res.status(404).json({ message: error.message, code: error.code });
   if (error.code === 'PERMIT_TRANSITION_CONFLICT') return res.status(409).json({ message: error.message, code: error.code, currentStatus: error.currentStatus, allowedFrom: error.allowedFrom });
@@ -76,7 +88,28 @@ function mapPermitError(error, res, next) {
   if (error.code === 'PERMIT_DOCUMENT_DUPLICATE') return res.status(409).json({ message: error.message, code: error.code });
   return next(error);
 }
-async function handleTransition(req, res, next, action, withReason = false) { try { const permitId = validatePermitId(req, res); if (!permitId) return; if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' }); let reason = null; if (withReason) { const { error, value } = reasonSchema.validate(req.body); if (error) return res.status(400).json({ message: error.details[0].message }); reason = value.reason; } const permit = await transitionPermit(prisma, { permitId, municipalityId: req.user.municipalityId, action, actorId: req.user.sub, actorRole: req.user.role, reason }); return res.json({ permit }); } catch (error) { return mapPermitError(error, res, next); } }
+async function handleTransition(req, res, next, action, withReason = false) {
+  try {
+    const permitId = validatePermitId(req, res);
+    if (!permitId) return;
+    if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' });
+
+    // Validate permit ownership before processing transition
+    await validatePermitOwnership(permitId, req.user.municipalityId);
+
+    let reason = null;
+    if (withReason) {
+      const { error, value } = reasonSchema.validate(req.body);
+      if (error) return res.status(400).json({ message: error.details[0].message });
+      reason = value.reason;
+    }
+    const permit = await transitionPermit(prisma, { permitId, municipalityId: req.user.municipalityId, action, actorId: req.user.sub, actorRole: req.user.role, reason });
+    return res.json({ permit });
+  } catch (error) {
+    if (error.message === 'UNAUTHORIZED_PERMIT') return res.status(403).json({ message: 'Accès non autorisé' });
+    return mapPermitError(error, res, next);
+  }
+}
 
 const municipalPermitAccess = [authenticate, authorize('ADMIN', 'MANAGER', 'MUNICIPAL_AGENT', 'VIEWER')];
 router.get('/', permitReadLimiter, ...municipalPermitAccess, async (req, res) => { const { error, value } = registerQuerySchema.validate(req.query, { abortEarly: false, stripUnknown: true }); if (error) return res.status(400).json({ message: 'Filtres de permis invalides', details: error.details.map((detail) => detail.message) }); if (!req.user.municipalityId) return res.status(403).json({ message: 'Municipalité requise' }); return res.json(await listMunicipalPermits(prisma, { municipalityId: req.user.municipalityId, ...value })); });

@@ -1,13 +1,44 @@
 const rateLimit = require('express-rate-limit');
 const Redis = require('ioredis');
 const RedisRateLimitStore = require('./redisRateLimitStore');
+const logger = require('../../logger');
 const config = require('../../config');
 
-const redisClient = config.redisRateLimitEnabled
-  ? new Redis(config.redisUrl, { lazyConnect: true, maxRetriesPerRequest: 1 })
-  : null;
-if (redisClient) redisClient.connect().catch(() => {});
-const sharedStore = redisClient ? new RedisRateLimitStore({ client: redisClient }) : undefined;
+let redisClient = null;
+let sharedStore = undefined;
+let redisConnected = false;
+
+if (config.redisRateLimitEnabled) {
+  redisClient = new Redis(config.redisUrl, { lazyConnect: true, maxRetriesPerRequest: 1 });
+
+  redisClient.on('connect', () => {
+    redisConnected = true;
+    logger.info('Redis rate limiter connected successfully');
+  });
+
+  redisClient.on('error', (err) => {
+    redisConnected = false;
+    logger.error('Redis rate limiter connection error', {
+      message: err.message,
+      code: err.code
+    });
+  });
+
+  redisClient.on('close', () => {
+    redisConnected = false;
+    logger.warn('Redis rate limiter connection closed');
+  });
+
+  redisClient.connect().catch((err) => {
+    redisConnected = false;
+    logger.error('Failed to connect Redis rate limiter', {
+      message: err.message,
+      code: err.code
+    });
+  });
+
+  sharedStore = new RedisRateLimitStore({ client: redisClient });
+}
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
