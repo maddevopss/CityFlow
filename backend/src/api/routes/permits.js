@@ -15,14 +15,44 @@ const {
 const { ALLOWED_STATUSES, listMunicipalPermits, getMunicipalPermitDetail } = require('../../services/permitRegister');
 
 const router = express.Router();
-const registerQuerySchema = Joi.object({ status: Joi.string().valid(...ALLOWED_STATUSES), q: Joi.string().trim().max(100).allow(''), page: Joi.number().integer().min(1).default(1), pageSize: Joi.number().integer().min(1).max(100).default(25) });
+
+// Register query validation schema for permit listing
+const registerQuerySchema = Joi.object({
+  status: Joi.string().valid(...ALLOWED_STATUSES),
+  q: Joi.string().trim().max(100).allow(''),
+  page: Joi.number().integer().min(1).default(1),
+  pageSize: Joi.number().integer().min(1).max(100).default(25)
+});
 const permitIdSchema = Joi.string().guid({ version: ['uuidv4'] }).required();
 const documentIdSchema = Joi.string().guid({ version: ['uuidv4'] }).required();
 const reasonSchema = Joi.object({ reason: Joi.string().trim().min(3).max(1000).required() });
-const documentSchema = Joi.object({ documentType: Joi.string().trim().min(2).max(100).required(), fileName: Joi.string().trim().min(1).max(255).required(), mimeType: Joi.string().trim().max(150).required(), sizeBytes: Joi.number().integer().min(1).max(25 * 1024 * 1024).required(), storageKey: Joi.string().trim().min(3).max(500).required(), sha256: Joi.string().hex().length(64).required(), description: Joi.string().trim().max(1000).allow('', null) });
+// Permit document metadata validation
+const documentSchema = Joi.object({
+  documentType: Joi.string().trim().min(2).max(100).required(),
+  fileName: Joi.string().trim().min(1).max(255).required(),
+  mimeType: Joi.string().trim().max(150).required(),
+  sizeBytes: Joi.number().integer().min(1).max(25 * 1024 * 1024).required(),
+  storageKey: Joi.string().trim().min(3).max(500).required(),
+  sha256: Joi.string().hex().length(64).required(),
+  description: Joi.string().trim().max(1000).allow('', null)
+});
 const documentReviewSchema = Joi.object({ status: Joi.string().valid('ACCEPTED', 'REJECTED').required(), reason: Joi.string().trim().max(1000).allow('', null) });
 const requirementSchema = Joi.object({ permitSubtype: Joi.string().trim().min(2).max(100).required(), requiredDocumentTypes: Joi.array().items(Joi.string().trim().min(2).max(100)).max(50).required() });
-const permitSchema = Joi.object({ permit_id: Joi.string().trim().max(100).required(), contractor: Joi.string().trim().max(200).allow('', null), start_date: Joi.date().iso().required(), end_date: Joi.date().iso().min(Joi.ref('start_date')).allow(null), municipalityId: Joi.number().integer().positive().required(), geometry: Joi.object({ type: Joi.string().valid('Point', 'LineString', 'Polygon').required(), coordinates: Joi.array().required() }).required(), impacts: Joi.array().items(Joi.string().trim().max(100)).default([]) });
+// Permit data validation schema for ingestion
+const permitSchema = Joi.object({
+  permit_id: Joi.string().trim().max(100).required(),
+  contractor: Joi.string().trim().max(200).allow('', null),
+  start_date: Joi.date().iso().required(),
+  end_date: Joi.date().iso().min(Joi.ref('start_date')).allow(null),
+  municipalityId: Joi.number().integer().positive().required(),
+  geometry: Joi.object({
+    type: Joi.string().valid('Point', 'LineString', 'Polygon').required(),
+    coordinates: Joi.array().required()
+  }).required(),
+  impacts: Joi.array()
+    .items(Joi.string().trim().max(100))
+    .default([])
+});
 
 function safeEqual(expected, received) {
   const a = Buffer.from(expected, 'utf8');
