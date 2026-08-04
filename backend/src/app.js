@@ -32,7 +32,7 @@ app.use(helmet.contentSecurityPolicy({
     frameSrc: ["'none'"],
     baseUri: ["'self'"],
     formAction: ["'self'"],
-    upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : undefined
+    upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? true : undefined
   },
   reportOnly: process.env.NODE_ENV !== 'production'
 }));
