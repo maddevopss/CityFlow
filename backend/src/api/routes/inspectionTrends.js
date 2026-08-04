@@ -2,13 +2,18 @@ const express = require('express');
 const Joi = require('joi');
 const prisma = require('../../db/prisma');
 const { authenticate, authorize } = require('../middleware/auth');
+const { operationsReadLimiter } = require('../middleware/rateLimiters');
 
 const router = express.Router();
-router.use(authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'));
+router.use(operationsReadLimiter, authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'));
+
+const trendsSchema = Joi.object({
+  months: Joi.number().integer().min(1).max(24).default(6)
+});
 
 router.get('/', async (req, res) => {
-  const { error, value } = Joi.object({ months: Joi.number().integer().min(1).max(12).default(6) }).validate(req.query);
-  if (error) return res.status(400).json({ message: 'Période invalide' });
+  const { error, value } = trendsSchema.validate(req.query, { abortEarly: false, stripUnknown: true });
+  if (error) return res.status(400).json({ message: 'Paramètres invalides', details: error.details.map(d => d.message) });
 
   const end = new Date();
   const start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - value.months + 1, 1));
