@@ -1,6 +1,7 @@
 const express = require('express');
 const prisma = require('../../db/prisma');
 const { authenticate, authorize } = require('../middleware/auth');
+const { addDays } = require('../../utils/dates');
 
 const router = express.Router();
 router.use(authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'));
@@ -12,8 +13,7 @@ router.get('/', async (req, res) => {
   };
 
   const now = new Date();
-  const weekEnd = new Date(now);
-  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+  const weekEnd = addDays(now, 7);
 
   const [byStatus, byOutcome, upcoming, overdue, unassigned, unreadReminders] = await Promise.all([
     prisma.inspection.groupBy({ by: ['status'], where, _count: { _all: true } }),
