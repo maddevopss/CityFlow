@@ -1,11 +1,13 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgis/postgis:15-3.3
     container_name: cityflow-db
     environment:
-      POSTGRES_USER: cityflow
-      POSTGRES_PASSWORD: cityflow_secret
-      POSTGRES_DB: cityflow
+      POSTGRES_USER: ${DB_USER:-cityflow}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?error: DB_PASSWORD must be set}
+      POSTGRES_DB: ${DB_NAME:-cityflow}
     ports:
       - "5432:5432"
     volumes:
@@ -37,12 +39,13 @@ services:
       dockerfile: ../docker/backend/Dockerfile
     container_name: cityflow-api
     environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://cityflow:cityflow_secret@postgres:5432/cityflow
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: dev_secret_key_change_in_production
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: postgresql://${DB_USER:-cityflow}:${DB_PASSWORD:?error: DB_PASSWORD must be set}@postgres:5432/${DB_NAME:-cityflow}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET:?error: JWT_SECRET must be set}
+      PERMIT_WEBHOOK_SECRET: ${PERMIT_WEBHOOK_SECRET:?error: PERMIT_WEBHOOK_SECRET must be set}
       PORT: 3000
-      FRONTEND_URL: http://localhost:5173
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
     ports:
       - "3000:3000"
     volumes:
@@ -63,10 +66,10 @@ services:
       dockerfile: ../docker/backend/Dockerfile
     container_name: cityflow-worker
     environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://cityflow:cityflow_secret@postgres:5432/cityflow
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: dev_secret_key_change_in_production
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: postgresql://${DB_USER:-cityflow}:${DB_PASSWORD:?error: DB_PASSWORD must be set}@postgres:5432/${DB_NAME:-cityflow}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET:?error: JWT_SECRET must be set}
     depends_on:
       postgres:
         condition: service_healthy
