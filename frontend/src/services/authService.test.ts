@@ -40,7 +40,24 @@ describe("authService", () => {
       email: "citoyen@example.com",
       password: "secret",
     });
-    expect(localStorage.getItem("token")).toBe("token-valide");
+    // Token is now stored as httpOnly cookie by backend (not accessible in JavaScript)
+  });
+
+  it("enregistre le refreshToken en localStorage si fourni par le backend", async () => {
+    const response = {
+      token: "token-valide",
+      refreshToken: "refresh-token-valide",
+      user: {
+        id: "user-1",
+        email: "citoyen@example.com",
+        role: "CITIZEN",
+      },
+    };
+    mockedPost.mockResolvedValue({ data: response });
+
+    await login({ email: "citoyen@example.com", password: "secret" });
+
+    expect(localStorage.getItem("refreshToken")).toBe("refresh-token-valide");
   });
 
   it("retourne l’utilisateur courant depuis /auth/me", async () => {
@@ -55,11 +72,26 @@ describe("authService", () => {
     expect(mockedGet).toHaveBeenCalledWith("/auth/me");
   });
 
-  it("retire le jeton local lors de la déconnexion", () => {
-    localStorage.setItem("token", "token-a-retirer");
+  it("nettoie les données client lors de la déconnexion", async () => {
+    localStorage.setItem("refreshToken", "refresh-token-a-retirer");
+    sessionStorage.setItem("session-data", "data");
+    mockedPost.mockResolvedValue({ data: {} });
 
-    logout();
+    await logout();
 
-    expect(localStorage.getItem("token")).toBeNull();
+    expect(mockedPost).toHaveBeenCalledWith("/auth/logout", {});
+    expect(localStorage.getItem("refreshToken")).toBeNull();
+    expect(sessionStorage.getItem("session-data")).toBeNull();
+    // httpOnly token is automatically cleared by backend (not accessible in JavaScript)
+  });
+
+  it("continue le logout côté client même si l'appel API échoue", async () => {
+    localStorage.setItem("refreshToken", "refresh-token-a-retirer");
+    mockedPost.mockRejectedValue(new Error("API Error"));
+
+    await logout();
+
+    expect(mockedPost).toHaveBeenCalledWith("/auth/logout", {});
+    expect(localStorage.getItem("refreshToken")).toBeNull();
   });
 });

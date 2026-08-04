@@ -6,13 +6,13 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  // Enable sending cookies with requests (httpOnly cookies are sent automatically)
+  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  // Token is now in httpOnly cookie, sent automatically by the browser
+  // No need to manually set Authorization header
   return config;
 });
 

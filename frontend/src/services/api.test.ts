@@ -55,15 +55,16 @@ describe("intercepteurs API", () => {
     vi.unstubAllGlobals();
   });
 
-  it("ajoute le jeton Bearer aux requêtes authentifiées", () => {
-    getItem.mockReturnValue("token-valide");
+  it("n'ajoute pas le jeton aux headers car le token est en cookie httpOnly", () => {
+    getItem.mockReturnValue("refresh-token-valide");
     const config = { headers: {} as Record<string, string> };
 
     const result = interceptorMocks.state.requestHandler?.(
       config,
     ) as typeof config;
 
-    expect(result.headers.Authorization).toBe("Bearer token-valide");
+    // Token is sent automatically via httpOnly cookie, no Authorization header needed
+    expect(result.headers.Authorization).toBeUndefined();
   });
 
   it("préserve un refus normal de connexion", async () => {
