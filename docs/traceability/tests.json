@@ -9,6 +9,15 @@
       "status": "active",
       "path": "scripts/validate-traceability.mjs",
       "expectedResult": "Aucun identifiant dupliqué, aucune référence cassée et couverture obligatoire complète."
+    },
+    {
+      "id": "TST-2026-001",
+      "title": "Suite de tests backend Jest (incluant les tests de sécurité de backend/src/)",
+      "type": "automated",
+      "runner": "Jest 29 / Node.js 20",
+      "status": "active",
+      "path": "backend/jest.config.js",
+      "expectedResult": "346 tests passent sur 67 suites, dont les 11 fichiers de tests de sécurité anciennement non découverts."
     }
   ]
 }

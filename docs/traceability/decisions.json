@@ -9,6 +9,15 @@
       "status": "accepted",
       "rationale": "Un format structuré et validable permet de détecter automatiquement les références cassées et les éléments orphelins.",
       "record": "docs/traceability/README.md"
+    },
+    {
+      "id": "DEC-CF-SEC-001",
+      "title": "Retirer lusca.csrf et terminer la migration vers l’authentification par cookie plutôt qu’introduire une session serveur",
+      "authority": "Revue technique interne (audit 2026-08-05)",
+      "date": "2026-08-05",
+      "status": "accepted",
+      "rationale": "lusca.csrf exigeait req.session, jamais monté, faisant échouer 100 % des requêtes. Ajouter express-session aurait introduit un état serveur inédit pour une API jusqu’ici sans session ; SameSite=lax sur le cookie accessToken (déjà nécessaire pour compléter la migration cookie annoncée par 315bbc5) offre une protection CSRF équivalente sans cette dépendance.",
+      "record": "docs/audits/2026-08-05-audit-technique-ancrage-systeme-mad.md"
     }
   ]
 }

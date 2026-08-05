@@ -8,17 +8,17 @@
 
 | Indicateur | Valeur |
 |---|---:|
-| Exigences actives | 1 |
-| Exigences couvertes | 1 |
+| Exigences actives | 2 |
+| Exigences couvertes | 2 |
 | Exigences partielles | 0 |
 | Exigences non couvertes | 0 |
-| Décisions | 1 |
-| Risques | 1 |
-| Changements | 1 |
-| Tests | 1 |
-| Preuves | 1 |
-| Validations | 1 |
-| Liens | 7 |
+| Décisions | 2 |
+| Risques | 4 |
+| Changements | 2 |
+| Tests | 2 |
+| Preuves | 2 |
+| Validations | 2 |
+| Liens | 17 |
 | Couverture obligatoire | 100.0 % |
 
 ## Détail des exigences
@@ -26,6 +26,7 @@
 | Exigence | Maillons présents | Couverture |
 |---|---:|---:|
 | REQ-CF-GOV-001 | 6/6 | 100.0 % |
+| REQ-CF-SEC-001 | 6/6 | 100.0 % |
 
 ## Limites
 

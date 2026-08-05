@@ -10,6 +10,16 @@
       "scope": "Chaîne de traçabilité initiale et barrière CI.",
       "evidence": ["PRV-CF-GOV-001"],
       "limitations": "La validation couvre le mécanisme initial et non toutes les futures exigences métier."
+    },
+    {
+      "id": "VAL-2026-001",
+      "title": "Validation technique directe des correctifs C1/C2/C3",
+      "authority": "Revue technique interne (audit 2026-08-05)",
+      "status": "approved",
+      "date": "2026-08-05",
+      "scope": "Disponibilité de l’API (authentification par cookie), exécution réelle des tests de sécurité, application des migrations Prisma sur base neuve.",
+      "evidence": ["PRV-2026-001"],
+      "limitations": "Validation technique directe par exécution réelle, pas une revue formelle indépendante distincte."
     }
   ]
 }
