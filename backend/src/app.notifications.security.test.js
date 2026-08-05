@@ -2,6 +2,9 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 jest.mock('./db/prisma', () => ({
+  user: {
+    findUnique: jest.fn()
+  },
   notification: {
     count: jest.fn(),
     findMany: jest.fn()
@@ -19,6 +22,12 @@ describe('sécurité des notifications', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.user.findUnique.mockResolvedValue({
+      id: userId,
+      role: 'MUNICIPAL_AGENT',
+      municipalityId,
+      isActive: true
+    });
     prisma.notification.count.mockReturnValue(Promise.resolve(1));
     prisma.notification.findMany.mockReturnValue(Promise.resolve([{ id: 'notification-1' }]));
     prisma.$transaction.mockResolvedValue([1, [{ id: 'notification-1' }]]);
@@ -28,7 +37,7 @@ describe('sécurité des notifications', () => {
     const response = await request(app).get('/api/v1/notifications');
 
     expect(response.status).toBe(401);
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
   });
 
   it('isole les notifications par utilisateur et municipalité', async () => {

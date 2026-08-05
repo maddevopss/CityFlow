@@ -1,6 +1,12 @@
 -- Baseline schema at commit 1178b56 (create cityflow).
 -- Later domain changes remain in their dedicated migrations.
 
+-- Requis par les migrations ultérieures (add_permit_fees, add_permit_issuance,
+-- add_inspection_reminders) qui utilisent gen_random_uuid() sans la recréer.
+-- Anciennement créée par le baseline dupliqué 20260730000000_init_core, supprimé
+-- car il recréait les mêmes tables que ce fichier (voir RSK-2026-003).
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE "Municipality" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,

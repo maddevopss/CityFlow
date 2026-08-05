@@ -2,7 +2,7 @@
 
 ## Statut
 
-**REGISTRE INITIALISÉ — AUCUN AUDIT RÉEL CONSIGNÉ**
+**REGISTRE VIVANT — 2 AUDITS RÉELS CONSIGNÉS**
 
 ## Objet
 
@@ -35,6 +35,8 @@ Le registre couvre les audits internes, externes, techniques, opérationnels, co
 
 | ID | Type | Portée | Auditeur | Début | Rapport | Constats ouverts | Statut | Prochaine action | Preuves |
 |---|---|---|---|---|---|---|---|---|---|
+| AUDIT-2026-001 | Technique (qualité du code) | `backend/src`, `frontend/src`, configuration, CI, dépendances | Revue technique interne | 2026-07-31 | [docs/audits/2026-07-31-audit-qualite-code.md](../audits/2026-07-31-audit-qualite-code.md) | 0 — les 6 constats (1 critique, 3 élevés, 2 moyens partiels) ont été traités par les PR #687, #688, #691 ; la correction du constat critique a elle-même introduit le risque RSK-2026-001, consigné en T2 | clos | Aucune — suivi assuré par AUDIT-2026-002 | Rapport daté, PR de correction fusionnées |
+| AUDIT-2026-002 | Technique + vérification de l'ancrage SYSTEME_MAD | `backend/`, `frontend/`, CI GitHub Actions, `docs/integration-systeme-mad/`, registres T | Revue technique interne | 2026-08-05 | [docs/audits/2026-08-05-audit-technique-ancrage-systeme-mad.md](../audits/2026-08-05-audit-technique-ancrage-systeme-mad.md) | 0 — RSK-2026-001 (régression CSRF/session), RSK-2026-002 (tests de sécurité non exécutés) et RSK-2026-003 (chaîne de migrations Prisma cassée) ont tous été corrigés et vérifiés le 2026-08-05 dans la même PR (#692) ; voir T2 | clos | Aucune — surveiller que les 3 correctifs restent verts en CI après fusion | Run CI `maddevopss/CityFlow` #30916518659 (échec initial), correctifs vérifiés par `npm test` (346/346), `npm run prisma:migrate:deploy` réel sur PostgreSQL 16, et exécutions CI de la PR #692 |
 
 ## Cycle de vie
 

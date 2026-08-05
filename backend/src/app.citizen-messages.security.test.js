@@ -26,7 +26,7 @@ describe('sécurité des messages citoyens', () => {
     );
 
     expect(response.status).toBe(401);
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
     expect(prisma.citizenRequest.findFirst).not.toHaveBeenCalled();
   });
 
@@ -36,7 +36,7 @@ describe('sécurité des messages citoyens', () => {
       .send({ body: 'Message' });
 
     expect(response.status).toBe(401);
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
     expect(prisma.citizenRequest.findFirst).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });

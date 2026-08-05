@@ -6,6 +6,6 @@ describe('sécurité de l’export GeoJSON public', () => {
     const response = await request(app).get('/api/v1/exports/geojson');
 
     expect(response.status).toBe(400);
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
   });
 });

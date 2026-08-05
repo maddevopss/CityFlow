@@ -6,13 +6,13 @@ describe('limitation des routes d’événements', () => {
     const response = await request(app).get('/api/v1/events');
 
     expect(response.status).toBe(401);
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
   });
 
   it('limite une écriture avant de refuser le jeton manquant', async () => {
     const response = await request(app).post('/api/v1/events').send({});
 
     expect(response.status).toBe(401);
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
   });
 });

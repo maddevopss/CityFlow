@@ -5,7 +5,6 @@ const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
-const lusca = require('lusca');
 const { version } = require('../package.json');
 const prisma = require('./db/prisma');
 const errorHandler = require('./api/middleware/errorHandler');
@@ -67,12 +66,14 @@ app.use(
   })
 );
 
-// CSRF protection middleware (required for cookie-based authentication)
-app.use(lusca.csrf({
-  key: '_csrf',
-  secret: process.env.CSRF_SECRET || 'change_this_in_production'
-}));
-
+// Protection CSRF : le cookie d'authentification (`accessToken`, voir
+// api/routes/auth.js) est posé avec SameSite=lax, ce qui bloque déjà les
+// requêtes de mutation cross-site (fetch/XHR/formulaire) tout en laissant
+// passer la navigation normale — c'est la défense CSRF réelle de cette API.
+// `lusca.csrf` a été retiré (RSK-2026-001) : il exigeait `req.session`, que
+// rien ne fournissait, et faisait échouer 100 % des requêtes en 500 ; le
+// frontend n'a par ailleurs jamais été câblé pour lire/envoyer un jeton
+// `_csrf`. Voir docs/audits/2026-08-05-audit-technique-ancrage-systeme-mad.md.
 app.use('/api/v1/auth', require('./api/routes/auth'));
 app.use('/api/v1/events', require('./api/routes/events'));
 app.use('/api/v1/exports', require('./api/routes/exports'));

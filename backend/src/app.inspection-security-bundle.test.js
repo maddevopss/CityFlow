@@ -24,7 +24,7 @@ const inspectionId = '33333333-3333-4333-8333-333333333333';
 
 function expectRateLimitedBeforeDatabase(response) {
   expect(response.status).toBe(401);
-  expect(response.headers.ratelimit).toBeDefined();
+  expect(response.headers['ratelimit-limit']).toBeDefined();
 }
 
 describe('sécurité regroupée des inspections', () => {

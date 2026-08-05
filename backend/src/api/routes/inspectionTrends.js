@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(operationsReadLimiter, authenticate, authorize('ADMIN', 'MUNICIPAL_AGENT', 'INSPECTOR'));
 
 const trendsSchema = Joi.object({
-  months: Joi.number().integer().min(1).max(24).default(6)
+  months: Joi.number().integer().min(1).max(12).default(6)
 });
 
 router.get('/', async (req, res) => {
