@@ -12,11 +12,13 @@ Le constat de l'audit du 31 juillet reste valide sur le fond : l'architecture ba
 
 Cette régression n'a pas été détectée par les tests de sécurité pourtant écrits pour ce périmètre, parce qu'ils ne s'exécutent jamais : `jest.config.js` restreint la découverte des tests à `backend/tests/`, alors que 11 fichiers de tests de sécurité (471 lignes, couvrant précisément auth, exports, métriques, opérations, notifications) vivent dans `backend/src/` et ne sont inclus ni par `npm test` ni par la commande que `SECURITY_AUDIT_CLOSEOUT.md` recommande d'exécuter.
 
+**Ajout post-publication (2026-08-05, après ouverture de la PR #692)** : l'exécution réelle du workflow `migration-readiness.yml` sur cette PR a révélé un troisième défaut critique, indépendant des deux précédents : la chaîne de migrations Prisma elle-même est cassée sur `main`. Voir C3 ci-dessous.
+
 Sur le second volet demandé — l'ancrage des spécifications SYSTEME_MAD — le résultat est net : le mécanisme formel est solide et passe sa propre validation (`node scripts/validate-systeme-mad-alignment.mjs` → SUCCÈS, 8 correspondances). Mais l'ancrage reste **structurel, pas encore opérationnel** : les registres T qui devraient porter la preuve vivante de cet alignement (T1 décisions, T2 risques, T13 audits) sont encore à l'état d'échafaudage vide, y compris pour un audit réel déjà produit (celui du 31 juillet, jamais consigné en T13). Ce rapport corrige cet écart en inscrivant les deux audits et les deux risques critiques identifiés ici dans les registres correspondants (§4).
 
 | Sévérité | Nombre de constats |
 |---|---:|
-| Critique | 2 |
+| Critique | 3 |
 | Élevée | 2 |
 | Moyenne | 3 |
 
@@ -59,6 +61,24 @@ La deuxième option évite d'introduire un état serveur pour une API qui jusqu'
 **Pourquoi c'est critique** : ce sont précisément les tests censés garantir la non-régression du durcissement de sécurité des phases 1 et 2. Leur silence explique directement pourquoi C1 a pu être mergé sans alerte : le filet de sécurité existe sur le papier (471 lignes écrites, une procédure de validation documentée) mais n'a jamais réellement tourné.
 
 **Recommandation** : corriger `roots` (ou déplacer ces fichiers sous `tests/security/`, plus conforme à la convention du reste du dépôt), les intégrer à `backend-ci.yml`, puis les faire tous passer avant de clore C1.
+
+### C3 — Critique : la chaîne de migrations Prisma est cassée sur `main` — un déploiement sur base neuve échoue
+
+**Où** : `backend/prisma/migrations/20260730000000_init_core/` et `backend/prisma/migrations/20260730000000_initial/` portent le même horodatage et créent toutes les deux, de façon quasi identique, les tables `Municipality`, `User` et `RoadEvent`. Prisma les applique dans l'ordre lexicographique du nom de dossier (`init_core` avant `initial`), et le fait que ni `check-migrations.mjs` ni la CI habituelle ne détectent le problème.
+
+**Preuve** : découverte en observant l'exécution réelle du workflow `migration-readiness.yml` (déclenché par la présente PR, car il ne tourne que sur `pull_request` — jamais sur push vers `main`, donc jamais vérifié en continu). Sortie exacte :
+```
+Applying migration `20260730000000_init_core`
+Applying migration `20260730000000_initial`
+Error: P3018
+Database error code: 42P07
+Database error: relation "Municipality" already exists
+```
+Le second migration échoue car le premier a déjà créé les mêmes tables. `20260730000000_init_core` a été ajouté très récemment (commit `c0ce1f5`, 2026-08-03, message « fix:migration/20260730000000_init_core »), après deux tentatives de correction d'ordre de baseline (`184e309`, `63bb0d4`) qui n'ont manifestement pas résolu le problème.
+
+**Pourquoi c'est critique** : `prisma migrate deploy` sur une base de données neuve — exactement le scénario d'un nouvel environnement, d'un onboarding municipal ou d'une restauration — échoue immédiatement et bloque tout démarrage. Combiné à C1, cela signifie qu'aujourd'hui, sur `main`, ni le déploiement initial (schéma) ni le fonctionnement de l'API (CSRF/session) ne sont opérationnels sur un environnement neuf.
+
+**Recommandation** : décider laquelle des deux migrations constitue la vraie baseline historique et supprimer l'autre (ou fusionner leurs différences réelles — `RoadEvent.status` a un défaut `'ACTIVE'` dans l'une et `'PLANNED'` dans l'autre, ce qui n'est pas qu'un problème de formatage). Vérifier au préalable qu'aucun environnement réel n'a déjà appliqué `20260730000000_init_core` avant de la retirer. Ajouter ensuite `migration-readiness.yml` comme vérification obligatoire avant fusion, pas seulement informative.
 
 ### H1 — Élevée : configuration ESLint backend incomplète — 162 faux positifs masquent 3 vrais signalements
 
@@ -125,7 +145,7 @@ Source épinglée: bleeband/SYSTEME_MAD@3a03d95fa435e911149c05081e1c0a2d3e20bcb9
 Pour que ce constat ne reste pas lui-même une observation sans preuve (contraire au principe SMAD-PRV-001 que CityFlow revendique), les entrées suivantes ont été ajoutées aux registres correspondants dans ce même changement :
 
 - `docs/registres/t13-registre-audits.md` : deux lignes — `AUDIT-2026-001` (audit du 2026-07-31, rétroactif) et `AUDIT-2026-002` (cet audit) ;
-- `docs/registres/t2-registre-risques.md` : deux lignes — `RSK-2026-001` (régression CSRF/session, C1) et `RSK-2026-002` (tests de sécurité non exécutés, C2).
+- `docs/registres/t2-registre-risques.md` : trois lignes — `RSK-2026-001` (régression CSRF/session, C1), `RSK-2026-002` (tests de sécurité non exécutés, C2) et `RSK-2026-003` (chaîne de migrations cassée, C3 — ajoutée après coup, une fois la PR #692 elle-même passée en CI et le workflow `migration-readiness.yml` déclenché).
 
 Ces entrées ne referment pas les risques : elles les rendent visibles et attribuables, conformément au registre lui-même (« aucune absence de risque présumée »).
 
@@ -138,10 +158,11 @@ Ces entrées ne referment pas les risques : elles les rendent visibles et attrib
 
 ## 6. Priorisation recommandée
 
-1. **C1** — bloquant absolu avant toute mise en production ou démonstration pilote : l'API ne répond pas.
-2. **C2** — à corriger dans la même PR que C1, puis à utiliser pour valider C1 avant fusion.
-3. **H1** — filet de sécurité lint à rétablir avant d'accumuler du code non vérifié.
-4. **M1–M3** — au fil de l'eau ; M2 a déjà été partiellement traité par ce rapport (§4).
+1. **C3** — bloquant en amont de tout le reste : sans chaîne de migrations valide, aucun environnement neuf ne démarre, y compris pour vérifier C1.
+2. **C1** — bloquant absolu avant toute mise en production ou démonstration pilote : l'API ne répond pas.
+3. **C2** — à corriger dans la même PR que C1, puis à utiliser pour valider C1 avant fusion.
+4. **H1** — filet de sécurité lint à rétablir avant d'accumuler du code non vérifié.
+5. **M1–M3** — au fil de l'eau ; M2 a déjà été partiellement traité par ce rapport (§4).
 
 ## Limites
 
