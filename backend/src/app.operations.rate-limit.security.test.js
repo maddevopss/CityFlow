@@ -6,7 +6,7 @@ describe('limitation des routes d’opérations', () => {
     const response = await request(app).get('/api/v1/operations/diffusion');
 
     expect(response.status).toBe(401);
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
   });
 
   it('limite une écriture avant de refuser le jeton manquant', async () => {
@@ -15,6 +15,6 @@ describe('limitation des routes d’opérations', () => {
     );
 
     expect(response.status).toBe(401);
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
   });
 });

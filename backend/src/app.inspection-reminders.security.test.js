@@ -26,7 +26,7 @@ describe('sécurité des rappels d’inspection', () => {
     const response = await request(app).get('/api/v1/inspection-reminders');
 
     expect(response.status).toBe(401);
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
     expect(prisma.inspectionReminder.findMany).not.toHaveBeenCalled();
   });
 
@@ -34,7 +34,7 @@ describe('sécurité des rappels d’inspection', () => {
     const response = await request(app).post('/api/v1/inspection-reminders/generate');
 
     expect(response.status).toBe(401);
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
     expect(prisma.inspection.findMany).not.toHaveBeenCalled();
     expect(prisma.inspectionReminder.upsert).not.toHaveBeenCalled();
   });
@@ -45,7 +45,7 @@ describe('sécurité des rappels d’inspection', () => {
     );
 
     expect(response.status).toBe(401);
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
     expect(prisma.inspectionReminder.findFirst).not.toHaveBeenCalled();
     expect(prisma.inspectionReminder.update).not.toHaveBeenCalled();
   });

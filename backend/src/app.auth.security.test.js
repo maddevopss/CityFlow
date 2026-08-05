@@ -10,13 +10,13 @@ describe('sécurité de l’authentification', () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ message: 'Identifiants invalides' });
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
   });
 
   it('limite la restauration avant de refuser un jeton manquant', async () => {
     const response = await request(app).get('/api/v1/auth/me');
 
     expect(response.status).toBe(401);
-    expect(response.headers.ratelimit).toBeDefined();
+    expect(response.headers['ratelimit-limit']).toBeDefined();
   });
 });

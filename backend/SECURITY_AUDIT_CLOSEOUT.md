@@ -77,4 +77,13 @@ npm run lint -- --quiet
 - Les compteurs `express-rate-limit` utilisent actuellement la mémoire du processus.
 - Un stockage partagé sera nécessaire avant un déploiement horizontal multi-instance.
 - La rotation de jetons ou les sessions révocables constituent une évolution d’architecture et ne sont pas introduites dans cette stabilisation.
+
+## Addendum 2026-08-05 — correction d'une régression de cette stabilisation
+
+La commande de validation ci-dessus (`npx jest src/app.*.security.test.js`) n'exécutait en réalité aucun test : `jest.config.js` limitait la découverte à `backend/tests/`, hors de `backend/src/`. Cela a laissé passer une régression introduite dans cette même PR : `lusca.csrf`, ajouté globalement, exigeait `req.session` sans qu'aucune session Express ne soit montée, faisant échouer 100 % des requêtes en `500`.
+
+Correctifs apportés (voir `docs/audits/2026-08-05-audit-technique-ancrage-systeme-mad.md`) :
+- `jest.config.js` découvre désormais aussi `backend/src/`, et les 11 fichiers de tests de sécurité s'exécutent réellement (plusieurs contenaient eux-mêmes des défauts jamais détectés : jeton de test utilisant `id` au lieu de `sub`, mocks Prisma incomplets, assertion sur un en-tête `RateLimit` qui n'existe plus depuis `express-rate-limit` v7 — tous corrigés) ;
+- `/auth/login` et `/auth/refresh` posent maintenant réellement le cookie `accessToken` httpOnly que `authenticate` et le frontend attendaient déjà ;
+- `lusca.csrf` a été retiré : la protection CSRF réelle de cette API est l'attribut `SameSite=lax` du cookie `accessToken`, qui bloque les requêtes de mutation cross-site sans dépendre d'une session serveur ni d'un jeton `_csrf` que le frontend n'a jamais été câblé pour envoyer.
 - Aucun comportement métier, schéma de base de données ou contrat de réponse réussi n’est modifié.

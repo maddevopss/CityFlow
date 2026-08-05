@@ -31,6 +31,26 @@ function getRefreshTokenExpiration() {
   return new Date(Date.now() + config.refreshTokenTtlDays * 24 * 60 * 60 * 1000);
 }
 
+// Le cookie httpOnly est la source d'authentification attendue par le frontend
+// (voir frontend/src/services/api.ts, withCredentials: true) ; le jeton reste
+// aussi renvoyé dans le corps pour les clients Bearer (tests, intégrations).
+// SameSite=lax est la protection CSRF réelle de ce cookie : elle bloque les
+// requêtes de mutation cross-site (fetch/XHR/POST de formulaire) tout en
+// laissant passer la navigation normale. Voir RSK-2026-001 pour l'historique.
+function setAccessTokenCookie(res, access) {
+  res.cookie('accessToken', access.token, {
+    httpOnly: true,
+    secure: config.nodeEnv === 'production',
+    sameSite: 'lax',
+    path: '/',
+    expires: access.expiresAt
+  });
+}
+
+function clearAccessTokenCookie(res) {
+  res.clearCookie('accessToken', { path: '/' });
+}
+
 async function recordAuthFailure(action, req, metadata = {}) {
   try {
     await appendSecurityAudit({
@@ -115,6 +135,8 @@ router.post('/login', loginLimiter, async (req, res) => {
     return refreshToken;
   });
 
+  setAccessTokenCookie(res, access);
+
   return res.json({
     token: access.token,
     refreshToken,
@@ -169,6 +191,7 @@ router.post('/refresh', authReadLimiter, async (req, res) => {
 
       return {
         token: access.token,
+        expiresAt: access.expiresAt,
         refreshToken: rotation.refreshToken
       };
     });
@@ -178,7 +201,9 @@ router.post('/refresh', authReadLimiter, async (req, res) => {
       return res.status(401).json({ message: 'Jeton de renouvellement invalide' });
     }
 
-    return res.json(rotated);
+    setAccessTokenCookie(res, { token: rotated.token, expiresAt: rotated.expiresAt });
+
+    return res.json({ token: rotated.token, refreshToken: rotated.refreshToken });
   } catch (err) {
     if (err.code === 'SESSION_INVALID') {
       await recordAuthFailure('auth.refresh.failed', req, { reason: 'inactive_account' });
@@ -197,6 +222,7 @@ router.post('/logout', authReadLimiter, authenticate, async (req, res) => {
     actorId: req.user.sub,
     requestId: req.requestId
   });
+  clearAccessTokenCookie(res);
   return res.status(204).send();
 });
 

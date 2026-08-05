@@ -16,11 +16,13 @@ Cette régression n'a pas été détectée par les tests de sécurité pourtant 
 
 Sur le second volet demandé — l'ancrage des spécifications SYSTEME_MAD — le résultat est net : le mécanisme formel est solide et passe sa propre validation (`node scripts/validate-systeme-mad-alignment.mjs` → SUCCÈS, 8 correspondances). Mais l'ancrage reste **structurel, pas encore opérationnel** : les registres T qui devraient porter la preuve vivante de cet alignement (T1 décisions, T2 risques, T13 audits) sont encore à l'état d'échafaudage vide, y compris pour un audit réel déjà produit (celui du 31 juillet, jamais consigné en T13). Ce rapport corrige cet écart en inscrivant les deux audits et les deux risques critiques identifiés ici dans les registres correspondants (§4).
 
-| Sévérité | Nombre de constats |
-|---|---:|
-| Critique | 3 |
-| Élevée | 2 |
-| Moyenne | 3 |
+| Sévérité | Nombre de constats | Statut |
+|---|---:|---|
+| Critique | 3 | **3 corrigés et vérifiés** (§2, addendum du 2026-08-05) |
+| Élevée | 2 | 1 corrigé (H1), 1 tel quel (M1/M2/M3 sont classés Moyenne, voir plus bas) |
+| Moyenne | 3 | ouverts, hors urgence |
+
+**Addendum 2026-08-05 (même journée, après la première publication de ce rapport)** : à la demande explicite de correction, C1, C2 et C3 ont été corrigés dans cette même PR #692 et revérifiés par exécution réelle (voir le détail dans chaque section et §4bis). Le texte ci-dessous conserve la description originale des constats tels que découverts, pour la traçabilité ; les blocs « Correctif appliqué » indiquent ce qui a été fait.
 
 ## 1. Suivi de l'audit du 31 juillet 2026
 
@@ -52,6 +54,11 @@ Sur le second volet demandé — l'ancrage des spécifications SYSTEME_MAD — l
 2. remplacer `lusca.csrf` par une protection CSRF sans état (double-submit cookie) cohérente avec une API JWT/Bearer qui n'a par ailleurs aucune autre notion de session serveur.
 La deuxième option évite d'introduire un état serveur pour une API qui jusqu'ici n'en avait pas. Dans les deux cas, la correction doit être validée par les tests de sécurité existants une fois C2 corrigé.
 
+**Correctif appliqué (2026-08-05)** : option 2, avec un défaut supplémentaire corrigé en chemin. En creusant l'option 2, il s'est avéré que `POST /auth/login` et `POST /auth/refresh` ne posaient en réalité **jamais** le cookie `accessToken` httpOnly que `authenticate` (middleware) et le frontend (`frontend/src/services/api.ts`, `withCredentials: true`, commentaire « Token is now stored as httpOnly cookie by the backend ») attendaient déjà — la migration vers l'authentification par cookie annoncée dans le message du commit `315bbc5` (« Migrated JWT tokens from localStorage to httpOnly cookies ») n'avait donc jamais été terminée côté serveur. Correctifs :
+- `backend/src/api/routes/auth.js` : `/login` et `/refresh` posent maintenant le cookie `accessToken` (httpOnly, `secure` en production, `sameSite: 'lax'`, expiration alignée sur le jeton) ; `/logout` le retire. Le jeton continue d'être renvoyé dans le corps JSON pour les clients Bearer (tests, intégrations tierces).
+- `backend/src/app.js` : `lusca.csrf` retiré, avec la dépendance `lusca` (package.json + lockfile). La protection CSRF réelle devient l'attribut `SameSite=lax` du cookie — il bloque les requêtes de mutation cross-site (fetch/XHR/formulaire) sans nécessiter de session serveur ni de jeton `_csrf` que le frontend n'a jamais été câblé pour envoyer.
+- Vérifié : `npm test` (backend) → 346/346 tests passent (voir C2) ; démarrage réel de l'app sans erreur `lusca requires req.session`.
+
 ### C2 — Critique : 11 fichiers de tests de sécurité (471 lignes) ne s'exécutent jamais, ni localement ni en CI
 
 **Où** : `backend/jest.config.js:3` fixe `roots: ['<rootDir>/tests']`. Or `backend/src/app.auth.security.test.js`, `app.citizen-messages.security.test.js`, `app.citizen-operations-security-bundle.test.js`, `app.events.rate-limit.security.test.js`, `app.exports.security.test.js`, `app.inspection-reminders.security.test.js`, `app.inspection-security-bundle.test.js`, `app.metrics.security.test.js`, `app.notifications.security.test.js`, `app.operations.rate-limit.security.test.js` et `app.release-readiness.test.js` vivent tous sous `backend/src/`, hors de ce `root`.
@@ -61,6 +68,14 @@ La deuxième option évite d'introduire un état serveur pour une API qui jusqu'
 **Pourquoi c'est critique** : ce sont précisément les tests censés garantir la non-régression du durcissement de sécurité des phases 1 et 2. Leur silence explique directement pourquoi C1 a pu être mergé sans alerte : le filet de sécurité existe sur le papier (471 lignes écrites, une procédure de validation documentée) mais n'a jamais réellement tourné.
 
 **Recommandation** : corriger `roots` (ou déplacer ces fichiers sous `tests/security/`, plus conforme à la convention du reste du dépôt), les intégrer à `backend-ci.yml`, puis les faire tous passer avant de clore C1.
+
+**Correctif appliqué (2026-08-05)** : `backend/jest.config.js` découvre maintenant `<rootDir>/tests` **et** `<rootDir>/src`. Une fois exécutés pour de vrai, ces 11 fichiers ont révélé leurs propres défauts — la confirmation la plus directe que « jamais exécuté » n'équivaut pas à « correct » :
+- `app.metrics.security.test.js` : jetons de test signés avec la revendication `id` au lieu de `sub` (attendue par `authenticate`), et absence totale de mock Prisma — `prisma.user.findUnique` échouait silencieusement, produisant un `401` au lieu du `403`/`200` attendu. Corrigé (revendication `sub`, mock `user.findUnique` par scénario).
+- `app.notifications.security.test.js` : mock Prisma incomplet (ne couvrait pas `user.findUnique`, utilisé par `authenticate`). Corrigé.
+- 17 occurrences dans 10 fichiers asserraient `response.headers.ratelimit` — un en-tête combiné qui n'existe plus depuis `express-rate-limit` v7 (`standardHeaders: true` envoie désormais `RateLimit-Limit`, `RateLimit-Remaining`, etc., pas `RateLimit`). Corrigé vers `response.headers['ratelimit-limit']`.
+- Effet de bord découvert en cours de route, sans rapport avec C1/C2 : `tests/integration/inspection-trends.test.js` attendait un rejet `400` pour `months=24`, alors que `inspectionTrends.js` autorisait jusqu'à `24`. Le frontend (`InspectionTrends.tsx`) n'offre que 3/6/12 mois : la borne serveur était trop permissive. Corrigée à `max(12)`.
+
+Vérifié : `npm test` → **346 tests passent sur 346, 67 suites sur 67** (contre 56 suites/317 tests visibles avant ce correctif).
 
 ### C3 — Critique : la chaîne de migrations Prisma est cassée sur `main` — un déploiement sur base neuve échoue
 
@@ -79,6 +94,10 @@ Le second migration échoue car le premier a déjà créé les mêmes tables. `2
 **Pourquoi c'est critique** : `prisma migrate deploy` sur une base de données neuve — exactement le scénario d'un nouvel environnement, d'un onboarding municipal ou d'une restauration — échoue immédiatement et bloque tout démarrage. Combiné à C1, cela signifie qu'aujourd'hui, sur `main`, ni le déploiement initial (schéma) ni le fonctionnement de l'API (CSRF/session) ne sont opérationnels sur un environnement neuf.
 
 **Recommandation** : décider laquelle des deux migrations constitue la vraie baseline historique et supprimer l'autre (ou fusionner leurs différences réelles — `RoadEvent.status` a un défaut `'ACTIVE'` dans l'une et `'PLANNED'` dans l'autre, ce qui n'est pas qu'un problème de formatage). Vérifier au préalable qu'aucun environnement réel n'a déjà appliqué `20260730000000_init_core` avant de la retirer. Ajouter ensuite `migration-readiness.yml` comme vérification obligatoire avant fusion, pas seulement informative.
+
+**Correctif appliqué (2026-08-05)** : `20260730000000_initial` a été conservée comme baseline (nom conventionnel, commentaire d'origine historique « Baseline schema at commit 1178b56 », `id` sans défaut base de données — cohérent avec `@default(uuid())` généré côté Prisma Client). `20260730000000_init_core` a été supprimée. La seule chose réellement nécessaire qu'elle apportait — `CREATE EXTENSION IF NOT EXISTS "pgcrypto"`, requise par trois migrations ultérieures (`add_permit_fees`, `add_permit_issuance`, `add_inspection_reminders`) qui utilisent `gen_random_uuid()` sans la recréer — a été déplacée en tête de `20260730000000_initial`. Les différences de defaults (`status`) n'avaient pas d'incidence : `20260731005500_add_road_event_lifecycle` les écrase explicitement (`SET DEFAULT 'DRAFT'`) juste après.
+
+Vérifié en conditions réelles (PostgreSQL 16 local, pas seulement en mock) : `npm run prisma:migrate:deploy` sur une base neuve applique les 24 migrations restantes sans erreur, et `npx prisma migrate status` confirme « Database schema is up to date! ». `node scripts/release/check-migrations.mjs` rapporte `{"count": 24, "duplicates": []}`.
 
 ### H1 — Élevée : configuration ESLint backend incomplète — 162 faux positifs masquent 3 vrais signalements
 
@@ -149,6 +168,10 @@ Pour que ce constat ne reste pas lui-même une observation sans preuve (contrair
 
 Ces entrées ne referment pas les risques : elles les rendent visibles et attribuables, conformément au registre lui-même (« aucune absence de risque présumée »).
 
+## 4bis. Clôture des trois risques critiques (même journée, 2026-08-05)
+
+À la demande explicite de correction, RSK-2026-001, RSK-2026-002 et RSK-2026-003 ont été traités dans cette même PR #692 et leur statut a été mis à jour de « ouvert » à « traité » dans `docs/registres/t2-registre-risques.md`, avec les preuves de vérification (tests réels, migration réelle) en colonne Preuves. Conformément au principe de non-masquage de SYSTEME_MAD, les entrées ne sont pas supprimées : elles restent visibles avec leur historique, leur cause et leur correctif.
+
 ## 5. Points positifs confirmés
 
 - Le pattern outbox (`backend/src/services/outbox.js`) reste solide (verrouillage `FOR UPDATE SKIP LOCKED`, back-off exponentiel, `dedupeKey`).
@@ -158,11 +181,13 @@ Ces entrées ne referment pas les risques : elles les rendent visibles et attrib
 
 ## 6. Priorisation recommandée
 
-1. **C3** — bloquant en amont de tout le reste : sans chaîne de migrations valide, aucun environnement neuf ne démarre, y compris pour vérifier C1.
-2. **C1** — bloquant absolu avant toute mise en production ou démonstration pilote : l'API ne répond pas.
-3. **C2** — à corriger dans la même PR que C1, puis à utiliser pour valider C1 avant fusion.
-4. **H1** — filet de sécurité lint à rétablir avant d'accumuler du code non vérifié.
-5. **M1–M3** — au fil de l'eau ; M2 a déjà été partiellement traité par ce rapport (§4).
+1. ~~**C3**~~ — corrigé et vérifié le 2026-08-05 (voir §2).
+2. ~~**C1**~~ — corrigé et vérifié le 2026-08-05 (voir §2).
+3. ~~**C2**~~ — corrigé et vérifié le 2026-08-05 (voir §2).
+4. ~~**H1**~~ — corrigé et vérifié le 2026-08-05 (voir §2).
+5. **M1–M3** — restent ouverts, au fil de l'eau ; M2 a été partiellement traité par ce rapport (§4). Aucun n'est bloquant.
+
+Il ne reste, à l'issue de cet audit, aucun constat critique ou élevé ouvert. Les trois constats moyens (M1, M2, M3) ne remettent pas en cause l'utilisabilité du dépôt et sont documentés pour suivi.
 
 ## Limites
 

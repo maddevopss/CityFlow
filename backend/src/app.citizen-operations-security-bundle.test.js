@@ -22,7 +22,7 @@ const app = require('./app');
 
 function expectLimitedBeforeDatabase(response) {
   expect(response.status).toBe(401);
-  expect(response.headers.ratelimit).toBeDefined();
+  expect(response.headers['ratelimit-limit']).toBeDefined();
 }
 
 describe('sécurité regroupée des opérations citoyennes', () => {
