@@ -9,6 +9,36 @@
       "owner": "Mainteneurs CityFlow",
       "status": "treated",
       "treatment": "Valider automatiquement les identifiants, relations, fichiers locaux et couvertures obligatoires."
+    },
+    {
+      "id": "RSK-2026-001",
+      "title": "Régression CSRF/session : lusca.csrf exigeait req.session (absent), faisant échouer 100 % des requêtes API",
+      "likelihood": "high",
+      "impact": "critical",
+      "owner": "Équipe backend CityFlow",
+      "status": "treated",
+      "treatment": "lusca.csrf retiré ; /auth/login et /auth/refresh posent désormais le cookie httpOnly accessToken (SameSite=lax) comme protection CSRF sans état. Vérifié en conditions réelles (serveur démarré, PostgreSQL 16 local).",
+      "record": "docs/registres/t2-registre-risques.md"
+    },
+    {
+      "id": "RSK-2026-002",
+      "title": "11 fichiers de tests de sécurité (471 lignes) jamais exécutés, ni localement ni en CI",
+      "likelihood": "high",
+      "impact": "high",
+      "owner": "Équipe backend CityFlow",
+      "status": "treated",
+      "treatment": "jest.config.js découvre désormais backend/src/ en plus de backend/tests/. Les défauts révélés par leur première exécution réelle (jeton de test id vs sub, mocks Prisma incomplets, en-tête RateLimit obsolète) ont aussi été corrigés. Vérifié : 346/346 tests passent sur 67/67 suites.",
+      "record": "docs/registres/t2-registre-risques.md"
+    },
+    {
+      "id": "RSK-2026-003",
+      "title": "Chaîne de migrations Prisma cassée : deux migrations au même horodatage créent les mêmes tables, prisma migrate deploy échoue sur base neuve",
+      "likelihood": "high",
+      "impact": "critical",
+      "owner": "Équipe backend CityFlow",
+      "status": "treated",
+      "treatment": "Migration dupliquée 20260730000000_init_core supprimée ; CREATE EXTENSION pgcrypto déplacée dans la baseline conservée. Vérifié à deux reprises sur PostgreSQL 16 local (bases neuves distinctes) : les 24 migrations s’appliquent sans erreur.",
+      "record": "docs/registres/t2-registre-risques.md"
     }
   ]
 }

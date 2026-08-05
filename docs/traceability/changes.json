@@ -8,6 +8,14 @@
       "status": "implemented",
       "scope": "Catalogues, graphe, validateur, rapport et workflow CI.",
       "implementation": "docs/traceability/README.md"
+    },
+    {
+      "id": "CHG-2026-001",
+      "title": "Corriger les régressions C1/C2/C3 (CSRF/session, tests de sécurité non exécutés, migrations dupliquées)",
+      "owner": "Équipe backend CityFlow",
+      "status": "implemented",
+      "scope": "backend/src/app.js, backend/src/api/routes/auth.js, backend/jest.config.js, backend/prisma/migrations/, et les fichiers de tests de sécurité corrigés en conséquence.",
+      "implementation": "docs/audits/2026-08-05-audit-technique-ancrage-systeme-mad.md"
     }
   ]
 }

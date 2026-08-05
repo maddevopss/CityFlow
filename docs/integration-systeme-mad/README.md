@@ -19,6 +19,8 @@ Relier la gouvernance, les preuves et les mécanismes de contrôle de CityFlow a
 
 Le commit est épinglé pour empêcher qu’une modification ultérieure de SYSTEME_MAD change automatiquement les règles applicables à CityFlow.
 
+**Note sur le nom du dépôt** : `bleeband/SYSTEME_MAD` est le nom institutionnel historique sous lequel le commit ci-dessus a été examiné et épinglé ; ce même dépôt est aujourd'hui hébergé sous `maddevopss/SYSTEME_MAD` (`git remote -v` y confirme `https://github.com/maddevopss/SYSTEME_MAD`, et le commit `3a03d95f...` s'y retrouve à l'identique). Le nom épinglé n'est pas modifié — il reste la référence documentaire de l'examen initial — mais quiconque cherche à recloner ce dépôt pour re-vérifier l'ancrage doit utiliser `maddevopss/SYSTEME_MAD`. Voir `docs/audits/2026-08-05-audit-technique-ancrage-systeme-mad.md` (constat M1).
+
 ## Principes d’intégration
 
 1. CityFlow demeure responsable de ses décisions, risques, contrôles et preuves.

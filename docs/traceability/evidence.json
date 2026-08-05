@@ -9,6 +9,15 @@
       "path": "scripts/validate-traceability.mjs",
       "scope": "Structure, unicité, intégrité référentielle, fichiers locaux et couverture obligatoire.",
       "limitations": "Ne démontre pas l’exactitude métier des affirmations ni l’efficacité réelle des contrôles."
+    },
+    {
+      "id": "PRV-2026-001",
+      "title": "Rapport d’audit avec reproduction et vérification réelles des correctifs C1/C2/C3",
+      "type": "audit-report",
+      "status": "available",
+      "path": "docs/audits/2026-08-05-audit-technique-ancrage-systeme-mad.md",
+      "scope": "Exécution réelle de npm test (346/346), de prisma migrate deploy sur PostgreSQL 16 local (deux bases neuves distinctes), et de requêtes curl bout-en-bout contre un serveur démarré (login, requête authentifiée par cookie, logout).",
+      "limitations": "La vérification en conditions réelles a été faite hors du dépôt (environnement d’audit local) ; aucun test automatisé équivalent n’a été ajouté au dépôt pour la reproduire en CI."
     }
   ]
 }

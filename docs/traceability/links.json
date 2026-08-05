@@ -7,6 +7,16 @@
     {"from":"REQ-CF-GOV-001","to":"TST-CF-GOV-001","type":"verified-by"},
     {"from":"REQ-CF-GOV-001","to":"PRV-CF-GOV-001","type":"evidenced-by"},
     {"from":"REQ-CF-GOV-001","to":"VAL-CF-GOV-001","type":"validated-by"},
-    {"from":"VAL-CF-GOV-001","to":"PRV-CF-GOV-001","type":"supported-by"}
+    {"from":"VAL-CF-GOV-001","to":"PRV-CF-GOV-001","type":"supported-by"},
+    {"from":"REQ-CF-SEC-001","to":"DEC-CF-SEC-001","type":"authorized-by"},
+    {"from":"REQ-CF-SEC-001","to":"RSK-2026-001","type":"exposed-to"},
+    {"from":"REQ-CF-SEC-001","to":"RSK-2026-002","type":"exposed-to"},
+    {"from":"REQ-CF-SEC-001","to":"RSK-2026-003","type":"exposed-to"},
+    {"from":"REQ-CF-SEC-001","to":"CHG-2026-001","type":"implemented-by"},
+    {"from":"REQ-CF-SEC-001","to":"TST-2026-001","type":"verified-by"},
+    {"from":"REQ-CF-SEC-001","to":"PRV-2026-001","type":"evidenced-by"},
+    {"from":"REQ-CF-SEC-001","to":"VAL-2026-001","type":"validated-by"},
+    {"from":"VAL-2026-001","to":"PRV-2026-001","type":"supported-by"},
+    {"from":"DEC-CF-SEC-001","to":"RSK-2026-001","type":"addresses"}
   ]
 }

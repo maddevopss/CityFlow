@@ -15,6 +15,21 @@
         "La couverture est calculée automatiquement.",
         "La CI échoue lorsqu’un maillon obligatoire disparaît."
       ]
+    },
+    {
+      "id": "REQ-CF-SEC-001",
+      "title": "Un changement de sécurité ne doit dégrader ni la disponibilité de l’API ni le filet de tests qui la protège",
+      "origin": "Audit technique 2026-08-05 (docs/audits/2026-08-05-audit-technique-ancrage-systeme-mad.md)",
+      "rationale": "Le durcissement sécurité de la Phase 1 (commit 315bbc5) a introduit une régression cassant 100 % des requêtes API, restée invisible car les tests de sécurité censés la détecter ne s’exécutaient jamais et la chaîne de migrations était elle-même cassée. Ces trois défaillances doivent rester tracées pour éviter une récidive silencieuse.",
+      "criticality": "high",
+      "owner": "Équipe backend CityFlow",
+      "status": "active",
+      "acceptanceCriteria": [
+        "L’authentification par cookie fonctionne de bout en bout (login, requête protégée, logout) sans middleware exigeant un état serveur absent.",
+        "Tous les fichiers de tests de sécurité sous backend/src/ sont découverts et exécutés par npm test et par la CI.",
+        "prisma migrate deploy s’applique sans erreur sur une base de données neuve.",
+        "Toute régression future sur ces trois points est détectée par la CI avant fusion, pas après."
+      ]
     }
   ]
 }
